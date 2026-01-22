@@ -1,6 +1,13 @@
 import Database from "better-sqlite3";
+import path from "path";
 
-const db = new Database("data.sqlite");
+// ✅ força usar SEMPRE o banco dentro do projeto da API
+// (não depende do "cwd" do pm2)
+const DB_PATH = "/home/deploy/helo-cosmeticos/helo-api/data.sqlite";
+// alternativa mais flexível:
+// const DB_PATH = path.resolve("/home/deploy/helo-cosmeticos/helo-api", "data.sqlite");
+
+const db = new Database(DB_PATH);
 
 // cria tabela se não existir
 db.exec(`
