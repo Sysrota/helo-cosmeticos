@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 helo-api/uploads/*
-helo-api/data.sqlite
+helo-api/data.sqlitedata.sqlite
