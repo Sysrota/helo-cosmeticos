@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 
-const API_URL = "http://localhost:3333";
-
+// const API_URL = "http://localhost:3333";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 export default function ProductsSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
