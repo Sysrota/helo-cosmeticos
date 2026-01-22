@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
+import { motion } from "framer-motion";
 
 export default function Hero() {
   return (
@@ -89,12 +90,21 @@ export default function Hero() {
                 <div className="absolute -left-1/2 top-1/2 -translate-y-1/2 w-[60%] h-[140%] rotate-12 bg-gradient-to-r from-transparent via-helo-rose/25 to-transparent blur-[2px] animate-[shimmer_1.6s_ease-in-out_infinite]" />
               </div>
 
-              <img
+            <motion.img
+              src={logo}
+              alt="Logo Helo Cosméticos"
+              className="w-full h-full object-cover"
+              initial={{ scale: 1.05 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            />
+
+              {/* <img
                 src={logo}
                 alt="Helô Cosméticos"
                 className="w-full h-full object-contain scale-[1] transition-transform duration-1000 group-hover:scale-[1.15]"
                 loading="lazy"
-              />
+              /> */}
             </div>
           </div>
         </div>
