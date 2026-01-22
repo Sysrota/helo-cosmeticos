@@ -115,7 +115,7 @@ export default function Produto() {
                   <img
                     src={mainImage}
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain object-center rounded-t-2xl"
                     style={{ objectPosition: "center top" }}
                   />
                 ) : (
@@ -149,7 +149,7 @@ export default function Produto() {
             title="Ver imagem"
           >
             <div className="w-full h-20 bg-helo-background">
-              <img src={img.full} alt="" className="w-full h-full object-cover" />
+              <img src={img.full} alt="" className="w-full h-full object-contain" />
             </div>
           </button>
         );
