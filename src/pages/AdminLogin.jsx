@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-// const API_URL = "/api";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 export default function AdminLogin() {
@@ -16,19 +15,21 @@ export default function AdminLogin() {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
+
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Falha no login");
 
       login(data.token);
-      nav("/admin/produtos");
+      nav("/admin/produtos", { replace: true });
     } catch (err) {
-      alert(err.message || "Erro no login");
+      alert(err?.message || "Erro no login");
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,10 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              type="email"
+              autoComplete="username"
             />
+
             <input
               className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white"
               placeholder="Senha"
@@ -56,6 +60,7 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
 
             <button
