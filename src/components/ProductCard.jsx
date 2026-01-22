@@ -1,26 +1,37 @@
 import { Link } from "react-router-dom";
 
 export default function ProductCard({ id, image, title, price }) {
+  const hasImage = Boolean(image);
+
   return (
     <Link to={`/produto/${id}`}>
       <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer">
-
-        <div className="w-full h-60 overflow-hidden">
-          <img 
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
+        <div className="w-full h-72 overflow-hidden bg-helo-background">
+          {hasImage ? (
+            <img
+              src={image}
+              alt={title}
+              className="block w-full h-full object-cover"
+              style={{ objectPosition: "center top" }}
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-helo-text/70 font-body">
+              Sem imagem
+            </div>
+          )}
         </div>
 
         <div className="p-5">
           <h3 className="font-display text-xl text-helo-dark">{title}</h3>
           <p className="text-helo-text/80 mt-1 font-body">{price}</p>
-          <button className="mt-4 w-full py-3 bg-helo-dark text-white rounded-xl font-semibold hover:bg-helo-rose transition-colors">
+          <button
+            type="button"
+            className="mt-4 w-full py-3 bg-helo-dark text-white rounded-xl font-semibold hover:bg-helo-rose transition-colors"
+          >
             Ver Detalhes
           </button>
         </div>
-
       </div>
     </Link>
   );

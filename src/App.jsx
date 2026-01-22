@@ -7,6 +7,8 @@ import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
 import Produto from "./pages/Produto";
 import Carrinho from "./pages/Carrinho";
+import AdminProdutos from "./pages/AdminProdutos";
+
 
 import Landing from "./pages/Landing";
 
@@ -23,6 +25,7 @@ export default function App() {
           <Route path="/produto/:id" element={<Produto />} />
           <Route path="/carrinho" element={<Carrinho />} />
           <Route path="/lp-kit-forte-liso" element={<Landing />} />
+          <Route path="/admin/produtos" element={<AdminProdutos />} />
         </Routes>
       </Layout>
     </BrowserRouter>

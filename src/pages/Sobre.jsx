@@ -31,7 +31,7 @@ export default function Sobre() {
           {/* Texto */}
           <div className="animate-fade-in-delay">
             <h2 className="text-3xl font-display text-helo-dark mb-4">
-              Inspirada em quem ilumina meus dias
+              Inspirada em quem ilumina nossos dias
             </h2>
 
             <p className="text-helo-text/90 font-body text-lg leading-relaxed">

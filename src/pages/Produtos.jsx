@@ -1,71 +1,71 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProductsFilter from "../components/ProductsFilter";
 import ProductCard from "../components/ProductCard";
 
-const placeholder = "https://placehold.co/600x800/F6E6E9/D9536F?text=Produto&font=Playfair+Display";
-
-const ALL_PRODUCTS = [
-  { id: 1, title: "Shampoo Delicato", price: 49.90, category: "shampoo", image: placeholder },
-  { id: 2, title: "Máscara Nutritiva", price: 59.90, category: "mascara", image: placeholder },
-  { id: 3, title: "Leave-in Suavizante", price: 39.90, category: "leavein", image: placeholder },
-  { id: 4, title: "Finalizador Glossy", price: 29.90, category: "finalizador", image: placeholder },
-  { id: 5, title: "Shampoo Ultra Care", price: 69.90, category: "shampoo", image: placeholder },
-  { id: 6, title: "Máscara Crescimento", price: 34.90, category: "mascara", image: placeholder },
-];
-
+const API_URL = "http://localhost:3333";
 
 export default function Produtos() {
-  const [filtered, setFiltered] = useState(ALL_PRODUCTS);
+  const [all, setAll] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+
+  async function load() {
+    const res = await fetch(`${API_URL}/products?active=true&limit=100`);
+    const data = await res.json();
+
+    // ✅ remove duplicados por id (caso backend esteja retornando 1 linha por imagem)
+    const unique = Array.from(
+      new Map((data.items || []).map((p) => [p.id, p])).values()
+    );
+
+    setAll(unique);
+    setFiltered(unique);
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleFilter = ({ search, category, sort }) => {
-    let result = [...ALL_PRODUCTS];
+    let result = [...all];
 
-    // FILTRO: busca
     if (search) {
-      result = result.filter(p =>
-        p.title.toLowerCase().includes(search.toLowerCase())
-      );
+      const q = search.toLowerCase();
+      result = result.filter((p) => (p.title || "").toLowerCase().includes(q));
     }
 
-    // FILTRO: categoria
     if (category !== "all") {
-      result = result.filter(p => p.category === category);
+      result = result.filter((p) => p.category === category);
     }
 
-    // ORDENAR
     if (sort === "low") result.sort((a, b) => a.price - b.price);
     if (sort === "high") result.sort((a, b) => b.price - a.price);
-    if (sort === "featured") result.sort((a, b) => b.price - a.price); // exemplo
+    if (sort === "featured") result.sort((a, b) => b.price - a.price);
 
     setFiltered(result);
   };
 
+  const cards = useMemo(() => filtered, [filtered]);
+
   return (
     <div className="bg-helo-background min-h-screen py-20">
       <div className="max-w-6xl mx-auto px-6">
-
-        {/* TÍTULO */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-display text-helo-dark">
-            Produtos
-          </h1>
+          <h1 className="text-4xl font-display text-helo-dark">Produtos</h1>
         </div>
 
-        {/* FILTROS PREMIUM */}
         <ProductsFilter onFilter={handleFilter} />
 
-        {/* GRID DE PRODUTOS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-          {filtered.map(product => (
+          {cards.map((product) => (
             <ProductCard
               key={product.id}
+              id={product.id}                         // ✅ agora o link funciona
               title={product.title}
-              price={`R$ ${product.price.toFixed(2)}`}
-              image={product.image}
+              price={`R$ ${Number(product.price || 0).toFixed(2)}`}
+              image={product.image_url ? `${API_URL}${product.image_url}` : ""}
             />
           ))}
         </div>
-
       </div>
     </div>
   );
