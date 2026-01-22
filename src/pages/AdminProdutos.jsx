@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
-// const API_URL = "http://localhost:3333";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
-
 
 const CATEGORIAS = [
   { value: "shampoo", label: "Shampoo" },
@@ -19,6 +18,8 @@ function reaisToNumber(v) {
 }
 
 export default function AdminProdutos() {
+  const { token, logout } = useAuth(); // ✅ hook tem que ficar aqui dentro
+
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
 
@@ -41,10 +42,31 @@ export default function AdminProdutos() {
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
 
-
   // galeria
   const [gallery, setGallery] = useState([]); // [{id,image_url,sort_order}]
   const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  function authHeadersJson() {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  function authHeadersOnly() {
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  async function handle401(res) {
+    if (res.status === 401) {
+      logout();
+      alert("Sessão expirada. Faça login novamente.");
+      return true;
+    }
+    return false;
+  }
 
   async function fetchProducts() {
     setLoading(true);
@@ -56,8 +78,9 @@ export default function AdminProdutos() {
         active,
         limit: "100",
       });
+
       const res = await fetch(`${API_URL}/products?${qs.toString()}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setItems(data.items || []);
     } finally {
       setLoading(false);
@@ -69,6 +92,7 @@ export default function AdminProdutos() {
     if (!res.ok) throw new Error("Falha ao carregar produto");
     const data = await res.json();
     setGallery(data.images || []);
+    return data;
   }
 
   useEffect(() => {
@@ -77,55 +101,65 @@ export default function AdminProdutos() {
   }, []);
 
   // Upload + já adiciona na galeria (somente em edit)
-async function handleUploadToGallery(e) {
-  e.preventDefault();
-  e.stopPropagation();
+  async function handleUploadToGallery(e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-  const file = e.target.files?.[0];
-  e.target.value = ""; // permite escolher o mesmo arquivo de novo
-  if (!file) return;
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo
+    if (!file) return;
 
-  if (!editingId) {
-    alert("Crie o produto e clique em Editar antes de adicionar imagens.");
-    return;
-  }
-
-  setUploadingGallery(true);
-  try {
-    // 1) upload do arquivo
-    const form = new FormData();
-    form.append("file", file);
-
-    const up = await fetch(`${API_URL}/upload`, { method: "POST", body: form });
-    if (!up.ok) throw new Error("Falha no upload");
-    const upData = await up.json();
-
-    // 2) vincular na galeria do produto (NÃO cria produto)
-    const nextOrder =
-      gallery.length > 0 ? Math.max(...gallery.map(g => Number(g.sort_order) || 0)) + 1 : 0;
-
-    const add = await fetch(`${API_URL}/products/${editingId}/images`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image_url: upData.image_url, sort_order: nextOrder }),
-    });
-
-    if (!add.ok) {
-      const err = await add.json().catch(() => ({}));
-      console.log("Erro add image:", err);
-      throw new Error("Falha ao vincular imagem na galeria");
+    if (!editingId) {
+      alert("Crie o produto e clique em Editar antes de adicionar imagens.");
+      return;
     }
 
-    await fetchProductDetails(editingId);
-    await fetchProducts();
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao adicionar imagem na galeria.");
-  } finally {
-    setUploadingGallery(false);
-  }
-}
+    setUploadingGallery(true);
+    try {
+      // 1) upload do arquivo (PROTEGIDO)
+      const form = new FormData();
+      form.append("file", file);
 
+      const up = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: authHeadersOnly(),
+        body: form,
+      });
+
+      if (await handle401(up)) return;
+      if (!up.ok) throw new Error("Falha no upload");
+
+      const upData = await up.json();
+
+      // 2) vincular na galeria do produto (NÃO cria produto) (PROTEGIDO)
+      const nextOrder =
+        gallery.length > 0
+          ? Math.max(...gallery.map((g) => Number(g.sort_order) || 0)) + 1
+          : 0;
+
+      const add = await fetch(`${API_URL}/products/${editingId}/images`, {
+        method: "POST",
+        headers: authHeadersJson(),
+        body: JSON.stringify({ image_url: upData.image_url, sort_order: nextOrder }),
+      });
+
+      if (await handle401(add)) return;
+
+      if (!add.ok) {
+        const err = await add.json().catch(() => ({}));
+        console.log("Erro add image:", err);
+        throw new Error("Falha ao vincular imagem na galeria");
+      }
+
+      await fetchProductDetails(editingId);
+      await fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao adicionar imagem na galeria.");
+    } finally {
+      setUploadingGallery(false);
+    }
+  }
 
   function resetForm() {
     setMode("create");
@@ -148,13 +182,22 @@ async function handleUploadToGallery(e) {
     setPrice(String(p.price ?? 0).replace(".", ","));
     setFormCategory(p.category || "kit");
     setIsActive(Boolean(p.is_active));
+
+    // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
     setOQueVaiSentir(p.o_que_vai_sentir || "");
 
     setGallery([]);
-
     window.scrollTo({ top: 0, behavior: "smooth" });
-    await fetchProductDetails(p.id);
+
+    // carrega detalhes (inclui galeria e pode incluir campos completos)
+    try {
+      const full = await fetchProductDetails(p.id);
+      setDicasUso(full.dicas_uso || p.dicas_uso || "");
+      setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function handleSubmit(e) {
@@ -168,7 +211,6 @@ async function handleUploadToGallery(e) {
       is_active: isActive,
       dicas_uso: dicasUso,
       o_que_vai_sentir: oQueVaiSentir,
-
     };
 
     const isEdit = mode === "edit" && editingId != null;
@@ -177,9 +219,11 @@ async function handleUploadToGallery(e) {
 
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: authHeadersJson(),
       body: JSON.stringify(payload),
     });
+
+    if (await handle401(res)) return;
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -196,11 +240,18 @@ async function handleUploadToGallery(e) {
     const ok = confirm("Tem certeza que deseja excluir este produto?");
     if (!ok) return;
 
-    const res = await fetch(`${API_URL}/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: "DELETE",
+      headers: authHeadersOnly(),
+    });
+
+    if (await handle401(res)) return;
+
     if (!res.ok) {
       alert("Erro ao excluir.");
       return;
     }
+
     await fetchProducts();
     if (editingId === id) resetForm();
   }
@@ -208,13 +259,17 @@ async function handleUploadToGallery(e) {
   async function toggleActive(p) {
     const res = await fetch(`${API_URL}/products/${p.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeadersJson(),
       body: JSON.stringify({ is_active: !p.is_active }),
     });
+
+    if (await handle401(res)) return;
+
     if (!res.ok) {
       alert("Erro ao alterar status.");
       return;
     }
+
     await fetchProducts();
     if (editingId === p.id) await fetchProductDetails(p.id);
   }
@@ -222,47 +277,61 @@ async function handleUploadToGallery(e) {
   async function setAsCover(img) {
     if (!editingId) return;
 
-    // coloca essa como 0 e empurra as outras pra frente (1..)
     const sorted = [...gallery].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     const updates = [];
 
+    // set cover sort_order = 0
     updates.push(
       fetch(`${API_URL}/products/${editingId}/images/${img.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeadersJson(),
         body: JSON.stringify({ sort_order: 0 }),
       })
     );
 
+    // push others
     let order = 1;
     for (const g of sorted) {
       if (g.id === img.id) continue;
       updates.push(
         fetch(`${API_URL}/products/${editingId}/images/${g.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeadersJson(),
           body: JSON.stringify({ sort_order: order++ }),
         })
       );
     }
 
-    await Promise.allSettled(updates);
+    const results = await Promise.allSettled(updates);
+    // se algum retornou 401, desloga
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        if (await handle401(r.value)) return;
+      }
+    }
+
     await fetchProductDetails(editingId);
     await fetchProducts();
   }
 
   async function removeImage(img) {
     if (!editingId) return;
+
     const ok = confirm("Remover esta imagem da galeria?");
     if (!ok) return;
 
     const res = await fetch(`${API_URL}/products/${editingId}/images/${img.id}`, {
       method: "DELETE",
+      headers: authHeadersOnly(),
     });
+
+    if (await handle401(res)) return;
+
     if (!res.ok) {
       alert("Erro ao remover imagem.");
       return;
     }
+
     await fetchProductDetails(editingId);
     await fetchProducts();
   }
@@ -366,29 +435,28 @@ async function handleUploadToGallery(e) {
             </div>
 
             <div className="md:col-span-2">
-  <label className="block text-sm font-semibold text-helo-dark mb-2">
-    Dicas de uso
-  </label>
-  <textarea
-    className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
-    value={dicasUso}
-    onChange={(e) => setDicasUso(e.target.value)}
-    placeholder="Ex: Aplique uma pequena quantidade, massageie e enxágue..."
-  />
-</div>
+              <label className="block text-sm font-semibold text-helo-dark mb-2">
+                Dicas de uso
+              </label>
+              <textarea
+                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
+                value={dicasUso}
+                onChange={(e) => setDicasUso(e.target.value)}
+                placeholder="Ex: Aplique uma pequena quantidade, massageie e enxágue..."
+              />
+            </div>
 
-<div className="md:col-span-2">
-  <label className="block text-sm font-semibold text-helo-dark mb-2">
-    O que você vai sentir (1 item por linha)
-  </label>
-  <textarea
-    className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
-    value={oQueVaiSentir}
-    onChange={(e) => setOQueVaiSentir(e.target.value)}
-    placeholder={`Ex:\nTextura agradável e aplicação fácil\nAcabamento mais alinhado e macio\nRotina prática no dia a dia`}
-  />
-</div>
-
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-helo-dark mb-2">
+                O que você vai sentir (1 item por linha)
+              </label>
+              <textarea
+                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
+                value={oQueVaiSentir}
+                onChange={(e) => setOQueVaiSentir(e.target.value)}
+                placeholder={`Ex:\nTextura agradável e aplicação fácil\nAcabamento mais alinhado e macio\nRotina prática no dia a dia`}
+              />
+            </div>
 
             <div className="md:col-span-2">
               <button
@@ -571,9 +639,7 @@ async function handleUploadToGallery(e) {
                       </div>
                       <div className="text-sm text-helo-text/80 mt-1">
                         Preço:{" "}
-                        <span className="font-semibold">
-                          R$ {Number(p.price).toFixed(2)}
-                        </span>
+                        <span className="font-semibold">R$ {Number(p.price).toFixed(2)}</span>
                       </div>
                       <div className="text-xs text-helo-text/70 mt-1">
                         Status: {p.is_active ? "Ativo" : "Inativo"}
@@ -603,7 +669,9 @@ async function handleUploadToGallery(e) {
                   </div>
 
                   {p.description ? (
-                    <p className="text-sm text-helo-text/80 mt-3 line-clamp-3">{p.description}</p>
+                    <p className="text-sm text-helo-text/80 mt-3 line-clamp-3">
+                      {p.description}
+                    </p>
                   ) : null}
                 </div>
               </div>

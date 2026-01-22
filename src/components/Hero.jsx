@@ -31,7 +31,7 @@ export default function Hero() {
             </a>
 
             <a
-              href="https://wa.me/55XXXXXXXXXXX"
+              href="https://wa.me/556298228-7272"
               className="px-8 py-4 border border-helo-rose text-helo-rose font-semibold rounded-xl hover:bg-helo-rose hover:text-white transition-all shadow-md"
             >
               Falar com a Helô

@@ -5,6 +5,9 @@ import db from "./db.js";
 import { productCreateSchema, productUpdateSchema } from "./validators.js";
 import path from "path";
 import fs from "fs";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
 
 const UPLOAD_DIR = path.resolve("uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -13,6 +16,43 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const app = express();
 const PORT = process.env.PORT || 3333;
+
+const JWT_SECRET = process.env.JWT_SECRET || "namaste@01";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "renato.sysrota@gmail.com";
+const ADMIN_PASSWORD_HASH =
+  process.env.ADMIN_PASSWORD_HASH ||
+  bcrypt.hashSync(process.env.ADMIN_PASSWORD || "admin123", 10);
+
+function auth(req, res, next) {
+  const h = req.headers.authorization || "";
+  const token = h.startsWith("Bearer ") ? h.slice(7) : null;
+  if (!token) return res.status(401).json({ error: "Não autorizado" });
+
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    return next();
+  } catch {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+
+app.post("/auth/login", (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: "Informe email e senha" });
+
+  if (String(email).toLowerCase() !== String(ADMIN_EMAIL).toLowerCase()) {
+    return res.status(401).json({ error: "Credenciais inválidas" });
+  }
+
+  const ok = bcrypt.compareSync(String(password), ADMIN_PASSWORD_HASH);
+  if (!ok) return res.status(401).json({ error: "Credenciais inválidas" });
+
+  const token = jwt.sign({ email: ADMIN_EMAIL, role: "admin" }, JWT_SECRET, { expiresIn: "7d" });
+  res.json({ token });
+});
+
+
+
 
 app.use(cors());
 app.use(express.json());
@@ -193,7 +233,7 @@ app.get("/products/:id", (req, res) => {
 /**
  * POST /products
  */
-app.post("/products", (req, res) => {
+app.post("/products",auth, (req, res) => {
   const parsed = productCreateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -231,7 +271,7 @@ app.post("/products", (req, res) => {
 /**
  * PUT /products/:id
  */
-app.put("/products/:id", (req, res) => {
+app.put("/products/:id", auth,(req, res) => {
   const id = Number(req.params.id);
 
   const existing = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
@@ -286,7 +326,7 @@ app.put("/products/:id", (req, res) => {
 /**
  * DELETE /products/:id
  */
-app.delete("/products/:id", (req, res) => {
+app.delete("/products/:id",auth, (req, res) => {
   const id = Number(req.params.id);
   const info = db.prepare("DELETE FROM products WHERE id = ?").run(id);
   if (info.changes === 0) return res.status(404).json({ error: "Produto não encontrado" });
@@ -297,7 +337,7 @@ app.delete("/products/:id", (req, res) => {
  * POST /products/:id/images
  * body: { image_url: string, sort_order?: number }
  */
-app.post("/products/:id/images", (req, res) => {
+app.post("/products/:id/images",auth, (req, res) => {
   const productId = Number(req.params.id);
 
   const prod = db.prepare("SELECT id FROM products WHERE id = ?").get(productId);
@@ -330,7 +370,7 @@ app.post("/products/:id/images", (req, res) => {
  * PUT /products/:id/images/:imageId
  * body: { sort_order?: number }
  */
-app.put("/products/:id/images/:imageId", (req, res) => {
+app.put("/products/:id/images/:imageId",auth, (req, res) => {
   const productId = Number(req.params.id);
   const imageId = Number(req.params.imageId);
 
@@ -367,7 +407,7 @@ app.put("/products/:id/images/:imageId", (req, res) => {
 /**
  * DELETE /products/:id/images/:imageId
  */
-app.delete("/products/:id/images/:imageId", (req, res) => {
+app.delete("/products/:id/images/:imageId",auth, (req, res) => {
   const productId = Number(req.params.id);
   const imageId = Number(req.params.imageId);
 
@@ -384,7 +424,7 @@ app.delete("/products/:id/images/:imageId", (req, res) => {
  * multipart/form-data com campo: file
  * retorna image_url
  */
-app.post("/upload", upload.single("file"), (req, res) => {
+app.post("/upload",auth, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
   const image_url = `/uploads/${req.file.filename}`;
   res.status(201).json({ image_url });

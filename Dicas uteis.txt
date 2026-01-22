@@ -1,0 +1,10 @@
+INICIAR O SITE
+ cd ~/helo-cosmeticos && npm run build
+
+
+
+
+pm2 set helo-api:ADMIN_EMAIL admin@helocosmeticos.com
+pm2 set helo-api:ADMIN_PASSWORD "SUA_SENHA_FORTE"
+pm2 set helo-api:JWT_SECRET "UMA_CHAVE_GIGANTE_ALEATORIA"
+pm2 restart helo-api
