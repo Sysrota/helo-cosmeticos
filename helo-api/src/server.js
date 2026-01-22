@@ -17,6 +17,10 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 const app = express();
 const PORT = process.env.PORT || 3333;
 
+app.use(cors());
+app.use(express.json());
+app.use("/uploads", express.static("uploads"));
+
 const JWT_SECRET = process.env.JWT_SECRET || "namaste@01";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "renato.sysrota@gmail.com";
 const ADMIN_PASSWORD_HASH =
@@ -36,6 +40,7 @@ function auth(req, res, next) {
   }
 }
 
+
 app.post("/auth/login", (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: "Informe email e senha" });
@@ -51,12 +56,6 @@ app.post("/auth/login", (req, res) => {
   res.json({ token });
 });
 
-
-
-
-app.use(cors());
-app.use(express.json());
-app.use("/uploads", express.static("uploads"));
 
 /**
  * Upload local (./uploads)
