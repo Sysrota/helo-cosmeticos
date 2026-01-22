@@ -25,7 +25,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "namaste@01";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "renato.sysrota@gmail.com";
 const ADMIN_PASSWORD_HASH =
   process.env.ADMIN_PASSWORD_HASH ||
-  bcrypt.hashSync(process.env.ADMIN_PASSWORD || "admin123", 10);
+  bcrypt.hashSync(process.env.ADMIN_PASSWORD || "namaste@01", 10);
 
 function auth(req, res, next) {
   const h = req.headers.authorization || "";

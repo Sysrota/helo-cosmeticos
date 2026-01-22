@@ -6,13 +6,12 @@ export default function ProductCard({ id, image, title, price }) {
   return (
     <Link to={`/produto/${id}`}>
       <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer">
-        <div className="w-full h-72 overflow-hidden bg-helo-background">
+        <div className="relative w-full h-72 overflow-hidden bg-helo-background rounded-t-2xl">
           {hasImage ? (
             <img
               src={image}
               alt={title}
-              className="block w-full h-full object-cover"
-              style={{ objectPosition: "center top" }}
+              className="absolute inset-0 w-full h-full object-contain object-center rounded-t-2xl"
               loading="lazy"
             />
           ) : (

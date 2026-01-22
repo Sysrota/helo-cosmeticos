@@ -1,16 +1,24 @@
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 
-// ✅ força usar SEMPRE o banco dentro do projeto da API
-// (não depende do "cwd" do pm2)
-const DB_PATH = "/home/deploy/helo-cosmeticos/helo-api/data.sqlite";
-// alternativa mais flexível:
-// const DB_PATH = path.resolve("/home/deploy/helo-cosmeticos/helo-api", "data.sqlite");
+// raiz do projeto da API (onde está este arquivo: src/db.js)
+const ROOT = path.resolve(process.cwd());
+
+// garante que a pasta existe (aqui é a raiz, mas deixei por segurança)
+if (!fs.existsSync(ROOT)) fs.mkdirSync(ROOT, { recursive: true });
+
+// usa SEMPRE o data.sqlite dentro do helo-api (raiz do projeto)
+// (no Windows: C:\Projeto React\...\helo-api\data.sqlite)
+// (no Linux: /home/deploy/.../helo-api/data.sqlite)
+const DB_PATH = path.resolve(ROOT, "data.sqlite");
 
 const db = new Database(DB_PATH);
 
 // cria tabela se não existir
 db.exec(`
+  PRAGMA foreign_keys = ON;
+
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,

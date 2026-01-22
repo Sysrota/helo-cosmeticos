@@ -1,6 +1,7 @@
 INICIAR O SITE
- cd ~/helo-cosmeticos && npm run build
- pm2 restart helo-api
+git pull
+npm run build
+pm2 restart helo-api 
 
 
 
