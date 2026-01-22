@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import ProductsFilter from "../components/ProductsFilter";
 import ProductCard from "../components/ProductCard";
 
-const API_URL = "http://localhost:3333";
+// const API_URL = "http://localhost:3333";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 
 export default function Produtos() {
   const [all, setAll] = useState([]);

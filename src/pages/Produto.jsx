@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 
-const API_URL = "http://localhost:3333";
+// const API_URL = "http://localhost:3333";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 
 function formatBRL(v) {
   const n = Number(v || 0);
