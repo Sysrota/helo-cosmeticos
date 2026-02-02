@@ -23,5 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-helo-api/uploads/*
-helo-api/data.sqlitedata.sqlite
+# uploads e banco local
+helo-api/uploads/
+helo-api/data.sqlite
+
