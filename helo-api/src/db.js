@@ -11,7 +11,8 @@ if (!fs.existsSync(ROOT)) fs.mkdirSync(ROOT, { recursive: true });
 // usa SEMPRE o data.sqlite dentro do helo-api (raiz do projeto)
 // (no Windows: C:\Projeto React\...\helo-api\data.sqlite)
 // (no Linux: /home/deploy/.../helo-api/data.sqlite)
-const DB_PATH = path.resolve(ROOT, "data.sqlite");
+// const DB_PATH = path.resolve(ROOT, "data.sqlite");
+const DB_PATH = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../data.sqlite");
 
 const db = new Database(DB_PATH);
 
