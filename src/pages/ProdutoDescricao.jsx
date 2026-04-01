@@ -33,14 +33,14 @@ export default function ProdutoDescricao() {
         <p>{produto.modoDeUsar}</p>
       </section>
 
-      <section className="mt-8">
+      {/* <section className="mt-8">
         <h2 className="text-lg font-medium text-slate-800 mb-2">
           Composição (INCI)
         </h2>
         <p className="text-sm leading-relaxed">
           {produto.composicaoINCI}
         </p>
-      </section>
+      </section> */}
 
       <section className="mt-6">
         <h2 className="text-lg font-medium text-slate-800 mb-2">

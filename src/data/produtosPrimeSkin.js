@@ -26,11 +26,12 @@ export const produtosPrimeSkin = {
     `,
 
     composicaoPT: `
-      Água, Cocoamidopropil Betaína, Carboxilato de Potássio Laurete-4,
-      Sulfato de Sódio Laurete, Glicerina, Laurete Sulfossuccinato
-      Dissódico, Trealose, Fragrância, Edetato Dissódico, Ácido Cítrico,
-      Dimetilidantoína, Citral, Metilcloroisotiazolinona,
-      Metilisotiazolinona.
+      Água, Carboxilato de Potássio Laurete-4, Cocamidopropil Betaína, 
+      Sulfato de Sódio Laurete, Dietanolamina Cocamida, Glicerol, 
+      Laurete Sulfossuccinato Dissódico, Trealose, Fragrância, Edetato Dissódico, 
+      Ácido Cítrico, Extrato da Flor de Flor-de-Lótus, Dimetilidantoína,
+       Ácido Benzoico, Fenoxietanol, Nitrato de Magnésio, Metilcloroisotiazolinona/ Metilisotiazolinona, 
+       Cloreto de Magnésio, Benzoato de Sódio, Sorbato de Potássio, Ácido Láctico.
     `,
 
     restricoes: `
@@ -73,18 +74,16 @@ export const produtosPrimeSkin = {
     `,
 
     composicaoPT: `
-      Água, Álcool Cetoestearílico, Trealose, Triglicerídeo
-      Caprílico/Cáprico, Propanediol, Niacinamida, Cetearete-20,
-      Palmitato de Cetila, Álcool Cetílico,
-      Octenilsuccinato de Amido Alumínio, Estearato de Macrogol 400,
-      Dimeticona, Fragrância, Monoestearato de Glicerila,
-      Polissorbato 60, Manteiga da Semente de Cupuaçu,
-      Lactato de Sódio, Gluconato de Sódio,
-      Óleo da Semente de Algodoeiro,
-      Crospolímero de Cetearil Dimeticone,
-      Extrato da Flor-de-Lótus, Dimetilidantoína, Glicerina,
-      Cera de Carnaúba, Edetato Dissódico, Fenoxietanol,
-      Butil-hidroxitolueno, Citral, Ácido Benzóico, Geraniol.
+      Água, Álcool Cetearílico, Triglicerídeo Caprílico/ Cáprico,
+      Trealose, Propanodiol, Cetearete-20, Nicotinamida, 
+      Palmitato de Cetila, Octenilsuccinato de Amido Alumínio, 
+      Álcool Cetílico, Estearato de PEG-20, Dimeticona, Fragrância,
+      Monoestearato de Glicerila, Polissorbato 60, Manteiga da Semente de Cupuaçu, 
+      Gliconato de Sódio, Lactato de Sódio, Extrato da Flor de Flor-de-Lótus, 
+      Óleo da Semente de Algodoeiro, Crospolímero de Cetearil Dimeticona, Glicerol, 
+      Cera de Carnaúba, Dimetilidantoína, Edetato Dissódico, Fenoxietanol, 
+      Butil-Hidroxitolueno, Citral, Ácido Benzoico, Benzoato de Sódio, Geraniol, 
+      Sorbato de Potássio, Ácido Láctico
     `,
 
     restricoes: `
@@ -114,42 +113,38 @@ export const produtosPrimeSkin = {
       tipo de pele.
     `,
 
-    composicaoINCI: `
-      Aqua, Silica, Synthetic Wax, Propanediol, Cetearyl Alcohol,
-      Caprylic/Capric Triglyceride, Parfum, Cetyl Palmitate,
-      Triethanolamine, Acrylates/C10-30 Alkyl Acrylate Crosspolymer,
-      Niacinamide, Trehalose, Theobroma grandiflorum Seed Butter,
-      PEG-20 Stearate, Sodium Laureth Sulfate,
-      Gossypium hirsutum Seed Oil, Glyceryl Stearate, Polysorbate 60,
-      Cetyl Alcohol, Ceteareth-20, Triisopropanolamine,
-      Copernicia cerifera Wax, Glycolic Acid,
-      Disodium Laureth Sulfosuccinate, Lactic Acid, Disodium EDTA,
-      Glycerin, Chromium Hydroxide Green (CI 77289), BHT,
-      Aminomethyl Propanol, Blue 1 Lake (CI 42090),
-      Citrus limon Fruit Extract, Citric Acid, Citral,
-      Citrus aurantium Dulcis Fruit Extract, Tartaric Acid,
-      DMDM Hydantoin, Malic Acid,
-      Methylchloroisothiazolinone, Methylisothiazolinone.
-    `,
+    // composicaoINCI: `
+    //   Aqua, Silica, Synthetic Wax, Propanediol, Cetearyl Alcohol,
+    //   Caprylic/Capric Triglyceride, Parfum, Cetyl Palmitate,
+    //   Triethanolamine, Acrylates/C10-30 Alkyl Acrylate Crosspolymer,
+    //   Niacinamide, Trehalose, Theobroma grandiflorum Seed Butter,
+    //   PEG-20 Stearate, Sodium Laureth Sulfate,
+    //   Gossypium hirsutum Seed Oil, Glyceryl Stearate, Polysorbate 60,
+    //   Cetyl Alcohol, Ceteareth-20, Triisopropanolamine,
+    //   Copernicia cerifera Wax, Glycolic Acid,
+    //   Disodium Laureth Sulfosuccinate, Lactic Acid, Disodium EDTA,
+    //   Glycerin, Chromium Hydroxide Green (CI 77289), BHT,
+    //   Aminomethyl Propanol, Blue 1 Lake (CI 42090),
+    //   Citrus limon Fruit Extract, Citric Acid, Citral,
+    //   Citrus aurantium Dulcis Fruit Extract, Tartaric Acid,
+    //   DMDM Hydantoin, Malic Acid,
+    //   Methylchloroisothiazolinone, Methylisothiazolinone.
+    // `,
 
     composicaoPT: `
-      Água, Sílica, Cera Sintética, Propanodiol, Álcool Cetoestearílico,
-      Triglicerídeo Caprílico/Cáprico, Fragrância, Palmitato de Cetila,
-      Trietanolamina, Crospolímero de Acrilatos/Acrilato de Alquila
-      C10-30, Niacinamida, Trealose, Manteiga da Semente de Cupuaçu,
-      Estearato de PEG-20, Sulfato de Sódio Laurete,
-      Óleo da Semente de Algodoeiro, Monoestearato de Glicerila,
-      Polissorbato 60, Álcool Cetílico, Cetearete-20,
-      Triisopropanolamina, Cera de Carnaúba, Ácido Glicólico,
-      Laurete Sulfossuccinato Dissódico, Ácido Láctico,
-      Edetato Dissódico, Glicerina,
-      Hidróxido de Cromo Verde (CI 77289),
-      Butil-hidroxitolueno, Aminometilpropanol,
-      Azul 1 Lake (CI 42090), Extrato do Fruto de Limão Siciliano,
-      Ácido Cítrico, Citral,
-      Extrato do Fruto de Laranja-Doce, Ácido Tartárico,
-      Dimetilidantoína, Ácido Málico,
-      Metilcloroisotiazolinona, Metilisotiazolinona.
+      Água, Quartzo, Cera Sintética, Triglicerídeo Caprílico/ Cáprico, Álcool Cetearílico, 
+      Fragrância, Propanodiol, Palmitato de Cetila, Trietanolamina, 
+      Crospolímero de Acrilatos/ Acrilato de Alquila C10-30, Nicotinamida, 
+      Manteiga da Semente de Cupuaçu, Trealose, Estearato de PEG-20, 
+      Sulfato de Sódio Laurete, Óleo da Semente de Algodoeiro, Monoestearato de Glicerila, 
+      Cetearete-20, Álcool Cetílico, Polissorbato 60, Triisopropanolamina, Cera de Carnaúba, 
+      Laurete Sulfossuccinato Dissódico, Ácido Glicólico, Ácido Láctico, Edetato Dissódico, 
+      Glicerol, Butil-Hidroxitolueno, Aminometilpropanol, Extrato de Fruto de Citrus limon, 
+      Corante Vermelho 33, Ácido Cítrico, Pigmento Vermelho 57:1, Citral, 
+      Extrato do Fruto de Laranja Doce, Ácido Tartárico, Dimetilidantoína, 
+      Nitrato de Magnésio, Ácido Málico, Corante Vermelho de Azorrubina, 
+      Metilcloroisotiazolinona/ Metilisotiazolinona, Sulfato de Sódio, 
+      Cloreto de Magnésio.
     `,
 
     restricoes: `
