@@ -201,7 +201,7 @@ export function ChatMessages() {
                 message.media_url && (
                   <img
                     src={
-                      `http://localhost:3333${message.media_url}`
+                      `window.location.origin${message.media_url}`
                     }
                     alt=""
                     className="
@@ -222,7 +222,7 @@ export function ChatMessages() {
                   >
                     <source
                       src={
-                        `http://localhost:3333${message.media_url}`
+                        `window.location.origin${message.media_url}`
                       }
                     />
                   </audio>
@@ -233,7 +233,7 @@ export function ChatMessages() {
                 message.media_url && (
                   <a
                     href={
-                      `http://localhost:3333${message.media_url}`
+                      `window.location.origin${message.media_url}`
                     }
                     target="_blank"
                     className="
