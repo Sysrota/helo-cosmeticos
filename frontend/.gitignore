@@ -27,3 +27,5 @@ dist-ssr
 helo-api/uploads/
 helo-api/data.sqlite
 
+.env
+
