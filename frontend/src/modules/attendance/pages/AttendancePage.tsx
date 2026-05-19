@@ -1,28 +1,58 @@
-import { ConversationsSidebar } from "../components/ConversationsSidebar";
+import { ConversationsSidebar }
+  from "../components/ConversationsSidebar";
 
-import { ChatMessages } from "../components/ChatMessages";
-import { CustomerPanel } from "../components/CustomerPanel";
+import { ChatMessages }
+  from "../components/ChatMessages";
 
+import { CustomerPanel }
+  from "../components/CustomerPanel";
 
 export function AttendancePage() {
   return (
     <div
+      className="
+        h-[calc(100vh-170px)]
+        flex
+        bg-[#F2F2E1]
+        overflow-hidden
+      "
+    >
+      <div
         className="
-          flex
-          h-[calc(100vh-80px)]
-          bg-[#111b21]
+          w-[340px]
+          min-w-[340px]
+          border-r
+          border-white/10
           overflow-hidden
+          flex
+          flex-col
         "
       >
-     <div className="w-80 p-4 overflow-hidden">
         <ConversationsSidebar />
       </div>
 
-     <div className="flex-1 p-4 overflow-hidden">
+      <div
+        className="
+          flex-1
+          overflow-hidden
+          flex
+          flex-col
+        "
+      >
         <ChatMessages />
       </div>
 
-      <div className="w-80 p-4 overflow-hidden">
+      <div
+        className="
+          w-[340px]
+          min-w-[340px]
+          border-l
+          border-white/10
+          overflow-hidden
+          flex
+          flex-col
+        "
+      >
         <CustomerPanel />
       </div>
     </div>

@@ -110,14 +110,14 @@ export function ChatMessages() {
 
   if (!selectedConversation) {
     return (
-      <div className="h-full flex items-center justify-center text-zinc-400 bg-[#0b141a] rounded-3xl">
+      <div className="h-full flex items-center justify-center text-zinc-400 bg-[#F4C2C2] rounded-3xl">
         Selecione uma conversa
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0b141a] rounded-3xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#00a884] rounded-3xl overflow-hidden">
       <div className="px-6 py-5 border-b border-white/10 bg-[#202c33] text-white">
         <div className="flex items-center gap-4">
           <div

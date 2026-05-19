@@ -53,13 +53,13 @@ export function ConversationsSidebar() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#111b21] text-white rounded-3xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#F2F2E1] text-white rounded-3xl overflow-hidden">
       <div className="p-5 border-b border-white/10">
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold text-[#0b141a]">
           Atendimento
         </h2>
 
-        <p className="text-sm text-zinc-400 mt-1">
+        <p className="text-sm text-zinc-500 mt-1">
           Conversas em tempo real
         </p>
       </div>
@@ -97,8 +97,8 @@ export function ConversationsSidebar() {
                   ${
                     isSelected
                       ? `
-                        bg-[#202c33]
-                        border-[#2a3942]
+                        bg-[#E1E7F2]
+                        border-[#F2F2E1]
                       `
                       : `
                         border-transparent
@@ -114,7 +114,7 @@ export function ConversationsSidebar() {
                     rounded-full
                     bg-gradient-to-br
                     from-pink-500
-                    to-rose-600
+                    to-rose-800
                     flex
                     items-center
                     justify-center
@@ -131,6 +131,7 @@ export function ConversationsSidebar() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
+
                     {conversation.unread_count >
                       0 && (
                       <div
