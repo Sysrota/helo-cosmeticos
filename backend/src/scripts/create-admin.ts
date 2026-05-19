@@ -5,16 +5,16 @@ import { prisma } from "../config/prisma.js";
 async function main() {
   const password =
     await bcrypt.hash(
-      "123456",
+      "namaste@01",
       10
     );
 
   const user =
     await prisma.user.create({
       data: {
-        name: "Administrador",
+        name: "Renato Pinheiro",
 
-        email: "admin@helo.com",
+        email: "renato.sysrota@gmail.com",
 
         password,
 
