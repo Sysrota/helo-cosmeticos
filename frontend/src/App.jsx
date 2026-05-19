@@ -15,6 +15,7 @@ import AdminProdutos from "./pages/AdminProdutos";
 import PrivateRoute from "./components/PrivateRoute";
 
 import ProdutoDescricao from "./pages/ProdutoDescricao";
+import { AttendancePage } from "./modules/attendance/pages/AttendancePage";
 
 
 export default function App() {
@@ -47,6 +48,15 @@ export default function App() {
 
           {/* se alguém entrar em /admin, manda para /admin/produtos */}
           <Route path="/admin" element={<Navigate to="/admin/produtos" replace />} />
+
+          <Route
+            path="/admin/attendance"
+            element={
+              <PrivateRoute>
+                <AttendancePage />
+              </PrivateRoute>
+            }
+          />
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

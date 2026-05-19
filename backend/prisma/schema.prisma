@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+
+  title             String
+  description       String   @default("")
+
+  price             Float
+
+  category          String
+
+  image_url         String   @default("")
+
+  dicas_uso         String   @default("")
+  o_que_vai_sentir  String   @default("")
+
+  is_active         Boolean  @default(true)
+
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  images            ProductImage[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id          Int      @id @default(autoincrement())
+
+  product_id  Int
+
+  image_url   String
+
+  sort_order  Int      @default(0)
+
+  created_at  DateTime @default(now())
+
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+
+  name          String
+
+  email         String    @unique
+
+  password      String
+
+  role          String    @default("admin")
+
+  is_active     Boolean   @default(true)
+
+  created_at    DateTime  @default(now())
+
+  updated_at    DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Contact {
+  id            Int       @id @default(autoincrement())
+
+  name          String?
+
+  phone         String    @unique
+
+  email         String?
+
+  avatar_url    String?
+
+  created_at    DateTime  @default(now())
+
+  updated_at    DateTime  @updatedAt
+
+  conversations Conversation[]
+
+  @@map("contacts")
+}
+
+model Conversation {
+  id              Int       @id @default(autoincrement())
+
+  contact_id      Int
+
+  status          String    @default("open")
+
+  unread_count    Int @default(0)
+
+  sector          String?
+
+  last_message    String?
+
+  last_message_at DateTime?
+
+  created_at      DateTime  @default(now())
+
+  updated_at      DateTime  @updatedAt
+
+  contact         Contact   @relation(fields: [contact_id], references: [id])
+
+  messages        Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id                Int       @id @default(autoincrement())
+
+  conversation_id   Int
+
+  sender_type       String
+
+  content           String
+
+  type              String    @default("text")
+
+  media_url         String?
+
+  is_read           Boolean   @default(false)
+
+  created_at        DateTime  @default(now())
+
+  conversation      Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
