@@ -58,11 +58,7 @@ yarn build
 # -----------------------------
 echo "🔄 Reiniciando backend..."
 
-pm2 delete helo-backend || true
-
-pm2 start $BACKEND_DIR/dist/server.js \
-  --name helo-backend
-
+pm2 restart helo-backend
 pm2 save
 
 # -----------------------------
