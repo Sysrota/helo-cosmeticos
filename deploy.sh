@@ -70,7 +70,7 @@ pm2 save
 # -----------------------------
 echo "🌐 Reload nginx..."
 
-sudo systemctl reload nginx
+systemctl reload nginx
 
 # -----------------------------
 # Final
