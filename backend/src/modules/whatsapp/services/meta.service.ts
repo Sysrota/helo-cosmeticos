@@ -127,3 +127,53 @@ export async function downloadWhatsAppMedia(
     contentType,
   };
 }
+
+export async function
+sendWhatsAppMediaMessage(
+  to: string,
+  mediaUrl: string,
+  type: string,
+  caption?: string
+) {
+
+  const url =
+    `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+  let payload: any = {
+    messaging_product:
+      "whatsapp",
+
+    to,
+
+    type,
+  };
+
+  payload[type] = {
+    link: mediaUrl,
+  };
+
+  if (
+    caption &&
+    type !== "audio"
+  ) {
+    payload[type].caption =
+      caption;
+  }
+
+  const response =
+    await axios.post(
+      url,
+      payload,
+      {
+        headers: {
+          Authorization:
+            `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+
+          "Content-Type":
+            "application/json",
+        },
+      }
+    );
+
+  return response.data;
+}

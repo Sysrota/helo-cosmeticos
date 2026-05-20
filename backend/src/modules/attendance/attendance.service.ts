@@ -1,7 +1,10 @@
 import { prisma } from "../../config/prisma.js";
+
 import { io } from "../../websocket/socket.js";
+
 import {
   sendWhatsAppMessage,
+  sendWhatsAppMediaMessage,
 } from "../whatsapp/services/meta.service.js";
 
 interface CreateConversationDTO {
@@ -53,7 +56,7 @@ export async function listConversations() {
       updated_at: "desc",
     },
   });
-}   
+}
 
 interface CreateMessageDTO {
   conversation_id: number;
@@ -96,7 +99,8 @@ export async function createMessage(
       data: {
         last_message: data.content,
 
-        last_message_at: new Date(),
+        last_message_at:
+          new Date(),
 
         unread_count:
           data.sender_type ===
@@ -111,7 +115,6 @@ export async function createMessage(
         contact: true,
       },
     });
-
 
   const fullMessage =
     await prisma.message.findUnique({
@@ -128,47 +131,82 @@ export async function createMessage(
       },
     });
 
-    io.emit(
-      "conversation_updated",
-      {
-        ...updatedConversation,
-        contact:
-          updatedConversation.contact,
-      }
-    );
+  io.emit(
+    "conversation_updated",
+    updatedConversation
+  );
 
-    io.to(
-      `conversation:${data.conversation_id}`
-    ).emit(
-      "new_message",
-      fullMessage
-    );
+  io.to(
+    `conversation:${data.conversation_id}`
+  ).emit(
+    "new_message",
+    fullMessage
+  );
 
-    if (
-      data.sender_type === "agent" &&
-        !data.media_url
-    ) {
-      const conversation =
-        await prisma.conversation.findUnique({
-          where: {
-            id: data.conversation_id,
-          },
+if (
+  data.sender_type ===
+  "agent"
+) {
 
-          include: {
-            contact: true,
-          },
-        });
+  const conversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id: data.conversation_id,
+      },
 
-      if (conversation?.contact?.phone) {
-        await sendWhatsAppMessage(
-          conversation.contact.phone,
-          data.content
-        );
-      }
+      include: {
+        contact: true,
+      },
+    });
+
+  if (
+    conversation?.contact?.phone
+  ) {
+
+    // TEXTO
+    if (!data.media_url) {
+
+      await sendWhatsAppMessage(
+        conversation.contact.phone,
+        data.content
+      );
     }
 
-    return message;
+    // ARQUIVO
+    else {
+
+      const mediaUrl =
+        `${process.env.APP_URL}${data.media_url}`;
+
+      let mediaType =
+        "document";
+
+      if (
+        data.type === "image"
+      ) {
+        mediaType = "image";
+      }
+
+      if (
+        data.type === "audio"
+      ) {
+        mediaType = "audio";
+      }
+
+      console.log(mediaUrl);
+      
+      await sendWhatsAppMediaMessage(
+        conversation.contact.phone,
+        mediaUrl,
+        mediaType,
+        data.content
+      );
+    }
   }
+}
+
+  return fullMessage;
+}
 
 export async function listMessages(
   conversationId: number

@@ -43,9 +43,19 @@ export const upload = multer({
     callback
   ) => {
     const allowed = [
+
+      // Imagens
       "image/jpeg",
       "image/png",
       "image/webp",
+
+      // Áudios
+      "audio/ogg",
+      "audio/webm",
+      "audio/mpeg",
+
+      // Documentos
+      "application/pdf",
     ];
 
     if (

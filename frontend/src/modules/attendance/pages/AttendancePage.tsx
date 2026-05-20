@@ -13,7 +13,9 @@ export function AttendancePage() {
       className="
         h-[calc(100vh-170px)]
         flex
-        bg-[#F2F2E1]
+        gap-4
+        p-4
+        bg-[#f8f4f1]
         overflow-hidden
       "
     >
@@ -21,11 +23,13 @@ export function AttendancePage() {
         className="
           w-[340px]
           min-w-[340px]
-          border-r
-          border-white/10
           overflow-hidden
-          flex
-          flex-col
+          rounded-3xl
+          bg-white/80
+          backdrop-blur-xl
+          border
+          border-[#eadfd8]
+          shadow-sm
         "
       >
         <ConversationsSidebar />
@@ -35,8 +39,12 @@ export function AttendancePage() {
         className="
           flex-1
           overflow-hidden
-          flex
-          flex-col
+          rounded-3xl
+          bg-white/80
+          backdrop-blur-xl
+          border
+          border-[#eadfd8]
+          shadow-sm
         "
       >
         <ChatMessages />
@@ -46,11 +54,13 @@ export function AttendancePage() {
         className="
           w-[340px]
           min-w-[340px]
-          border-l
-          border-white/10
           overflow-hidden
-          flex
-          flex-col
+          rounded-3xl
+          bg-white/80
+          backdrop-blur-xl
+          border
+          border-[#eadfd8]
+          shadow-sm
         "
       >
         <CustomerPanel />

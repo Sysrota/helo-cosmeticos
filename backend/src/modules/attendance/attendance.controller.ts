@@ -98,3 +98,56 @@ export async function markAsReadController(
 
   return res.json(conversation);
 }
+
+export async function
+uploadAttendanceFileController(
+  req: Request,
+  res: Response
+) {
+
+  if (!req.file) {
+    return res.status(400).json({
+      error: "Arquivo não enviado",
+    });
+  }
+
+  const conversationId =
+    Number(
+      req.body.conversation_id
+    );
+
+  const mimeType =
+    req.file.mimetype;
+
+  let type = "document";
+
+  if (
+    mimeType.startsWith("image/")
+  ) {
+    type = "image";
+  }
+
+  if (
+    mimeType.startsWith("audio/")
+  ) {
+    type = "audio";
+  }
+
+  const message =
+    await createMessage({
+      conversation_id:
+        conversationId,
+
+      sender_type: "agent",
+
+      content:
+        req.file.originalname,
+
+      media_url:
+        `/uploads/${req.file.filename}`,
+
+      type,
+    });
+
+  return res.json(message);
+}

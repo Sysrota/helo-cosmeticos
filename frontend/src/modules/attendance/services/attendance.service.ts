@@ -86,3 +86,30 @@ export async function markAsRead(
 
   return response.data;
 }
+
+export async function uploadFile(
+  formData: FormData
+) {
+
+  const token =
+    localStorage.getItem(
+      "auth_token"
+    );
+
+  const response =
+    await api.post(
+      "/attendance/upload",
+      formData,
+      {
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
+
+  return response.data;
+}

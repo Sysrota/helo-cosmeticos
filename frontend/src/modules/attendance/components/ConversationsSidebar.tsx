@@ -53,7 +53,7 @@ export function ConversationsSidebar() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#F2F2E1] text-white rounded-3xl overflow-hidden">
+    <div className="flex flex-col h-full bg-transparent text-[#3d2b2b] rounded-3xl overflow-hidden">
       <div className="p-5 border-b border-white/10">
         <h2 className="text-2xl font-bold text-[#0b141a]">
           Atendimento
@@ -97,12 +97,12 @@ export function ConversationsSidebar() {
                   ${
                     isSelected
                       ? `
-                        bg-[#E1E7F2]
+                        bg-[#f5e7df]
                         border-[#F2F2E1]
                       `
                       : `
                         border-transparent
-                        hover:bg-[#202c33]
+                        hover:bg-[#f8efea]
                       `
                   }
                 `}
@@ -111,10 +111,10 @@ export function ConversationsSidebar() {
                   className="
                     w-12
                     h-12
-                    rounded-full
+                    rounded-full  
                     bg-gradient-to-br
-                    from-pink-500
-                    to-rose-800
+                  from-[#f3d6cb]
+                  to-[#ddb7aa]
                     flex
                     items-center
                     justify-center

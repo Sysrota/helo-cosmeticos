@@ -6,11 +6,13 @@ import {
   listMessagesController,
   createMessageController,
   markAsReadController,
+  uploadAttendanceFileController,
 } from "./attendance.controller.js";
 
 import { asyncHandler } from "../../shared/middlewares/async-handler.js";
 
 import { auth } from "../../shared/middlewares/auth.js";
+import { upload } from "../../config/multer.js";
 
 const router = Router();
 
@@ -51,6 +53,16 @@ router.patch(
   auth,
   asyncHandler(
     markAsReadController
+  )
+);
+
+
+router.post(
+  "/upload",
+  auth,
+  upload.single("file"),
+  asyncHandler(
+    uploadAttendanceFileController
   )
 );
 

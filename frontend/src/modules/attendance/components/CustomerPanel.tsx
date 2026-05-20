@@ -19,14 +19,15 @@ export function CustomerPanel() {
     selectedConversation.contact;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col p-6 bg-transparent">
       <div className="flex flex-col items-center border-b pb-6">
         <div
           className="
             w-24
             h-24
             rounded-full
-            bg-zinc-200
+           bg-[#f5e7df]
+           text-[#5c4033]
             flex
             items-center
             justify-center
@@ -96,23 +97,6 @@ export function CustomerPanel() {
             WhatsApp
           </div>
         </div>
-      </div>
-
-      <div className="mt-auto">
-        <button
-          className="
-            w-full
-            bg-green-600
-            hover:bg-green-700
-            text-white
-            py-3
-            rounded-2xl
-            font-semibold
-            transition-all
-          "
-        >
-          Abrir WhatsApp
-        </button>
       </div>
     </div>
   );
