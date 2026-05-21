@@ -13,6 +13,8 @@ model Product {
   title             String
   description       String   @default("")
 
+  keywords          String @default("")
+
   price             Float
 
   category          String
@@ -28,6 +30,8 @@ model Product {
   updated_at        DateTime @updatedAt
 
   images            ProductImage[]
+
+  order_items OrderItem[]
 
   @@map("products")
 }
@@ -85,6 +89,10 @@ model Contact {
 
   conversations Conversation[]
 
+  addresses ContactAddress[]
+
+  orders Order[]
+
   @@map("contacts")
 }
 
@@ -134,4 +142,96 @@ model Message {
   conversation      Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
 
   @@map("messages")
+}
+
+model StoreConfig {
+  id Int @id @default(1)
+
+  payment_methods String @default("")
+
+  shipping_info String @default("")
+
+  business_hours String @default("")
+
+  exchange_policy String @default("")
+
+  created_at DateTime @default(now())
+
+  updated_at DateTime @updatedAt
+
+  @@map("store_config")
+}
+
+model ContactAddress {
+  id Int @id @default(autoincrement())
+
+  contact_id Int
+
+  cep String
+
+  street String?
+  number String?
+  district String?
+  city String?
+  state String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  contact Contact@relation(fields: [contact_id],references: [id])
+
+  orders Order[]
+
+  @@map("contact_addresses")
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  contact_id Int
+
+  address_id Int?
+
+  status String @default("pending")
+
+  subtotal Float @default(0)
+
+  shipping_price Float @default(0)
+
+  total Float @default(0)
+
+  payment_method String?
+
+  shipping_deadline String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  contact Contact @relation(fields: [contact_id],references: [id])
+
+  address ContactAddress?@relation(fields: [address_id],references: [id])
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  order_id Int
+
+  product_id Int
+
+  quantity Int @default(1)
+
+  price Float
+
+  created_at DateTime @default(now())
+
+  order Order @relation(fields: [order_id],references: [id])
+
+  product Product@relation(fields: [product_id],references: [id])
+
+  @@map("order_items")
 }

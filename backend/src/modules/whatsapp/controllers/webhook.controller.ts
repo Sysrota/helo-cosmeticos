@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 
 import { prisma } from "../../../config/prisma.js";
 
-import { io } from "../../../websocket/socket.js";
 
 import {
   downloadWhatsAppMedia,
 } from "../services/meta.service.js";
+import { createMessage } from "../../attendance/attendance.service.js";
 
 export async function verifyWebhookController(
   req: Request,
@@ -46,7 +46,17 @@ export async function receiveWebhookController(
   res: Response
 ) {
   try {
+
     const body = req.body;
+
+    const value =
+      body?.entry?.[0]
+        ?.changes?.[0]
+        ?.value;
+
+    if (!value?.messages) {
+      return res.sendStatus(200);
+    }
 
     const message =
       body?.entry?.[0]
@@ -78,10 +88,12 @@ export async function receiveWebhookController(
     let type =
       message?.type || "text";
 
+    // IMAGEM
     if (
       type === "image" &&
       message?.image?.id
     ) {
+
       const media =
         await downloadWhatsAppMedia(
           message.image.id
@@ -93,10 +105,12 @@ export async function receiveWebhookController(
       text = "📷 Imagem";
     }
 
+    // ÁUDIO
     if (
       type === "audio" &&
       message?.audio?.id
     ) {
+
       const media =
         await downloadWhatsAppMedia(
           message.audio.id
@@ -108,10 +122,12 @@ export async function receiveWebhookController(
       text = "🎤 Áudio";
     }
 
+    // DOCUMENTO
     if (
       type === "document" &&
       message?.document?.id
     ) {
+
       const media =
         await downloadWhatsAppMedia(
           message.document.id
@@ -121,13 +137,13 @@ export async function receiveWebhookController(
         `/uploads/${media.fileName}`;
 
       text = "📄 Documento";
-    }  
-
+    }
 
     if (!phone || !text) {
       return res.sendStatus(200);
     }
 
+    // CONTATO
     let contact =
       await prisma.contact.findUnique({
         where: {
@@ -136,6 +152,7 @@ export async function receiveWebhookController(
       });
 
     if (!contact) {
+
       contact =
         await prisma.contact.create({
           data: {
@@ -145,10 +162,12 @@ export async function receiveWebhookController(
         });
     }
 
+    // CONVERSA
     let conversation =
       await prisma.conversation.findFirst({
         where: {
-          contact_id: contact.id,
+          contact_id:
+            contact.id,
         },
 
         include: {
@@ -157,12 +176,15 @@ export async function receiveWebhookController(
       });
 
     if (!conversation) {
+
       conversation =
         await prisma.conversation.create({
           data: {
-            contact_id: contact.id,
+            contact_id:
+              contact.id,
 
-            last_message: text,
+            last_message:
+              text,
 
             last_message_at:
               new Date(),
@@ -175,57 +197,28 @@ export async function receiveWebhookController(
           },
         });
     }
+  
+      if (
+        message?.from ===
+        process.env.WHATSAPP_PHONE_NUMBER_ID
+      ) {
+        return res.sendStatus(200);
+      }
 
-    const newMessage =
-      await prisma.message.create({
-        data: {
-          conversation_id:
-            conversation.id,
+    // MENSAGEM
+    await createMessage({
+      conversation_id:
+        conversation.id,
 
-          sender_type:
-            "client",
+      sender_type:
+        "client",
 
-          content: text,
+      content: text,
 
-          type,
+      type,
 
-          media_url: mediaUrl,
-        },
-      });
-
-    const updatedConversation =
-      await prisma.conversation.update({
-        where: {
-          id: conversation.id,
-        },
-
-        data: {
-          last_message: text,
-
-          last_message_at:
-            new Date(),
-
-          unread_count: {
-            increment: 1,
-          },
-        },
-
-        include: {
-          contact: true,
-        },
-      });
-
-    io.emit(
-      "conversation_updated",
-      updatedConversation
-    );
-
-    io.to(
-      `conversation:${conversation.id}`
-    ).emit(
-      "new_message",
-      newMessage
-    );
+      media_url: mediaUrl,
+    });
 
     console.log(
       "✅ Mensagem recebida:",
@@ -233,7 +226,9 @@ export async function receiveWebhookController(
     );
 
     return res.sendStatus(200);
+
   } catch (error) {
+
     console.error(error);
 
     return res.sendStatus(500);

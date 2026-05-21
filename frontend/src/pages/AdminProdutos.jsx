@@ -5,8 +5,10 @@ const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 const CATEGORIAS = [
   { value: "shampoo", label: "Shampoo" },
-  { value: "mascara", label: "Máscara" },
-  { value: "leavein", label: "Leave-in" },
+  { value: "condicionador", label: "Condicionador" },
+  { value: "mascara", label: "Máscara Capilar" },
+  { value: "redutor", label: "Redutor de Volume" },
+  { value: "skincare", label: "Skincare " },
   { value: "finalizador", label: "Finalizador" },
   { value: "kit", label: "Kit" },
 ];
@@ -28,6 +30,7 @@ export default function AdminProdutos() {
   const [category, setCategory] = useState("all");
   const [active, setActive] = useState("true");
   const [sort, setSort] = useState("new");
+  const [tagsIA, setTagsIA] = useState("");
 
   // form
   const [mode, setMode] = useState("create"); // create | edit
@@ -35,8 +38,8 @@ export default function AdminProdutos() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("79,90");
-  const [formCategory, setFormCategory] = useState("kit");
+  const [price, setPrice] = useState("");
+  const [formCategory, setFormCategory] = useState("Selecione");
   const [isActive, setIsActive] = useState(true);
 
   const [dicasUso, setDicasUso] = useState("");
@@ -166,12 +169,13 @@ export default function AdminProdutos() {
     setEditingId(null);
     setTitle("");
     setDescription("");
-    setPrice("79,90");
-    setFormCategory("kit");
+    setPrice("0,00");
+    setFormCategory("");
     setIsActive(true);
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
+    setTagsIA("");
   }
 
   async function fillForm(p) {
@@ -180,12 +184,13 @@ export default function AdminProdutos() {
     setTitle(p.title || "");
     setDescription(p.description || "");
     setPrice(String(p.price ?? 0).replace(".", ","));
-    setFormCategory(p.category || "kit");
+    setFormCategory(p.category || "");
     setIsActive(Boolean(p.is_active));
-
+    setTagsIA(p.keywords || "");
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
     setOQueVaiSentir(p.o_que_vai_sentir || "");
+
 
     setGallery([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -211,6 +216,7 @@ export default function AdminProdutos() {
       is_active: isActive,
       dicas_uso: dicasUso,
       o_que_vai_sentir: oQueVaiSentir,
+      keywords: tagsIA,
     };
 
     const isEdit = mode === "edit" && editingId != null;
@@ -337,15 +343,15 @@ export default function AdminProdutos() {
   }
 
   return (
-    <div className="bg-helo-background min-h-screen py-16">
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="bg-helo-background min-h-screen py-5">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
+        {/* <div className="text-center mb-10">
           <h1 className="text-4xl font-display text-helo-dark">Admin • Produtos</h1>
           <p className="mt-2 text-helo-text/80 font-body">
             Cadastre e gerencie os produtos da Helô Cosméticos.
           </p>
-        </div>
+        </div> */}
 
         {/* Form card */}
         <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-6 md:p-8 mb-10">
@@ -388,6 +394,7 @@ export default function AdminProdutos() {
                 onChange={(e) => setFormCategory(e.target.value)}
                 required
               >
+                <option value="">Selecione</option>
                 {CATEGORIAS.map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
@@ -404,7 +411,7 @@ export default function AdminProdutos() {
                 className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="79,90"
+                placeholder="0,00"
                 required
               />
             </div>
@@ -455,6 +462,18 @@ export default function AdminProdutos() {
                 value={oQueVaiSentir}
                 onChange={(e) => setOQueVaiSentir(e.target.value)}
                 placeholder={`Ex:\nTextura agradável e aplicação fácil\nAcabamento mais alinhado e macio\nRotina prática no dia a dia`}
+              />
+            </div>
+            {/* tags para a IA */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-helo-dark mb-2">
+                Tags para a IA
+              </label>
+              <input
+                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white focus:outline-none focus:ring-2 focus:ring-helo-rose/40"
+                value={tagsIA}
+                onChange={(e) => setTagsIA(e.target.value)}
+                placeholder={`Ex: hidratante facial,hidratação pele,toque seco,skincare,pele macia,rosto,hidratação profunda,prime skin,pele saudável`}
               />
             </div>
 

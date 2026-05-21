@@ -16,6 +16,8 @@ export async function findAllProducts() {
       },
     });
 
+    console.log(products);
+
     return products.map(
       (product) => ({
         ...product,

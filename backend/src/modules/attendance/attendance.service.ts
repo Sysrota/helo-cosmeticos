@@ -7,6 +7,10 @@ import {
   sendWhatsAppMediaMessage,
 } from "../whatsapp/services/meta.service.js";
 
+import { aiQueue }
+  from "../../queues/ai.queue.js";
+import { redis } from "../../config/redis.js";
+
 interface CreateConversationDTO {
   phone: string;
   name?: string;
@@ -143,10 +147,54 @@ export async function createMessage(
     fullMessage
   );
 
-if (
-  data.sender_type ===
-  "agent"
-) {
+  if (
+    data.sender_type ===
+    "client"
+  ) {
+
+
+  const existingJobs =
+    await aiQueue.getDelayed();
+
+  for (const job of existingJobs) {
+    if (
+      job.id ===
+      `conversation-${data.conversation_id}`
+    ) {
+
+      await job.remove();
+    }
+  }
+
+  await redis.set(
+    `conversation:last-message:${data.conversation_id}`,
+    Date.now()
+  );
+
+  await aiQueue.add(
+      "generate-response",
+
+      {
+        conversationId:
+          data.conversation_id,
+      },
+
+      {
+        jobId:
+          `conversation-${data.conversation_id}`,
+
+        delay: 2000,
+
+        removeOnComplete: true,
+      }
+    );
+  }
+
+
+  if (
+    data.sender_type ===
+    "agent"
+  ) {
 
   const conversation =
     await prisma.conversation.findUnique({
