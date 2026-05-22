@@ -1,21 +1,23 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./layout/Layout";
+import Carrinho from "./pages/Carrinho";
+import Contato from "./pages/Contato";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
+import Produto from "./pages/Produto";
 import Produtos from "./pages/Produtos";
 import Sobre from "./pages/Sobre";
-import Contato from "./pages/Contato";
-import Produto from "./pages/Produto";
-import Carrinho from "./pages/Carrinho";
-import Landing from "./pages/Landing";
 
 // admin
+import PrivateRoute from "./components/PrivateRoute";
 import AdminLogin from "./pages/AdminLogin";
 import AdminProdutos from "./pages/AdminProdutos";
-import PrivateRoute from "./components/PrivateRoute";
 
-import ProdutoDescricao from "./pages/ProdutoDescricao";
 import { AttendancePage } from "./modules/attendance/pages/AttendancePage";
+import ProdutoDescricao from "./pages/ProdutoDescricao";
+import ClientesPage from "./pages/src/pages/clientes/Clientes";
+import ClienteDetalhesPage from "./pages/src/pages/clientes/[id]";
 
 
 export default function App() {
@@ -57,6 +59,24 @@ export default function App() {
               </PrivateRoute>
             }
           />
+
+          <Route
+            path="/admin/clientes"
+            element={
+              <PrivateRoute>
+                <ClientesPage />
+              </PrivateRoute>
+            }
+          />
+        <Route
+          path="/admin/clientes/:id"
+          element={
+            <PrivateRoute>
+              <ClienteDetalhesPage />
+            </PrivateRoute>
+          }
+        />
+          
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

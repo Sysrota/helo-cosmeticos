@@ -73,19 +73,35 @@ model User {
 }
 
 model Contact {
-  id            Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  name          String?
+  name String?
 
-  phone         String    @unique
+  phone String @unique
 
-  email         String?
+  email String?
 
-  avatar_url    String?
+  cpf String?
 
-  created_at    DateTime  @default(now())
+  birth_date DateTime?
 
-  updated_at    DateTime  @updatedAt
+  city String?
+  state String?
+
+  notes String? @db.Text
+
+  lead_status String @default("novo")
+
+  total_spent Float @default(0)
+
+  last_order_at DateTime?
+
+  blocked_ai Boolean @default(false)
+
+  priority Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   conversations Conversation[]
 

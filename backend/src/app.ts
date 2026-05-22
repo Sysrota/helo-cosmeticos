@@ -12,8 +12,9 @@ import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
 import { webhookRoutes } from "./modules/whatsapp/routes/webhook.routes.js";
 import { errorHandler } from "./shared/middlewares/error-handler.js";
 import { uploadRoutes } from "./modules/uploads/uploads.routes.js";
-import testRoutes from "./routes/test.routes.js";
 import { shippingRoutes } from "./modules/shipping/shipping.routes.js";
+import { contactRoutes } from "./modules/contact/contact.routes.js";
+import { updateContactController } from "./modules/contact/contact.controller.js";
 
 
 const app = express();
@@ -41,11 +42,6 @@ app.use("/auth", authRoutes);
 app.use("/products", productsRoutes);
 
 app.use(
-  "/test",
-  testRoutes
-);
-
-app.use(
   "/upload",
   uploadRoutes
 );
@@ -56,6 +52,10 @@ app.use("/attendance",attendanceRoutes);
 app.use("/whatsapp",webhookRoutes);
 
 app.use("/shipping",shippingRoutes);
+
+app.use("/contacts",contactRoutes);
+
+contactRoutes.put("/:id",updateContactController);
 
 
 

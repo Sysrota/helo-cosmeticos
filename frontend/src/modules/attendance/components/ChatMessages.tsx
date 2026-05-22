@@ -14,18 +14,26 @@ import {
   useAttendanceStore,
 } from "../store/attendance.store";
 
-import { socket } from "../websocket/socket";
+import { socket }
+  from "../websocket/socket";
 
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker
+  from "emoji-picker-react";
 
 export function ChatMessages() {
 
   const {
     selectedConversation,
+
     messages,
+
     setMessages,
+
     addMessage,
-  } = useAttendanceStore();
+
+    setMobileView,
+  } =
+    useAttendanceStore();
 
   const [message, setMessage] =
     useState("");
@@ -48,7 +56,7 @@ export function ChatMessages() {
       null
     );
 
-  // Entrar na conversa
+  // JOIN
   useEffect(() => {
 
     if (!selectedConversation)
@@ -63,7 +71,7 @@ export function ChatMessages() {
 
   }, [selectedConversation]);
 
-  // Receber mensagens realtime
+  // REALTIME
   useEffect(() => {
 
     function handleNewMessage(
@@ -75,7 +83,9 @@ export function ChatMessages() {
         selectedConversation?.id
       ) {
 
-        addMessage(newMessage);
+        addMessage(
+          newMessage
+        );
       }
     }
 
@@ -94,7 +104,7 @@ export function ChatMessages() {
 
   }, [selectedConversation]);
 
-  // Typing realtime
+  // TYPING
   useEffect(() => {
 
     function handleTyping() {
@@ -123,7 +133,7 @@ export function ChatMessages() {
 
   }, []);
 
-  // Scroll automático
+  // SCROLL
   useEffect(() => {
 
     messagesEndRef.current
@@ -163,9 +173,11 @@ export function ChatMessages() {
       conversation_id:
         selectedConversation.id,
 
-      sender_type: "agent",
+      sender_type:
+        "agent",
 
-      content: currentMessage,
+      content:
+        currentMessage,
     });
   }
 
@@ -178,7 +190,9 @@ export function ChatMessages() {
         prev + emojiData.emoji
     );
 
-    setShowEmojiPicker(false);
+    setShowEmojiPicker(
+      false
+    );
   }
 
   async function handleFileUpload(
@@ -236,132 +250,249 @@ export function ChatMessages() {
       "
     >
 
-      {/* Header */}
+      {/* HEADER */}
       <div
         className="
-          px-6
-          py-5
+          px-3
+          md:px-6
+
+          py-3
+          md:py-5
+
           border-b
           border-[#eadfd8]
+
           bg-[#f3e5df]
+
+          shrink-0
         "
       >
-        <div className="flex items-center gap-4">
 
-          <div
-            className="
-              w-12
-              h-12
-              rounded-full
-              bg-gradient-to-br
-              from-[#f3d6cb]
-              to-[#ddb7aa]
-              flex
-              items-center
-              justify-center
-              font-bold
-              text-lg
-              text-[#5c4033]
-            "
-          >
-            {selectedConversation
-              .contact?.name
-              ?.charAt(0)
-              ?.toUpperCase() || "C"}
-          </div>
+        <div className="
+          flex
+          items-center
+          justify-between
+          gap-3
+        ">
 
-          <div>
+          {/* ESQUERDA */}
+          <div className="
+            flex
+            items-center
+            gap-3
+            min-w-0
+          ">
 
-            <h2
+            {/* VOLTAR MOBILE */}
+            <button
+              onClick={() =>
+                setMobileView(
+                  "conversations"
+                )
+              }
+
               className="
-                font-semibold
-                text-lg
-                text-[#3d2b2b]
+                lg:hidden
+
+                w-10
+                h-10
+
+                rounded-xl
+
+                bg-white
+
+                border
+
+                shrink-0
+              "
+            >
+              ←
+            </button>
+
+            {/* AVATAR */}
+            <div
+              className="
+                w-10
+                h-10
+
+                md:w-12
+                md:h-12
+
+                rounded-full
+
+                bg-gradient-to-br
+                from-[#f3d6cb]
+                to-[#ddb7aa]
+
+                flex
+                items-center
+                justify-center
+
+                font-bold
+
+                text-[#5c4033]
+
+                shrink-0
               "
             >
               {selectedConversation
-                .contact?.name ||
-                selectedConversation
-                  ?.contact?.phone}
-            </h2>
+                .contact?.name
+                ?.charAt(0)
+                ?.toUpperCase() ||
+                "C"}
+            </div>
 
-            <p
-              className="
-                text-sm
-                text-[#9b7b72]
-              "
-            >
-              {isTyping
-                ? "digitando..."
-                : "ativo recentemente"}
-            </p>
+            {/* INFO */}
+            <div className="
+              min-w-0
+            ">
 
+              <h2
+                className="
+                  font-semibold
+                  text-sm
+                  md:text-lg
+
+                  text-[#3d2b2b]
+
+                  truncate
+                "
+              >
+                {selectedConversation
+                  .contact?.name ||
+
+                  selectedConversation
+                    ?.contact?.phone}
+              </h2>
+
+              <p
+                className="
+                  text-xs
+                  md:text-sm
+
+                  text-[#9b7b72]
+                "
+              >
+                {isTyping
+                  ? "digitando..."
+                  : "ativo recentemente"}
+              </p>
+            </div>
           </div>
 
+          {/* CLIENTE */}
+          <button
+            onClick={() =>
+              setMobileView(
+                "customer"
+              )
+            }
+
+            className="
+              lg:hidden
+
+              px-3
+              py-2
+
+              rounded-xl
+
+              bg-white
+              border
+
+              text-sm
+
+              shrink-0
+            "
+          >
+            Cliente
+          </button>
         </div>
       </div>
 
-      {/* Mensagens */}
+      {/* MENSAGENS */}
       <div
         className="
           flex-1
           overflow-y-auto
-          p-6
-          space-y-4
+
+          p-3
+          md:p-6
+
+          space-y-3
+          md:space-y-4
         "
       >
 
-        {messages.map((message) => (
-
-          <div
-            key={message.id}
-            className={`
-              flex
-              ${
-                message.sender_type ===
-                "agent"
-                  ? "justify-end"
-                  : "justify-start"
-              }
-            `}
-          >
+        {messages.map(
+          (message) => (
 
             <div
+              key={message.id}
+
               className={`
-                max-w-[70%]
-                px-5
-                py-4
-                rounded-3xl
-                shadow-sm
-                text-sm
-                leading-relaxed
+                flex
 
                 ${
                   message.sender_type ===
                   "agent"
-                    ? `
-                      bg-[#d6a692]
-                      text-white
-                    `
-                    : `
-                      bg-white
-                      text-[#3d2b2b]
-                      border
-                      border-[#eadfd8]
-                    `
+                    ? "justify-end"
+                    : "justify-start"
                 }
               `}
             >
 
-              <div className="space-y-3">
+              <div
+                className={`
+                  max-w-[88%]
+                  md:max-w-[70%]
 
-                {/* Imagem */}
-                {message.type ===
-                  "image" &&
-                  message.media_url && (
+                  px-4
+                  md:px-5
+
+                  py-3
+                  md:py-4
+
+                  rounded-3xl
+
+                  shadow-sm
+
+                  text-sm
+
+                  leading-relaxed
+
+                  break-words
+
+                  ${
+                    message.sender_type ===
+                    "agent"
+                      ? `
+                        bg-[#d6a692]
+                        text-white
+                      `
+                      : `
+                        bg-white
+                        text-[#3d2b2b]
+                        border
+                        border-[#eadfd8]
+                      `
+                  }
+                `}
+              >
+
+                <div className="
+                  space-y-3
+                ">
+
+                  {/* IMG */}
+                  {message.type ===
+                    "image" &&
+                    message.media_url && (
+
                     <img
                       src={`${window.location.origin}${message.media_url}`}
+
                       alt=""
+
                       className="
                         rounded-2xl
                         max-w-full
@@ -369,131 +500,232 @@ export function ChatMessages() {
                         object-cover
                       "
                     />
-                )}
+                  )}
 
-                {/* Áudio */}
-                {message.type ===
-                  "audio" &&
-                  message.media_url && (
+                  {/* AUDIO */}
+                  {message.type ===
+                    "audio" &&
+                    message.media_url && (
+
                     <audio
                       controls
                       preload="metadata"
-                      className="w-full"
+
+                      className="
+                        w-full
+                      "
+
                       src={`${window.location.origin}${message.media_url}`}
                     />
-                )}
+                  )}
 
-                {/* Documento */}
-                {message.type ===
-                  "document" &&
-                  message.media_url && (
+                  {/* DOC */}
+                  {message.type ===
+                    "document" &&
+                    message.media_url && (
+
                     <a
                       href={`${window.location.origin}${message.media_url}`}
+
                       target="_blank"
+
                       className="
                         inline-flex
                         items-center
                         gap-2
+
                         bg-black/5
+
                         px-4
                         py-3
+
                         rounded-2xl
                       "
                     >
-                      📄 Abrir documento
+                      📄 Documento
                     </a>
-                )}
+                  )}
 
-                {/* Texto */}
-                <div>
-                  {message.content}
+                  {/* TEXTO */}
+                  <div>
+                    {message.content}
+                  </div>
                 </div>
 
-              </div>
+                {/* HORA */}
+                <div
+                  className="
+                    text-[10px]
+                    opacity-60
+                    mt-2
+                    text-right
+                  "
+                >
+                  {new Date(
+                    message.created_at
+                  ).toLocaleTimeString(
+                    "pt-BR",
+                    {
+                      hour:
+                        "2-digit",
 
-              {/* Hora */}
-              <div
-                className="
-                  text-[10px]
-                  opacity-60
-                  mt-2
-                  text-right
-                "
-              >
-                {new Date(
-                  message.created_at
-                ).toLocaleTimeString(
-                  "pt-BR",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
+                      minute:
+                        "2-digit",
+                    }
+                  )}
+                </div>
               </div>
-
             </div>
+          )
+        )}
 
-          </div>
-        ))}
-
-        <div ref={messagesEndRef} />
-
+        <div
+          ref={messagesEndRef}
+        />
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <div
         className="
-          p-5
+          p-3
+          md:p-5
+
           border-t
           border-[#eadfd8]
+
           bg-[#f3e5df]
+
+          shrink-0
         "
       >
 
-        <div className="flex gap-3 relative">
+        <div className="
+          flex
+          items-end
+          gap-2
+          md:gap-3
 
-          {/* Upload */}
-          <div className="relative">
+          relative
+        ">
+
+          {/* UPLOAD */}
+          <input
+            ref={fileInputRef}
+
+            type="file"
+
+            hidden
+
+            onChange={(e) => {
+
+              const file =
+                e.target.files?.[0];
+
+              if (file) {
+
+                handleFileUpload(
+                  file
+                );
+              }
+            }}
+          />
+
+          <button
+            onClick={() =>
+              fileInputRef.current?.click()
+            }
+
+            className="
+              w-11
+              h-11
+
+              md:w-14
+              md:h-14
+
+              rounded-2xl
+
+              bg-white
+
+              border
+              border-[#eadfd8]
+
+              text-xl
+
+              shrink-0
+            "
+          >
+            📎
+          </button>
+
+          {/* INPUT */}
+          <div className="
+            flex-1
+            relative
+          ">
 
             <input
-              ref={fileInputRef}
-              type="file"
-              hidden
+              value={message}
 
               onChange={(e) => {
 
-                const file =
-                  e.target.files?.[0];
+                setMessage(
+                  e.target.value
+                );
 
-                if (file) {
+                if (
+                  selectedConversation
+                ) {
 
-                  handleFileUpload(file);
+                  socket.emit(
+                    "typing",
+                    selectedConversation.id
+                  );
+                }
+              }}
+
+              placeholder="Digite uma mensagem"
+
+              className="
+                w-full
+
+                bg-white
+
+                border
+                border-[#eadfd8]
+
+                text-[#3d2b2b]
+
+                rounded-2xl
+
+                pl-4
+                pr-12
+
+                py-3
+                md:py-4
+
+                outline-none
+
+                shadow-sm
+
+                focus:ring-2
+                focus:ring-[#d6a692]
+              "
+
+              onKeyDown={(e) => {
+
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey
+                ) {
+
+                  e.preventDefault();
+
+                  handleSendMessage();
                 }
               }}
             />
 
-            <button
-              onClick={() =>
-                fileInputRef.current?.click()
-              }
-
-              className="
-                w-14
-                h-14
-                rounded-2xl
-                bg-white
-                border
-                border-[#eadfd8]
-                text-2xl
-                shadow-sm
-                hover:bg-[#f8f1ed]
-                transition-all
-              "
-            >
-              📎
-            </button>
-
-            {/* Emoji */}
+            {/* EMOJI */}
             <button
               onClick={() =>
                 setShowEmojiPicker(
@@ -502,29 +734,28 @@ export function ChatMessages() {
               }
 
               className="
-                w-14
-                h-14
-                rounded-2xl
-                bg-white
-                border
-                border-[#eadfd8]
-                text-2xl
-                shadow-sm
-                hover:bg-[#f8f1ed]
-                transition-all
-                ml-3
+                absolute
+                right-3
+                top-1/2
+                -translate-y-1/2
+
+                text-xl
               "
             >
               😊
             </button>
 
             {showEmojiPicker && (
+
               <div
                 className="
                   absolute
-                  bottom-16
-                  left-0
+                  bottom-14
+                  right-0
                   z-50
+
+                  scale-[0.85]
+                  origin-bottom-right
                 "
               >
                 <EmojiPicker
@@ -534,79 +765,39 @@ export function ChatMessages() {
                 />
               </div>
             )}
-
           </div>
 
-          {/* Input */}
-          <input
-            value={message}
-
-            onChange={(e) => {
-
-              setMessage(
-                e.target.value
-              );
-
-              if (
-                selectedConversation
-              ) {
-
-                socket.emit(
-                  "typing",
-                  selectedConversation.id
-                );
-              }
-            }}
-
-            placeholder="Digite uma mensagem"
-
-            className="
-              flex-1
-              bg-white
-              border
-              border-[#eadfd8]
-              text-[#3d2b2b]
-              rounded-2xl
-              px-5
-              py-4
-              outline-none
-              shadow-sm
-              focus:ring-2
-              focus:ring-[#d6a692]
-            "
-
-            onKeyDown={(e) => {
-
-              if (
-                e.key === "Enter" &&
-                !e.shiftKey
-              ) {
-
-                e.preventDefault();
-
-                handleSendMessage();
-              }
-            }}
-          />
-
-          {/* Botão enviar */}
+          {/* ENVIAR */}
           <button
-            onClick={handleSendMessage}
+            onClick={
+              handleSendMessage
+            }
 
             className="
               bg-[#d6a692]
               hover:bg-[#c7917b]
+
               text-white
-              px-8
+
+              px-4
+              md:px-8
+
+              h-11
+              md:h-14
+
               rounded-2xl
+
               font-semibold
+
               transition-all
+
               shadow-sm
+
+              shrink-0
             "
           >
             Enviar
           </button>
-
         </div>
       </div>
     </div>
