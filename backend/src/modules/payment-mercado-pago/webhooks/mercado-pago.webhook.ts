@@ -10,9 +10,8 @@ import {
   Payment,
 } from "mercadopago";
 import { mercadoPagoClient } from "../mercado-pago.provider";
-import { Server } from "socket.io";
-import { io } from "@/websocket/socket";
 
+import { io } from '../../../websocket/socket'
 
 export async function mercadoPagoWebhook(
   req: Request,
