@@ -442,6 +442,18 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@mercadopago/sdk-js@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@mercadopago/sdk-js/-/sdk-js-0.0.3.tgz#f54eee5faa7d8d7253b5c03b0ef09dcb8229698a"
+  integrity sha512-kO48DNLHdfFAp3on12nuKdqNlEmw1x3+nM6wLd04BdWOXoFcAhkNMQV3AyUIanXdO/bB/dENakdacLT29297EQ==
+
+"@mercadopago/sdk-react@^1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@mercadopago/sdk-react/-/sdk-react-1.0.7.tgz#158b09747528ae36f4cc7e7ce1979f7fae127238"
+  integrity sha512-babuAgsi1pQU+jfIQX1Sl0efp2no64OU/9yYK+RDz0NvSyARe+/D9ih9GyDNwVJJZuAA2lS4GF06oSxDFS5HYg==
+  dependencies:
+    "@mercadopago/sdk-js" "^0.0.3"
+
 "@napi-rs/wasm-runtime@^1.0.7":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.1.tgz#c3705ab549d176b8dc5172723d6156c3dc426af2"

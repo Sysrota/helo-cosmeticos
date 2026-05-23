@@ -49,6 +49,20 @@ export default function AdminProdutos() {
   const [gallery, setGallery] = useState([]); // [{id,image_url,sort_order}]
   const [uploadingGallery, setUploadingGallery] = useState(false);
 
+    // dimensões para frete
+
+    const [weight, setWeight] =
+      useState(0);
+
+    const [height, setHeight] =
+      useState(0);
+
+    const [width, setWidth] =
+      useState(0);
+
+    const [length, setLength] =
+      useState(0);
+
   function authHeadersJson() {
     return {
       "Content-Type": "application/json",
@@ -176,6 +190,10 @@ export default function AdminProdutos() {
     setDicasUso("");
     setOQueVaiSentir("");
     setTagsIA("");
+    setWeight(0);
+    setHeight(0);
+    setWidth(0);
+    setLength(0);
   }
 
   async function fillForm(p) {
@@ -190,6 +208,11 @@ export default function AdminProdutos() {
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
     setOQueVaiSentir(p.o_que_vai_sentir || "");
+
+    setWeight(p.weight || 0);
+    setHeight(p.height || 0);
+    setWidth(p.width || 0);
+    setLength(p.length || 0);
 
 
     setGallery([]);
@@ -208,16 +231,22 @@ export default function AdminProdutos() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const payload = {
-      title,
-      description,
-      price: reaisToNumber(price),
-      category: formCategory,
-      is_active: isActive,
-      dicas_uso: dicasUso,
-      o_que_vai_sentir: oQueVaiSentir,
-      keywords: tagsIA,
-    };
+  const payload = {
+    title,
+    description,
+    price: reaisToNumber(price),
+    category: formCategory,
+    is_active: isActive,
+    dicas_uso: dicasUso,
+    o_que_vai_sentir: oQueVaiSentir,
+    keywords: tagsIA,
+    weight,
+    height,
+    width,
+    length,
+  };
+
+  console.log("Payload para salvar:", payload);
 
     const isEdit = mode === "edit" && editingId != null;
     const url = isEdit ? `${API_URL}/products/${editingId}` : `${API_URL}/products`;
@@ -374,143 +403,746 @@ export default function AdminProdutos() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-helo-dark mb-2">Título</label>
-              <input
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white focus:outline-none focus:ring-2 focus:ring-helo-rose/40"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Kit Forte Liso 3 Passos"
-                required
-              />
-            </div>
+<form
+  onSubmit={handleSubmit}
 
-            <div>
-              <label className="block text-sm font-semibold text-helo-dark mb-2">Categoria</label>
-              <select
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white"
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                required
-              >
-                <option value="">Selecione</option>
-                {CATEGORIAS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+  className="
+    mt-6
+    flex
+    flex-col
+    gap-6
+  "
+>
 
-            <div>
-              <label className="block text-sm font-semibold text-helo-dark mb-2">
-                Preço (R$)
-              </label>
-              <input
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0,00"
-                required
-              />
-            </div>
+  {/* ========================= */}
+  {/* DADOS PRINCIPAIS */}
+  {/* ========================= */}
 
-            <div className="flex items-center gap-3 mt-6 md:mt-0">
-              <input
-                id="ativo"
-                type="checkbox"
-                className="w-5 h-5"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <label htmlFor="ativo" className="text-helo-text/90 font-body">
-                Produto ativo (aparece na loja)
-              </label>
-            </div>
+  <div className="
+    bg-zinc-50
+    border
+    rounded-2xl
+    p-5
+  ">
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-helo-dark mb-2">
-                Descrição
-              </label>
-              <textarea
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descrição curta e objetiva do produto."
-              />
-            </div>
+    <div className="
+      flex
+      items-center
+      justify-between
+      mb-5
+    ">
+      <div>
+        <h3 className="
+          text-lg
+          font-semibold
+          text-helo-dark
+        ">
+          Dados principais
+        </h3>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-helo-dark mb-2">
-                Dicas de uso
-              </label>
-              <textarea
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
-                value={dicasUso}
-                onChange={(e) => setDicasUso(e.target.value)}
-                placeholder="Ex: Aplique uma pequena quantidade, massageie e enxágue..."
-              />
-            </div>
+        <p className="
+          text-sm
+          text-zinc-500
+        ">
+          Informações básicas do produto
+        </p>
+      </div>
+    </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-helo-dark mb-2">
-                O que você vai sentir (1 item por linha)
-              </label>
-              <textarea
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white min-h-[110px]"
-                value={oQueVaiSentir}
-                onChange={(e) => setOQueVaiSentir(e.target.value)}
-                placeholder={`Ex:\nTextura agradável e aplicação fácil\nAcabamento mais alinhado e macio\nRotina prática no dia a dia`}
-              />
-            </div>
-            {/* tags para a IA */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-helo-dark mb-2">
-                Tags para a IA
-              </label>
-              <input
-                className="w-full px-4 py-3 rounded-xl border border-helo-dark/10 bg-white focus:outline-none focus:ring-2 focus:ring-helo-rose/40"
-                value={tagsIA}
-                onChange={(e) => setTagsIA(e.target.value)}
-                placeholder={`Ex: hidratante facial,hidratação pele,toque seco,skincare,pele macia,rosto,hidratação profunda,prime skin,pele saudável`}
-              />
-            </div>
+    <div className="
+      grid
+      grid-cols-1
+      md:grid-cols-2
+      gap-5
+    ">
 
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="px-8 py-3 bg-helo-dark text-white rounded-xl font-semibold shadow-md hover:bg-helo-rose transition-all"
-              >
-                {mode === "edit" ? "Salvar alterações" : "Cadastrar produto"}
-              </button>
+      {/* TITULO */}
+      <div className="md:col-span-2">
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Título
+        </label>
 
-              <div className="mt-6">
-                <label className="block text-sm font-semibold text-helo-dark mb-2">
-                  Galeria (várias imagens)
-                </label>
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    disabled={!editingId}
-                    onChange={handleUploadToGallery}
-                    className="block w-full text-sm disabled:opacity-50"
-                  />
-                  {uploadingGallery && (
-                    <span className="text-sm text-helo-text/80">Enviando...</span>
-                  )}
-                </div>
+          value={title}
 
-                {!editingId && (
-                  <p className="text-xs text-helo-text/70 mt-2">
-                    * Para adicionar imagens, primeiro crie o produto e clique em “Editar”.
-                  </p>
-                )}
+          onChange={(e) =>
+            setTitle(
+              e.target.value
+            )
+          }
+
+          placeholder="Ex: Kit PrimeSkin"
+          required
+        />
+      </div>
+
+      {/* CATEGORIA */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Categoria
+        </label>
+
+        <select
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={formCategory}
+
+          onChange={(e) =>
+            setFormCategory(
+              e.target.value
+            )
+          }
+
+          required
+        >
+          <option value="">
+            Selecione
+          </option>
+
+          {CATEGORIAS.map((c) => (
+            <option
+              key={c.value}
+              value={c.value}
+            >
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* PREÇO */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Preço
+        </label>
+
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={price}
+
+          onChange={(e) =>
+            setPrice(
+              e.target.value
+            )
+          }
+
+          placeholder="0,00"
+          required
+        />
+      </div>
+
+      {/* STATUS */}
+      <div className="
+        md:col-span-2
+        flex
+        items-center
+        gap-3
+      ">
+
+        <input
+          id="ativo"
+          type="checkbox"
+
+          className="
+            w-5
+            h-5
+          "
+
+          checked={isActive}
+
+          onChange={(e) =>
+            setIsActive(
+              e.target.checked
+            )
+          }
+        />
+
+        <label
+          htmlFor="ativo"
+
+          className="
+            text-sm
+            text-zinc-700
+          "
+        >
+          Produto ativo
+        </label>
+      </div>
+
+      {/* DESCRIÇÃO */}
+      <div className="md:col-span-2">
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Descrição
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[120px]
+          "
+
+          value={description}
+
+          onChange={(e) =>
+            setDescription(
+              e.target.value
+            )
+          }
+
+          placeholder="Descrição do produto"
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* ========================= */}
+  {/* EXPERIÊNCIA */}
+  {/* ========================= */}
+
+  <div className="
+    bg-zinc-50
+    border
+    rounded-2xl
+    p-5
+  ">
+
+    <div className="mb-5">
+      <h3 className="
+        text-lg
+        font-semibold
+        text-helo-dark
+      ">
+        Experiência do cliente
+      </h3>
+
+      <p className="
+        text-sm
+        text-zinc-500
+      ">
+        Informações usadas pela IA e vendas
+      </p>
+    </div>
+
+    <div className="
+      flex
+      flex-col
+      gap-5
+    ">
+
+      {/* DICAS */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Dicas de uso
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[110px]
+          "
+
+          value={dicasUso}
+
+          onChange={(e) =>
+            setDicasUso(
+              e.target.value
+            )
+          }
+        />
+      </div>
+
+      {/* O QUE VAI SENTIR */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          O que o cliente vai sentir
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[110px]
+          "
+
+          value={oQueVaiSentir}
+
+          onChange={(e) =>
+            setOQueVaiSentir(
+              e.target.value
+            )
+          }
+        />
+      </div>
+
+      {/* TAGS IA */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Tags para IA
+        </label>
+
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={tagsIA}
+
+          onChange={(e) =>
+            setTagsIA(
+              e.target.value
+            )
+          }
+
+          placeholder="hidratação, skincare, pele..."
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* ========================= */}
+  {/* FRETE */}
+  {/* ========================= */}
+
+  <div className="
+    bg-zinc-50
+    border
+    rounded-2xl
+    p-5
+  ">
+
+    <div className="mb-5">
+      <h3 className="
+        text-lg
+        font-semibold
+        text-helo-dark
+      ">
+        Frete e logística
+      </h3>
+
+      <p className="
+        text-sm
+        text-zinc-500
+      ">
+        Usado no cálculo automático de frete
+      </p>
+    </div>
+
+    <div className="
+      grid
+      grid-cols-2
+      md:grid-cols-4
+      gap-4
+    ">
+
+      <div>
+        <label className="
+          block
+          text-sm
+          mb-2
+        ">
+          Peso (kg)
+        </label>
+
+        <input
+          type="number"
+
+          step="0.01"
+
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+          "
+
+          value={weight}
+
+          onChange={(e) =>
+            setWeight(
+              Number(
+                e.target.value
+              )
+            )
+          }
+        />
+      </div>
+
+      <div>
+        <label className="
+          block
+          text-sm
+          mb-2
+        ">
+          Altura
+        </label>
+
+        <input
+          type="number"
+
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+          "
+
+          value={height}
+
+          onChange={(e) =>
+            setHeight(
+              Number(
+                e.target.value
+              )
+            )
+          }
+        />
+      </div>
+
+      <div>
+        <label className="
+          block
+          text-sm
+          mb-2
+        ">
+          Largura
+        </label>
+
+        <input
+          type="number"
+
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+          "
+
+          value={width}
+
+          onChange={(e) =>
+            setWidth(
+              Number(
+                e.target.value
+              )
+            )
+          }
+        />
+      </div>
+
+      <div>
+        <label className="
+          block
+          text-sm
+          mb-2
+        ">
+          Comprimento
+        </label>
+
+        <input
+          type="number"
+
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+          "
+
+          value={length}
+
+          onChange={(e) =>
+            setLength(
+              Number(
+                e.target.value
+              )
+            )
+          }
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* ========================= */}
+  {/* GALERIA */}
+  {/* ========================= */}
+
+  <div className="
+    bg-zinc-50
+    border
+    rounded-2xl
+    p-5
+  ">
+
+    <div className="
+      flex
+      items-center
+      justify-between
+      mb-5
+      gap-4
+      flex-wrap
+    ">
+
+      <div>
+        <h3 className="
+          text-lg
+          font-semibold
+          text-helo-dark
+        ">
+          Galeria do produto
+        </h3>
+
+        <p className="
+          text-sm
+          text-zinc-500
+        ">
+          Imagens do produto
+        </p>
+      </div>
+
+      <input
+        type="file"
+
+        accept="
+          image/png,
+          image/jpeg,
+          image/webp
+        "
+
+        disabled={!editingId}
+
+        onChange={
+          handleUploadToGallery
+        }
+
+        className="
+          text-sm
+          max-w-full
+        "
+      />
+    </div>
+
+    {!editingId && (
+      <div className="
+        text-sm
+        text-zinc-500
+        mb-4
+      ">
+        Salve o produto primeiro para adicionar imagens.
+      </div>
+    )}
+
+    {gallery.length > 0 && (
+      <div className="
+        grid
+        grid-cols-2
+        md:grid-cols-4
+        gap-4
+      ">
+
+        {[...gallery]
+          .sort(
+            (a, b) =>
+              (a.sort_order ?? 0) -
+              (b.sort_order ?? 0)
+          )
+          .map((g) => (
+
+            <div
+              key={g.id}
+
+              className="
+                bg-white
+                border
+                rounded-2xl
+                overflow-hidden
+              "
+            >
+
+              <div className="
+                h-40
+                overflow-hidden
+              ">
+                <img
+                  src={`${API_URL}${g.image_url}`}
+
+                  alt=""
+
+                  className="
+                    w-full
+                    h-full
+                    object-cover
+                  "
+                />
+              </div>
+
+              <div className="
+                p-3
+                flex
+                flex-col
+                gap-2
+              ">
+
+                <button
+                  type="button"
+
+                  onClick={() =>
+                    setAsCover(g)
+                  }
+
+                  className="
+                    px-3
+                    py-2
+                    rounded-xl
+                    border
+                  "
+                >
+                  Definir capa
+                </button>
+
+                <button
+                  type="button"
+
+                  onClick={() =>
+                    removeImage(g)
+                  }
+
+                  className="
+                    px-3
+                    py-2
+                    rounded-xl
+                    bg-red-600
+                    text-white
+                  "
+                >
+                  Remover
+                </button>
               </div>
             </div>
-          </form>
+          ))}
+      </div>
+    )}
+  </div>
+
+  {/* BOTÃO */}
+  <div className="
+    flex
+    justify-end
+  ">
+
+    <button
+      type="submit"
+
+      className="
+        px-8
+        py-3
+        rounded-xl
+        bg-helo-dark
+        text-white
+        font-semibold
+      "
+    >
+      {mode === "edit"
+        ? "Salvar alterações"
+        : "Cadastrar produto"}
+    </button>
+  </div>
+</form>
 
           {/* Galeria */}
           {mode === "edit" && (

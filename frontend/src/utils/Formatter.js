@@ -30,17 +30,38 @@
       return v;
     }
 
-    static telefone(value) {
-      let v = Formatter.onlyNumbers(value);
-      if (v.length <= 10) {
-        v = v.replace(/(\d{2})(\d)/, '($1) $2');
-        v = v.replace(/(\d{4})(\d)/, '$1-$2');
-      } else {
-        v = v.replace(/(\d{2})(\d)/, '($1) $2');
-        v = v.replace(/(\d{1})(\d{4})(\d)/, '$1 $2-$3');
-      }
-      return v;
+static telefone(value) {
+  let v = Formatter.onlyNumbers(value);
+
+  // Número com DDI do Brasil
+  if (v.startsWith('55') && v.length > 11) {
+
+    // 55 62 99999-9999
+    if (v.length >= 13) {
+      return v.replace(
+        /(\d{2})(\d{2})(\d{1})(\d{4})(\d+)/,
+        '+$1 ($2) $3 $4-$5'
+      );
     }
+
+    // 55 62 9999-9999
+    return v.replace(
+      /(\d{2})(\d{2})(\d{4})(\d+)/,
+      '+$1 ($2) $3-$4'
+    );
+  }
+
+  // Sem DDI
+  if (v.length <= 10) {
+    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  } else {
+    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+    v = v.replace(/(\d{1})(\d{4})(\d)/, '$1 $2-$3');
+  }
+
+  return v;
+}
 
     // Data (dd/mm/yyyy)
     static data(value) {

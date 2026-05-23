@@ -16,7 +16,6 @@ export async function findAllProducts() {
       },
     });
 
-    console.log(products);
 
     return products.map(
       (product) => ({
@@ -58,11 +57,17 @@ interface CreateProductDTO {
   dicas_uso?: string;
   o_que_vai_sentir?: string;
   is_active?: boolean;
+  keywords?: string;
+  weight?: number;
+  height?: number;
+  width?: number;
+  length?: number;
 }
 
 export async function createProduct(
   data: CreateProductDTO
 ) {
+
   return prisma.product.create({
     data: {
       title: data.title,
@@ -81,6 +86,12 @@ export async function createProduct(
         data.o_que_vai_sentir ?? "",
 
       is_active: data.is_active ?? true,
+
+      keywords: data.keywords ?? "",
+      weight: data.weight ?? 0,
+      height: data.height ?? 0,
+      width: data.width ?? 0,
+      length: data.length ?? 0,
     },
   });
 }
@@ -94,12 +105,19 @@ interface UpdateProductDTO {
   dicas_uso?: string;
   o_que_vai_sentir?: string;
   is_active?: boolean;
+  keywords?: string;
+  weight?: number;
+  height?: number;
+  width?: number;
+  length?: number;
 }
 
 export async function updateProduct(
   id: number,
   data: UpdateProductDTO
 ) {
+
+  console.log(`Updating product ${id} with data:`, data);
   return prisma.product.update({
     where: {
       id,

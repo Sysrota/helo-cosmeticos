@@ -8,6 +8,9 @@ export async function sendWhatsAppMessage(
   to: string,
   message: string
 ) {
+
+  console.log("Enviando mensagem para:", to);
+
   const url =
     `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
 

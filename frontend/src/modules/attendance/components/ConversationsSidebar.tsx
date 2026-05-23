@@ -10,7 +10,7 @@ import {
 } from "../store/attendance.store";
 
 import { socket }
-  from "../websocket/socket";
+  from "../../../websocket/socket";
 
 export function ConversationsSidebar() {
 

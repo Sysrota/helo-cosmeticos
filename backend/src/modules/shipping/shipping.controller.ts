@@ -14,13 +14,16 @@ export async function calculateShippingController(
 
   try {
 
-    const { cep } =
-      req.body;
+    const {
+      cep,
+      order_id,
+    } = req.body;
 
     const shipping =
-      await calculateShipping(
-        cep
-      );
+      await calculateShipping({
+        cep,
+        order_id,
+      });
 
     return res.json(
       shipping

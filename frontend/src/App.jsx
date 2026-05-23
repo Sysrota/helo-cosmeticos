@@ -16,8 +16,11 @@ import AdminProdutos from "./pages/AdminProdutos";
 
 import { AttendancePage } from "./modules/attendance/pages/AttendancePage";
 import ProdutoDescricao from "./pages/ProdutoDescricao";
-import ClientesPage from "./pages/src/pages/clientes/Clientes";
-import ClienteDetalhesPage from "./pages/src/pages/clientes/[id]";
+import ClienteDetalhesPage from "./pages/clientes/[id]";
+import OrdersPage from "./pages/orders/OrdersPage";
+import ClientesPage from "./pages/clientes/Clientes";
+import OrderDetailsPage from "./pages/orders/OrderDetailsPage";
+import StoreSettingsPage from "./pages/settings/StoreSettingsPage";
 
 
 export default function App() {
@@ -68,14 +71,41 @@ export default function App() {
               </PrivateRoute>
             }
           />
-        <Route
-          path="/admin/clientes/:id"
-          element={
-            <PrivateRoute>
-              <ClienteDetalhesPage />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/admin/clientes/:id"
+            element={
+              <PrivateRoute>
+                <ClienteDetalhesPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin/orders"
+            element={
+              <PrivateRoute>
+                <OrdersPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin/orders/:id"
+            element={
+              <PrivateRoute>
+                <OrderDetailsPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin/settings"
+            element={
+              <PrivateRoute>
+                <StoreSettingsPage />
+              </PrivateRoute>
+            }
+          />
           
 
           {/* fallback */}

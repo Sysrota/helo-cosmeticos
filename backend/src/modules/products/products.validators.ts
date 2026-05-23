@@ -16,6 +16,12 @@ export const createProductSchema = z.object({
   o_que_vai_sentir: z.string().optional().default(""),
 
   is_active: z.boolean().optional().default(true),
+
+  keywords: z.string().optional().default(""),
+  weight: z.number().optional().default(0),
+  height: z.number().optional().default(0),
+  width: z.number().optional().default(0),
+  length: z.number().optional().default(0),
 });
 
 export const updateProductSchema =

@@ -1,0 +1,281 @@
+import { prisma }
+  from "../../config/prisma.js";
+import {
+  Request,
+  Response,
+} from "express";
+
+interface Item {
+  product_id: number;
+
+  quantity: number;
+}
+
+interface Props {
+  contact_id: number;
+
+  items: Item[];
+}
+
+export async function createOrderService({
+  contact_id,
+  items,
+}: Props) {
+
+  let subtotal = 0;
+
+  const products =
+    await prisma.product.findMany({
+      where: {
+        id: {
+          in: items.map(
+            (i) =>
+              i.product_id
+          ),
+        },
+      },
+    });
+
+  const orderItems =
+    items.map((item) => {
+
+      const product =
+        products.find(
+          (p) =>
+            p.id ===
+            item.product_id
+        );
+
+      const unit_price =
+        product?.price || 0;
+
+      const total =
+        unit_price *
+        item.quantity;
+
+      subtotal += total;
+
+      return {
+        product_id:
+          item.product_id,
+
+        quantity:
+          item.quantity,
+
+        unit_price,
+
+        total,
+      };
+    });
+
+  return prisma.order.create({
+    data: {
+      contact_id,
+
+      subtotal,
+
+      total:
+        subtotal,
+
+      items: {
+        create:
+          orderItems,
+      },
+    },
+
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+
+      contact: true,
+    },
+  });
+}
+
+
+export async function createOrderController(
+  req: Request,
+  res: Response
+) {
+
+  try {
+
+    const order =
+      await createOrderService(
+        req.body
+      );
+
+    return res.json(
+      order
+    );
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+      error:
+        "Erro ao criar pedido",
+    });
+  }
+}
+
+export async function listOrdersService() {
+
+  return prisma.order.findMany({
+    orderBy: {
+      created_at: "desc",
+    },
+
+    include: {
+      contact: true,
+
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+}
+
+export async function showOrderService(
+  orderId: number
+) {
+
+  return prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+
+    include: {
+      contact: true,
+
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+}
+
+interface Item {
+  product_id: number;
+
+  quantity: number;
+
+  unit_price: number;
+}
+
+interface Props {
+  id: number;
+
+  status: string;
+
+  subtotal: number;
+
+  shipping: number;
+
+  discount: number;
+
+  total: number;
+
+  items: Item[];
+
+  shipping_deadline: string;
+
+  shipping_method: string;
+
+  shipping_price: number;
+}
+
+export async function updateOrderService({
+  id,
+  status,
+  subtotal,
+  shipping,
+  discount,
+  total,
+  items,
+  shipping_method,
+  shipping_price,
+  shipping_deadline
+}: Props) {
+
+
+  // UPDATE PEDIDO
+  await prisma.order.update({
+    where: {
+      id,
+    },
+
+    data: {
+      status,
+
+      subtotal,
+
+      shipping,
+
+      discount,
+
+      total,
+
+      shipping_method,
+
+      shipping_price,
+
+      shipping_deadline,
+    },
+  });
+
+  // REMOVE ITENS ANTIGOS
+  await prisma.orderItem.deleteMany({
+    where: {
+      order_id: id,
+    },
+  });
+
+  // RECRIA ITENS
+  if (items.length) {
+
+    await prisma.orderItem.createMany({
+      data:
+        items.map((item) => ({
+          order_id: id,
+
+          product_id:
+            item.product_id,
+
+          quantity:
+            item.quantity,
+
+          unit_price:
+            item.unit_price,
+
+          total:
+            item.quantity *
+            item.unit_price,
+        })),
+    });
+  }
+
+  return prisma.order.findUnique({
+    where: {
+      id,
+    },
+
+    include: {
+      contact: true,
+
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+}

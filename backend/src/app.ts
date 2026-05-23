@@ -15,6 +15,10 @@ import { uploadRoutes } from "./modules/uploads/uploads.routes.js";
 import { shippingRoutes } from "./modules/shipping/shipping.routes.js";
 import { contactRoutes } from "./modules/contact/contact.routes.js";
 import { updateContactController } from "./modules/contact/contact.controller.js";
+import { orderRoutes } from "./modules/order/order.routes.js";
+import { storeConfigRoutes } from "./modules/store-config/store-config.routes.js";
+import { melhorEnvioRoutes } from "./modules/shipping/melhor-envio/melhor-envio.routes.js";
+import { paymentRoutes } from "./modules/payment-mercado-pago/payment.routes.js";
 
 
 const app = express();
@@ -41,11 +45,7 @@ app.use("/auth", authRoutes);
 
 app.use("/products", productsRoutes);
 
-app.use(
-  "/upload",
-  uploadRoutes
-);
-
+app.use("/upload",uploadRoutes);
 
 app.use("/attendance",attendanceRoutes);
 
@@ -54,6 +54,16 @@ app.use("/whatsapp",webhookRoutes);
 app.use("/shipping",shippingRoutes);
 
 app.use("/contacts",contactRoutes);
+
+app.use("/orders",orderRoutes);
+
+app.use("/store-config",storeConfigRoutes);
+
+app.use("/shipping/melhor-envio",melhorEnvioRoutes);
+
+app.use("/payment",paymentRoutes);
+
+
 
 contactRoutes.put("/:id",updateContactController);
 

@@ -26,6 +26,15 @@ model Product {
 
   is_active         Boolean  @default(true)
 
+
+  weight Float @default(0)
+
+  height Float @default(0)
+
+  width Float @default(0)
+
+  length Float @default(0)
+
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
@@ -163,13 +172,17 @@ model Message {
 model StoreConfig {
   id Int @id @default(1)
 
-  payment_methods String @default("")
+  payment_methods Json?
+
+  shipping_methods Json?
 
   shipping_info String @default("")
 
   business_hours String @default("")
 
   exchange_policy String @default("")
+
+  ai_rules String @default("")
 
   created_at DateTime @default(now())
 
@@ -196,8 +209,6 @@ model ContactAddress {
 
   contact Contact@relation(fields: [contact_id],references: [id])
 
-  orders Order[]
-
   @@map("contact_addresses")
 }
 
@@ -206,26 +217,38 @@ model Order {
 
   contact_id Int
 
-  address_id Int?
-
   status String @default("pending")
 
   subtotal Float @default(0)
 
-  shipping_price Float @default(0)
+  shipping Float @default(0)
+
+  discount Float @default(0)
 
   total Float @default(0)
 
+  paid_at DateTime?
+
   payment_method String?
+  payment_status String? @default("pending")
+  pix_code String?
+  pix_qrcode String?
+
+  mercado_pago_payment_id String?
+
+  notes String?
+
+  shipping_method String?
+
+  shipping_price Float @default(0)
 
   shipping_deadline String?
 
   created_at DateTime @default(now())
+
   updated_at DateTime @updatedAt
 
-  contact Contact @relation(fields: [contact_id],references: [id])
-
-  address ContactAddress?@relation(fields: [address_id],references: [id])
+  contact Contact@relation(fields: [contact_id], references: [id])
 
   items OrderItem[]
 
@@ -241,13 +264,15 @@ model OrderItem {
 
   quantity Int @default(1)
 
-  price Float
+  unit_price Float
+
+  total Float
 
   created_at DateTime @default(now())
 
-  order Order @relation(fields: [order_id],references: [id])
+  order Order @relation(fields: [order_id], references: [id])
 
-  product Product@relation(fields: [product_id],references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 
   @@map("order_items")
 }

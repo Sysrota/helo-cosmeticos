@@ -9,16 +9,16 @@ import {
 } from "@/stores/clientes.store";
 
 import LoadingFincob
-  from "../../../../components/LoadingFincob";
+  from "../../components/LoadingFincob";
 
 import EmptyStateFincob
-  from "../../../../components/EmptyStateFincob";
+  from "../../components/EmptyStateFincob";
 
 import PaginationFincob
-  from "../../../../components/PaginationFincob";
+  from "../../components/PaginationFincob";  
 
 import Formatter
-  from "../../../../utils/Formatter";
+  from "../../utils/Formatter";
 
 export default function ClientesPage() {
 

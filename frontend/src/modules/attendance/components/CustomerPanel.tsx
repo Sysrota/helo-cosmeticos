@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   useAttendanceStore,
 } from "../store/attendance.store";
@@ -6,6 +7,9 @@ export function CustomerPanel() {
   const {
     selectedConversation,
   } = useAttendanceStore();
+
+  const navigate =
+    useNavigate();
 
   if (!selectedConversation) {
     return (
@@ -17,6 +21,50 @@ export function CustomerPanel() {
 
   const contact =
     selectedConversation.contact;
+
+  async function createOrder() {
+    if (!contact?.id) {
+      return;
+    }
+
+    try {
+
+      const res =
+        await fetch(
+          `${import.meta.env.VITE_API_URL}/orders`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              contact_id:
+                contact.id,
+
+              items: [],
+            }),
+          }
+        );
+
+      const order =
+        await res.json();
+
+      navigate(
+        `/admin/orders/${order.id}`
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Erro ao criar pedido"
+      );
+    }
+  }
 
   return (
     <div className="h-full flex flex-col p-6 bg-transparent">
@@ -48,6 +96,57 @@ export function CustomerPanel() {
         <p className="text-zinc-500">
           {contact?.phone}
         </p>
+
+        <div className="
+            flex
+            flex-col
+            gap-3
+            mt-5
+            w-full
+          ">
+
+            <button
+              onClick={createOrder}
+
+              className="
+                w-full
+
+                bg-black
+                text-white
+
+                py-3
+
+                rounded-2xl
+
+                font-medium
+              "
+            >
+              Novo Pedido
+            </button>
+
+            <button
+              onClick={() => {
+
+                navigate(
+                  `/admin/clientes/${contact.id}`
+                );
+              }}
+
+              className="
+                w-full
+
+                border
+
+                py-3
+
+                rounded-2xl
+
+                font-medium
+              "
+            >
+              Abrir Cadastro
+            </button>
+          </div>
 
         <span
           className="

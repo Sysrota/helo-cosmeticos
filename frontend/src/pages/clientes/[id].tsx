@@ -4,9 +4,8 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import Formatter from "../../utils/Formatter";
 
-import Formatter
-  from "../../../../utils/Formatter";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "/api";
@@ -234,100 +233,100 @@ export default function ClienteDetalhesPage() {
       ">
 
         {/* HEADER */}
-<div className="
-  bg-white
-  border
-  rounded-2xl
-  p-6
-  flex
-  flex-col
-  lg:flex-row
-  lg:items-center
-  lg:justify-between
-  gap-4
-">
+        <div className="
+          bg-white
+          border
+          rounded-2xl
+          p-6
+          flex
+          flex-col
+          lg:flex-row
+          lg:items-center
+          lg:justify-between
+          gap-4
+        ">
 
-  <div>
+          <div>
 
-    <h1 className="
-      text-2xl
-      md:text-3xl
-      font-bold
-      break-words
-    ">
-      {cliente.name ||
-        "Sem nome"}
-    </h1>
-  </div>
+            <h1 className="
+              text-2xl
+              md:text-3xl
+              font-bold
+              break-words
+            ">
+              {cliente.name ||
+                "Sem nome"}
+            </h1>
+          </div>
 
-  <div className="
-    flex
-    flex-col
-    sm:flex-row
-    gap-3
-    w-full
-    lg:w-auto
-  ">
+          <div className="
+            flex
+            flex-col
+            sm:flex-row
+            gap-3
+            w-full
+            lg:w-auto
+          ">
 
-    <button
-      onClick={() =>
-        navigate(
-          "/admin/attendance"
-        )
-      }
+            <button
+              onClick={() =>
+                navigate(
+                  "/admin/attendance"
+                )
+              }
 
-      className="
-        px-4
-        py-2
-        rounded-xl
-        border
-        w-full
-        sm:w-auto
-      "
-    >
-      Atendimento
-    </button>
+              className="
+                px-4
+                py-2
+                rounded-xl
+                border
+                w-full
+                sm:w-auto
+              "
+            >
+              Atendimento
+            </button>
 
-    <button
-      onClick={() =>
-        navigate(
-          "/admin/clientes"
-        )
-      }
+            <button
+              onClick={() =>
+                navigate(
+                  "/admin/clientes"
+                )
+              }
 
-      className="
-        px-4
-        py-2
-        rounded-xl
-        bg-zinc-200
-        w-full
-        sm:w-auto
-      "
-    >
-      Voltar
-    </button>
+              className="
+                px-4
+                py-2
+                rounded-xl
+                bg-zinc-200
+                w-full
+                sm:w-auto
+              "
+            >
+              Voltar
+            </button>
 
-    <button
-      onClick={saveCliente}
+            <button
+              onClick={saveCliente}
 
-      disabled={saving}
+              disabled={saving}
 
-      className="
-        px-5
-        py-2
-        rounded-xl
-        bg-black
-        text-white
-        w-full
-        sm:w-auto
-      "
-    >
-      {saving
-        ? "Salvando..."
-        : "Salvar"}
-    </button>
-  </div>
-</div>
+              className="
+                px-5
+                py-2
+                rounded-xl
+                bg-black
+                text-white
+                w-full
+                sm:w-auto
+              "
+            >
+              {saving
+                ? "Salvando..."
+                : "Salvar"}
+            </button>
+          </div>
+        </div>
 
         {/* GRID */}
         <div className="
@@ -415,8 +414,9 @@ export default function ClienteDetalhesPage() {
                   onChange={(e) =>
                     setCliente({
                       ...cliente,
-                      phone:
-                        e.target.value,
+                      phone: Formatter.onlyNumbers(
+                        e.target.value
+                      ),
                     })
                   }
 
