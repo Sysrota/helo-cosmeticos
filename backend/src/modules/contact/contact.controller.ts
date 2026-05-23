@@ -3,7 +3,6 @@ import {
   Response,
 } from "express";
 import { listContacts, showContact, updateContactService } from "./contact.service";
-import { prisma } from "@/config/prisma";
 
 
 export async function listContactsController(
