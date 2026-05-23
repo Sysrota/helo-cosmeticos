@@ -1,6 +1,4 @@
-import { prisma }
-  from "@/config/prisma";
-
+import { prisma } from "@/config/prisma";
 import {
   mercadoPagoClient,
 } from "./mercado-pago.provider";
