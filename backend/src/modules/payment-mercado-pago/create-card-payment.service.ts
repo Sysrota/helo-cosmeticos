@@ -1,4 +1,4 @@
-import { io } from "@/websocket/socket.js";
+import { io } from "../../websocket/socket.js";
 
 import { prisma }
   from "../../config/prisma.js";
