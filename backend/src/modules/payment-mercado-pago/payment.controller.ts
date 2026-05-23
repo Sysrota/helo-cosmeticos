@@ -62,8 +62,6 @@ export async function createCardPaymentController(
   res: Response
 ) {
 
-  console.log("Chegand",req.body)  
-
   try {
 
     const payment =

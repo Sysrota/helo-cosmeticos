@@ -12,6 +12,11 @@ export async function getAiCartController(
   res: Response
 ) {
 
+
+  const checkoutToken = Array.isArray(req.query.checkout_token)
+  ? req.query.checkout_token[0]
+  : req.query.checkout_token;
+
   try {
 
     const { token } =
@@ -23,7 +28,7 @@ export async function getAiCartController(
 
           where: {
             checkout_token:
-              token,
+              checkoutToken,
           },
         });
 
