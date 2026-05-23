@@ -19,6 +19,8 @@ import { orderRoutes } from "./modules/order/order.routes.js";
 import { storeConfigRoutes } from "./modules/store-config/store-config.routes.js";
 import { melhorEnvioRoutes } from "./modules/shipping/melhor-envio/melhor-envio.routes.js";
 import { paymentRoutes } from "./modules/payment-mercado-pago/payment.routes.js";
+import { aiRoutes } from "./modules/ai/ai.routes.js";
+import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
 
 
 const app = express();
@@ -62,6 +64,10 @@ app.use("/store-config",storeConfigRoutes);
 app.use("/shipping/melhor-envio",melhorEnvioRoutes);
 
 app.use("/payment",paymentRoutes);
+
+app.use("/ai",aiRoutes);
+
+app.use("/checkout",checkoutRoutes);
 
 
 

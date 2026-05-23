@@ -1,40 +1,319 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const CartContext = createContext();
+const CartContext =
+  createContext();
 
 export function useCart() {
-  return useContext(CartContext);
+
+  return useContext(
+    CartContext
+  );
 }
 
-export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
+export function CartProvider({
+  children,
+}) {
 
-  // Carregar carrinho salvo
+  // =====================
+  // STATE
+  // =====================
+
+  const [cart, setCart] =
+    useState([]);
+
+  // =====================
+  // LOAD STORAGE
+  // =====================
+
   useEffect(() => {
-    const saved = localStorage.getItem("helo_cart");
-    if (saved) setCart(JSON.parse(saved));
+
+    const saved =
+      localStorage.getItem(
+        "helo_cart"
+      );
+
+    if (saved) {
+
+      try {
+
+        setCart(
+          JSON.parse(saved)
+        );
+
+      } catch {
+
+        setCart([]);
+      }
+    }
+
   }, []);
 
-  // Salvar mudanças
+  // =====================
+  // SAVE STORAGE
+  // =====================
+
   useEffect(() => {
-    localStorage.setItem("helo_cart", JSON.stringify(cart));
+
+    localStorage.setItem(
+
+      "helo_cart",
+
+      JSON.stringify(cart)
+    );
+
   }, [cart]);
 
-  const addToCart = (product) => {
-    setCart((prev) => [...prev, product]);
-  };
+  // =====================
+  // ADD ITEM
+  // =====================
 
-  const removeFromCart = (index) => {
-    setCart((prev) => prev.filter((_, i) => i !== index));
-  };
+  const addToCart =
+    (product) => {
 
-  const clearCart = () => {
-    setCart([]);
-  };
+      setCart((prev) => {
+
+        const existing =
+          prev.find(
+            (item) =>
+
+              item.product_id ===
+              product.product_id
+          );
+
+        // =====================
+        // INCREASE EXISTING
+        // =====================
+
+        if (existing) {
+
+          return prev.map(
+            (item) => {
+
+              if (
+                item.product_id ===
+                product.product_id
+              ) {
+
+                return {
+
+                  ...item,
+
+                  quantity:
+                    Number(
+                      item.quantity || 1
+                    ) + Number(
+                      product.quantity || 1
+                    ),
+                };
+              }
+
+              return item;
+            }
+          );
+        }
+
+        // =====================
+        // NEW ITEM
+        // =====================
+
+        return [
+
+          ...prev,
+
+          {
+            ...product,
+
+            quantity:
+              Number(
+                product.quantity || 1
+              ),
+          },
+        ];
+      });
+    };
+
+  // =====================
+  // REMOVE
+  // =====================
+
+  const removeFromCart =
+    (index) => {
+
+      setCart((prev) =>
+
+        prev.filter(
+          (_, i) =>
+            i !== index
+        )
+      );
+    };
+
+  // =====================
+  // CLEAR
+  // =====================
+
+  const clearCart =
+    () => {
+
+      setCart([]);
+    };
+
+  // =====================
+  // INCREASE
+  // =====================
+
+  const increaseQuantity =
+    (index) => {
+
+      setCart((prev) =>
+
+        prev.map(
+          (item, i) => {
+
+            if (i === index) {
+
+              return {
+
+                ...item,
+
+                quantity:
+                  Number(
+                    item.quantity || 1
+                  ) + 1,
+              };
+            }
+
+            return item;
+          }
+        )
+      );
+    };
+
+  // =====================
+  // DECREASE
+  // =====================
+
+  const decreaseQuantity =
+    (index) => {
+
+      setCart((prev) =>
+
+        prev.map(
+          (item, i) => {
+
+            if (
+              i === index
+            ) {
+
+              return {
+
+                ...item,
+
+                quantity:
+                  Math.max(
+                    1,
+                    Number(
+                      item.quantity || 1
+                    ) - 1
+                  ),
+              };
+            }
+
+            return item;
+          }
+        )
+      );
+    };
+
+  // =====================
+  // TOTAL ITEMS
+  // =====================
+
+  const totalItems =
+    useMemo(() => {
+
+      return cart.reduce(
+
+        (acc, item) => {
+
+          return (
+            acc +
+            Number(
+              item.quantity || 1
+            )
+          );
+        },
+
+        0
+      );
+
+    }, [cart]);
+
+  // =====================
+  // SUBTOTAL
+  // =====================
+
+  const subtotal =
+    useMemo(() => {
+
+      return cart.reduce(
+
+        (acc, item) => {
+
+          return (
+            acc +
+            (
+              Number(item.price) *
+              Number(
+                item.quantity || 1
+              )
+            )
+          );
+        },
+
+        0
+      );
+
+    }, [cart]);
+
+  // =====================
+  // PROVIDER
+  // =====================
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+
+    <CartContext.Provider
+
+      value={{
+
+        cart,
+
+        setCart,
+
+        addToCart,
+
+        removeFromCart,
+
+        clearCart,
+
+        increaseQuantity,
+
+        decreaseQuantity,
+
+        subtotal,
+
+        totalItems,
+      }}
+    >
+
       {children}
+
     </CartContext.Provider>
   );
 }

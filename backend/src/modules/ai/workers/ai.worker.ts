@@ -7,12 +7,11 @@ import { redis }
 import { buildContext }
   from "../services/context.service.js";
 
-import { gerarRespostaIA }
-  from "../services/openai.service.js";
-
 import {
   createMessage,
 } from "../../attendance/attendance.service.js";
+import { executeAiAgent } from "../services/ai-agent.service.js";
+import { updateConversationMemory } from "../services/conversation-memory.service.js";
 
 export const aiWorker =
   new Worker(
@@ -53,7 +52,10 @@ export const aiWorker =
           );
 
         const response =
-          await gerarRespostaIA({
+          await executeAiAgent({
+
+            conversationId,
+
             messages,
           });
 
@@ -70,6 +72,10 @@ export const aiWorker =
 
           content:
             response,
+        });
+
+        await updateConversationMemory({
+          conversationId,
         });
 
       } catch (error) {

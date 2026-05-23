@@ -21,6 +21,8 @@ import OrdersPage from "./pages/orders/OrdersPage";
 import ClientesPage from "./pages/clientes/Clientes";
 import OrderDetailsPage from "./pages/orders/OrderDetailsPage";
 import StoreSettingsPage from "./pages/settings/StoreSettingsPage";
+import AiCartPage from "./pages/AiCartPage";
+import PublicCheckoutPage from "./pages/PublicCheckoutPage";
 
 
 export default function App() {
@@ -37,6 +39,9 @@ export default function App() {
           <Route path="/carrinho" element={<Carrinho />} />
           <Route path="/lp-kit-forte-liso" element={<Landing />} />
           <Route path="/produto-descricao/:id" element={<ProdutoDescricao />} />
+          <Route path="/carrinho-ai/:token" element={<AiCartPage />}/>
+
+          <Route path="/checkout/:id" element={<PublicCheckoutPage />}/>
 
 
           {/* admin */}

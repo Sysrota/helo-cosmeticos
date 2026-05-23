@@ -1,3 +1,5 @@
+import { io } from "@/websocket/socket.js";
+
 import { prisma }
   from "../../config/prisma.js";
 
@@ -15,8 +17,6 @@ interface Props {
 
   token: string;
 
-  issuer_id?: string;
-
   payment_method_id: string;
 
   transaction_amount: number;
@@ -26,6 +26,10 @@ interface Props {
   payer: {
 
     email: string;
+
+    first_name?: string;
+
+    last_name?: string;
 
     identification: {
 
@@ -52,7 +56,10 @@ export async function createCardPaymentService({
 
 }: Props) {
 
-  // PEDIDO
+  // =========================
+  // ORDER
+  // =========================
+
   const order =
     await prisma.order.findUnique({
 
@@ -71,14 +78,19 @@ export async function createCardPaymentService({
       "Pedido não encontrado"
     );
   }
-
+  // =========================
   // PAYMENT CLIENT
+  // =========================
+
   const paymentClient =
     new Payment(
       mercadoPagoClient
     );
 
+  // =========================
   // CREATE PAYMENT
+  // =========================
+
   const payment =
     await paymentClient.create({
 
@@ -86,7 +98,7 @@ export async function createCardPaymentService({
 
         transaction_amount:
           Number(
-            transaction_amount
+            order.total
           ),
 
         token,
@@ -94,7 +106,10 @@ export async function createCardPaymentService({
         description:
           `Pedido #${order.id}`,
 
-        installments,
+        installments:
+          Number(
+            installments
+          ),
 
         payment_method_id,
 
@@ -102,34 +117,64 @@ export async function createCardPaymentService({
       },
     });
 
-  // STATUS
-  const status =
-    payment.status ===
-    "approved"
+  // =========================
+  // UPDATE ORDER
+  // =========================
 
-      ? "paid"
+  const updatedOrder =
+    await prisma.order.update({
 
-      : "pending";
+      where: {
+        id: order.id,
+      },
 
-  // SAVE
-  await prisma.order.update({
+      data: {
 
-    where: {
-      id: order.id,
-    },
+        payment_method:
+          "credit_card",
 
-    data: {
+        payment_status:
+          payment.status,
 
-      payment_method:
-        "credit_card",
+        paid_at:
 
-      payment_status:
-        status,
+          payment.status ===
+          "approved"
 
-      mercado_pago_payment_id:
-        String(payment.id),
-    },
-  });
+            ? new Date()
 
-  return payment;
+            : null,
+
+        mercado_pago_payment_id:
+          String(payment.id),
+      },
+    });
+
+  // =========================
+  // REALTIME
+  // =========================
+
+  io.emit(
+    "order_updated",
+    updatedOrder
+  );
+
+  // =========================
+  // RETURN
+  // =========================
+
+  return {
+
+    id:
+      payment.id,
+
+    status:
+      payment.status,
+
+    status_detail:
+      payment.status_detail,
+
+    payment_method_id:
+      payment.payment_method_id,
+  };
 }

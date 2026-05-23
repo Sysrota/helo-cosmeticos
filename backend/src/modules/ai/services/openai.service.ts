@@ -1,5 +1,15 @@
 import OpenAI from "openai";
 
+console.log("ENV LOCAL:", process.env.OPENAI_API_KEY);
+
+console.log("Todas variáveis OPENAI:");
+Object.keys(process.env)
+  .filter((k) => k.includes("OPENAI"))
+  .forEach((k) => {
+    console.log(k, process.env[k]);
+  });
+  console.log("process.cwd():", process.cwd());
+
 const openai =
   new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,

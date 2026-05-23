@@ -156,7 +156,11 @@ export async function showOrderService(
 
       items: {
         include: {
-          product: true,
+          product:{
+            include:{
+              images:true
+            }
+          }
         },
       },
     },

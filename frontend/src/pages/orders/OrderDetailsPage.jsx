@@ -180,7 +180,7 @@ export default function OrderDetailsPage() {
   useEffect(() => {
 
     socket.on(
-      "order_paid",
+      "order_updated",
       (updatedOrder) => {
 
         if (
@@ -192,17 +192,26 @@ export default function OrderDetailsPage() {
             updatedOrder
           );
 
-          setPaymentApproved(
-            true
-          );
+          // APPROVED
+          if (
 
-          setTimeout(() => {
+            updatedOrder.payment_status ===
+            "approved"
+
+          ) {
 
             setPaymentApproved(
-              false
+              true
             );
 
-          }, 6000);
+            setTimeout(() => {
+
+              setPaymentApproved(
+                false
+              );
+
+            }, 6000);
+          }
         }
       }
     );
@@ -589,6 +598,64 @@ return (
           </div>
         </div>
       )}
+
+      {order?.payment_status ===
+        "rejected" && (
+
+          <div className="
+            bg-red-500
+            text-white
+
+            rounded-3xl
+
+            p-4
+
+            shadow-lg
+
+            flex
+            items-center
+            justify-between
+          ">
+
+            <div>
+
+              <div className="
+                text-2xl
+                font-bold
+              ">
+                Pagamento recusado
+              </div>
+
+              <div className="
+                opacity-90
+                mt-1
+              ">
+                A operadora recusou
+                o pagamento do cartão
+              </div>
+            </div>
+
+            <div className="
+              text-right
+            ">
+
+              <div className="
+                text-sm
+                opacity-80
+              ">
+                Status
+              </div>
+
+              <div className="
+                text-xl
+                font-bold
+              ">
+                RECUSADO
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* HEADER */}
       <OrderHeader

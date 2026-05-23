@@ -136,6 +136,18 @@ model Conversation {
 
   last_message_at DateTime?
 
+  ai_stage        String?
+  ai_summary      String?
+  cart_json       Json?
+  customer_name   String?
+  customer_city   String?
+  customer_state  String?
+  checkout_url    String?
+  last_product_id Int?
+
+  checkout_token String?
+  last_order_id Int?
+
   created_at      DateTime  @default(now())
 
   updated_at      DateTime  @updatedAt

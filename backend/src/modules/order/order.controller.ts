@@ -24,6 +24,7 @@ export async function showOrderController(
   res: Response
 ) {
 
+
   const order =
     await showOrderService(
       Number(
@@ -53,6 +54,8 @@ export async function updateOrderController(
 
         ...req.body,
       });
+
+      console.log("aqui?")
 
     return res.json(
       order
