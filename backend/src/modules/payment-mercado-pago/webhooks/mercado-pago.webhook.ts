@@ -4,7 +4,7 @@ import {
 } from "express";
 
 import { prisma }
-  from "@/config/prisma";
+  from "../../../config/prisma.js";
 
 import {
   Payment,

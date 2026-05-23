@@ -1,5 +1,5 @@
 import { prisma }
-  from "@/config/prisma";
+  from "../../config/prisma.js";
 
 import {
   mercadoPagoClient,
