@@ -4,6 +4,7 @@ import {
 
 import {
   createCheckoutController,
+  updateCheckoutDeliveryController,
 } from "./checkout.controller.js";
 
 export const checkoutRoutes =
@@ -12,4 +13,9 @@ export const checkoutRoutes =
 checkoutRoutes.post(
   "/",
   createCheckoutController
+);
+
+checkoutRoutes.put(
+  "/:id/delivery",
+  updateCheckoutDeliveryController
 );

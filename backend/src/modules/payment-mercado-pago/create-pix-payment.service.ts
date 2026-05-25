@@ -36,18 +36,34 @@ export async function createPixPaymentService({
     );
   }
 
-  // TOTAL
+  const regularTotal =
+    Number(
+      (
+        Number(order.subtotal || 0) +
+        Number(order.shipping || 0)
+      ).toFixed(2)
+    );
+
+  const discount =
+    Number(
+      (
+        regularTotal *
+        0.05
+      ).toFixed(2)
+    );
+
   const total =
     Number(
-      Number(
-        order.total || 0
+      (
+        regularTotal -
+        discount
       ).toFixed(2)
     );
 
   console.log({
     total,
-    orderTotal:
-      order.total,
+    regularTotal,
+    discount,
   });
 
   if (
@@ -112,6 +128,10 @@ export async function createPixPaymentService({
       payment_status:
         "pending",
 
+      discount,
+
+      total,
+
       pix_code:
         qrCode,
 
@@ -132,6 +152,11 @@ export async function createPixPaymentService({
 
     qr_code_base64:
       qrCodeBase64,
+
+    amount:
+      total,
+
+    discount,
   };
 }
 

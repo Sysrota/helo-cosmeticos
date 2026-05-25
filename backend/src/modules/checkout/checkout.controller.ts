@@ -6,6 +6,9 @@ import {
 import {
   prisma,
 } from "../../config/prisma.js";
+import {
+  calculateShipping,
+} from "../shipping/shipping.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -31,6 +34,18 @@ export async function createCheckoutController(
       return res.status(400).json({
         error:
           "Carrinho vazio",
+      });
+    }
+
+    if (
+      !customer?.name ||
+      !customer?.phone ||
+      !customer?.email
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Dados do cliente incompletos",
       });
     }
 
@@ -95,11 +110,29 @@ export async function createCheckoutController(
             in:
               cart.map(
                 (item: any) =>
-                  item.product_id
+                  item.product_id ??
+                  item.id
               ),
           },
         },
       });
+
+    if (
+      products.length !==
+      new Set(
+        cart.map(
+          (item: any) =>
+            item.product_id ??
+            item.id
+        )
+      ).size
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Um ou mais produtos não estão disponíveis",
+      });
+    }
 
     // =====================
     // ITEMS
@@ -115,7 +148,10 @@ export async function createCheckoutController(
             products.find(
               (p) =>
                 p.id ===
-                item.product_id
+                (
+                  item.product_id ??
+                  item.id
+                )
             );
 
           const unit_price =
@@ -137,7 +173,7 @@ export async function createCheckoutController(
           return {
 
             product_id:
-              item.product_id,
+              product!.id,
 
             quantity,
 
@@ -215,7 +251,11 @@ export async function createCheckoutController(
           items: {
 
             include: {
-              product: true,
+              product: {
+                include: {
+                  images: true,
+                },
+              },
             },
           },
         },
@@ -238,6 +278,190 @@ export async function createCheckoutController(
 
       error:
         "Erro ao finalizar checkout",
+    });
+  }
+}
+
+export async function updateCheckoutDeliveryController(
+  req: Request,
+  res: Response
+) {
+
+  try {
+
+    const orderId =
+      Number(req.params.id);
+
+    const {
+      customer,
+      shipping_method,
+    } = req.body;
+
+    if (
+      !orderId ||
+      !customer?.zipcode ||
+      !customer?.street ||
+      !customer?.number ||
+      !customer?.district ||
+      !customer?.city ||
+      !customer?.state
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Endereço incompleto",
+      });
+    }
+
+    const order =
+      await prisma.order.findUnique({
+        where: {
+          id: orderId,
+        },
+      });
+
+    if (!order) {
+
+      return res.status(404).json({
+        error:
+          "Pedido não encontrado",
+      });
+    }
+
+    const options =
+      await calculateShipping({
+        cep:
+          customer.zipcode,
+        order_id:
+          orderId,
+      });
+
+    const selectedShipping =
+      options.find(
+        (option) =>
+          option.name ===
+          shipping_method
+      ) || options[0];
+
+    const shippingPrice =
+      Number(
+        selectedShipping.price
+      );
+
+    const total =
+      Number(order.subtotal) +
+      shippingPrice;
+
+    await prisma.contact.update({
+      where: {
+        id:
+          order.contact_id,
+      },
+      data: {
+        name:
+          customer.name,
+        phone:
+          customer.phone,
+        email:
+          customer.email,
+        cpf:
+          customer.cpf,
+        city:
+          customer.city,
+        state:
+          customer.state,
+      },
+    });
+
+    const address =
+      await prisma.contactAddress.findFirst({
+        where: {
+          contact_id:
+            order.contact_id,
+        },
+      });
+
+    const addressData = {
+      cep:
+        customer.zipcode,
+      street:
+        customer.street,
+      number:
+        customer.number,
+      district:
+        customer.district,
+      city:
+        customer.city,
+      state:
+        customer.state,
+    };
+
+    if (address) {
+
+      await prisma.contactAddress.update({
+        where: {
+          id:
+            address.id,
+        },
+        data:
+          addressData,
+      });
+
+    } else {
+
+      await prisma.contactAddress.create({
+        data: {
+          contact_id:
+            order.contact_id,
+          ...addressData,
+        },
+      });
+    }
+
+    const updatedOrder =
+      await prisma.order.update({
+        where: {
+          id:
+            orderId,
+        },
+        data: {
+          shipping:
+            shippingPrice,
+          shipping_price:
+            shippingPrice,
+          shipping_method:
+            selectedShipping.name,
+          shipping_deadline:
+            selectedShipping.deadline,
+          discount:
+            0,
+          total,
+        },
+        include: {
+          contact: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  images: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+    return res.json(
+      updatedOrder
+    );
+
+  } catch (error) {
+
+    return res.status(400).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao salvar entrega",
     });
   }
 }

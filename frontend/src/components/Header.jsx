@@ -9,68 +9,177 @@ export default function Header() {
     { to: "/produtos", label: "Produtos" },
     { to: "/sobre", label: "Sobre" },
     { to: "/contato", label: "Contato" },
-    { to: "/carrinho", label: "Carrinho" },
   ];
 
   return (
-    <header className="
-      sticky top-0 z-50 
-      backdrop-blur-xl 
-      bg-white/60 
-      border-b border-white/30 
-      shadow-[0_4px_12px_rgba(0,0,0,0.06)]
-      animate-fade-in
-    ">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-
+    <header
+      className="
+        sticky
+        top-0
+        z-50
+        bg-white/75
+        backdrop-blur-lg
+        border-b
+        border-helo-rose/10
+      "
+    >
+      <div
+        className="
+          max-w-7xl
+          mx-auto
+          px-6
+          h-[72px]
+          flex
+          items-center
+          justify-between
+        "
+      >
         {/* Logo */}
         <Link
           to="/"
-          className="text-3xl font-display text-helo-dark tracking-wide hover:text-helo-rose transition-colors"
+          className="
+            font-display
+            text-2xl
+            text-helo-dark
+            tracking-wide
+            transition-colors
+            hover:text-helo-rose
+          "
         >
           Helô Cosméticos
         </Link>
 
-        {/* Desktop Menu */}
-        <nav className="hidden md:flex gap-8 text-helo-dark/80 font-body text-lg">
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="relative group hover:text-helo-dark transition-colors"
-            >
-              {item.label}
-              <span className="
-                absolute left-0 -bottom-1 w-0 h-[2px] 
-                bg-helo-rose transition-all duration-300 group-hover:w-full
-              "></span>
-            </Link>
-          ))}
-        </nav>
+        {/* Desktop */}
+        <div
+          className="
+            hidden
+            md:flex
+            items-center
+            gap-10
+          "
+        >
+          <nav
+            className="
+              flex
+              items-center
+              gap-6
+              text-sm
+              font-medium
+              text-helo-text/80
+            "
+          >
+            {navItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="
+                  relative
+                  transition-colors
+                  hover:text-helo-dark
+                  group
+                "
+              >
+                {item.label}
 
-        {/* Mobile Button */}
+                <span
+                  className="
+                    absolute
+                    left-0
+                    -bottom-1
+                    w-0
+                    h-[1.5px]
+                    bg-helo-rose
+                    transition-all
+                    duration-300
+                    group-hover:w-full
+                  "
+                />
+              </Link>
+            ))}
+          </nav>
+
+          {/* Carrinho */}
+          <Link
+            to="/carrinho"
+            className="
+              px-5
+              py-2.5
+              rounded-xl
+              bg-helo-dark
+              text-white
+              text-sm
+              font-semibold
+              transition-all
+              hover:bg-helo-rose
+              hover:shadow-lg
+            "
+          >
+            Carrinho
+          </Link>
+        </div>
+
+        {/* Mobile button */}
         <button
-          className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg bg-helo-rose text-white"
+          className="
+            md:hidden
+            w-10
+            h-10
+            rounded-xl
+            bg-helo-dark
+            text-white
+            flex
+            items-center
+            justify-center
+            text-lg
+            transition-all
+            hover:bg-helo-rose
+          "
           onClick={() => setMenuOpen(!menuOpen)}
         >
           ☰
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white/90 backdrop-blur-xl px-6 pb-6 shadow-lg animate-slide-down">
-          <nav className="flex flex-col gap-4 text-lg font-body text-helo-dark">
-            {navItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setMenuOpen(false)}
-                className="py-2 border-b border-helo-rose/20 hover:text-helo-rose transition"
-              >
-                {item.label}
-              </Link>
-            ))}
+        <div
+          className="
+            md:hidden
+            bg-white/95
+            backdrop-blur-xl
+            border-t
+            border-helo-rose/10
+            px-6
+            py-5
+          "
+        >
+          <nav
+            className="
+              flex
+              flex-col
+              gap-1
+            "
+          >
+            {[...navItems, { to: "/carrinho", label: "Carrinho" }].map(
+              (item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className="
+                    py-3
+                    px-2
+                    rounded-lg
+                    text-helo-dark
+                    transition-all
+                    hover:bg-helo-rose/10
+                    hover:text-helo-rose
+                  "
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
         </div>
       )}

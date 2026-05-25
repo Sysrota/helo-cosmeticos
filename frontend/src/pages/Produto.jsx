@@ -1,90 +1,267 @@
+import {
+  ChevronRight,
+  CreditCard,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Truck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import Formatter from "../utils/Formatter";
 
-// const API_URL = "http://localhost:3333";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-
-function formatBRL(v) {
-  const n = Number(v || 0);
-  return n.toFixed(2).replace(".", ",");
+function formatBRL(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 export default function Produto() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
-
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState(null);
   const [selected, setSelected] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [shippingCep, setShippingCep] = useState("");
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingOptions, setShippingOptions] = useState([]);
+  const [shippingError, setShippingError] = useState("");
 
   const cover = useMemo(() => {
-    if (!product) return "";
-    return product.image_url ? `${API_URL}${product.image_url}` : "";
+    if (!product?.image_url) {
+      return "";
+    }
+
+    return `${API_URL}${product.image_url}`;
   }, [product]);
 
   const gallery = useMemo(() => {
-    if (!product?.images?.length) return [];
+    if (!product?.images?.length) {
+      return [];
+    }
+
     return product.images
       .slice()
       .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-      .map((img) => ({
-        ...img,
-        full: `${API_URL}${img.image_url}`,
+      .map((image) => ({
+        ...image,
+        full: `${API_URL}${image.image_url}`,
       }));
   }, [product]);
 
-  const sentirList = useMemo(() => {
-    const raw = product?.o_que_vai_sentir || "";
-    return raw
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, [product]);
+  const images = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          [{ id: "cover", full: cover }, ...gallery]
+            .filter((image) => Boolean(image.full))
+            .map((image) => [image.full, image])
+        ).values()
+      ).slice(0, 10),
+    [cover, gallery]
+  );
+
+  const feelingList = useMemo(
+    () =>
+      String(product?.o_que_vai_sentir || "")
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [product]
+  );
 
   useEffect(() => {
-    let alive = true;
+    let active = true;
 
-    async function load() {
+    async function loadProduct() {
       setLoading(true);
+
       try {
-        const res = await fetch(`${API_URL}/products/${id}`);
-        if (!res.ok) throw new Error("Produto não encontrado");
-        const data = await res.json();
+        const response = await fetch(`${API_URL}/products/${id}`);
 
-        if (!alive) return;
+        if (!response.ok) {
+          throw new Error("Produto não encontrado");
+        }
+
+        const data = await response.json();
+
+        if (!active) {
+          return;
+        }
+
         setProduct(data);
-
-        const first =
+        setSelected(
           data.image_url
             ? `${API_URL}${data.image_url}`
             : data.images?.[0]?.image_url
-            ? `${API_URL}${data.images[0].image_url}`
-            : "";
-
-        setSelected(first);
+              ? `${API_URL}${data.images[0].image_url}`
+              : ""
+        );
+        setQuantity(1);
+        setShippingOptions([]);
+        setShippingCep("");
       } catch {
-        if (!alive) return;
-        setProduct(null);
+        if (active) {
+          setProduct(null);
+        }
       } finally {
-        if (!alive) return;
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
-    load();
+    loadProduct();
+
     return () => {
-      alive = false;
+      active = false;
     };
   }, [id]);
 
   const mainImage = selected || cover;
+  const unavailable = product?.is_active === false;
+  const category =
+    String(product?.category || "beleza")
+      .replace(/[-_]/g, " ");
+  const productTotal =
+    Number(product?.price || 0) *
+    quantity;
+  const pixTotal =
+    Number(
+      (
+        productTotal *
+        0.95
+      ).toFixed(2)
+    );
+
+  function selectedItem() {
+    return {
+      product_id: product.id,
+      title: product.title,
+      price: Number(product.price || 0),
+      image: mainImage || cover || "",
+      quantity,
+    };
+  }
+
+  function handleAddToCart() {
+    addToCart(selectedItem());
+    setAddedToCart(true);
+    window.setTimeout(() => setAddedToCart(false), 2400);
+  }
+
+  function handleBuyNow() {
+    navigate("/checkout", {
+      state: {
+        directPurchaseItem: selectedItem(),
+      },
+    });
+  }
+
+  function updateQuantity(value) {
+    setQuantity(
+      Math.max(
+        1,
+        value
+      )
+    );
+    setShippingOptions([]);
+    setShippingError("");
+  }
+
+  function handleShippingCep(value) {
+    setShippingCep(
+      Formatter.cep(
+        Formatter.onlyNumbers(value)
+          .slice(0, 8)
+      )
+    );
+    setShippingOptions([]);
+    setShippingError("");
+  }
+
+  async function calculateProductShipping(event) {
+    event.preventDefault();
+
+    if (
+      Formatter.onlyNumbers(shippingCep).length !== 8
+    ) {
+      setShippingError("Informe um CEP válido.");
+      return;
+    }
+
+    try {
+      setShippingLoading(true);
+      setShippingError("");
+      setShippingOptions([]);
+
+      const response =
+        await fetch(
+          `${API_URL}/shipping/product-quote`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                cep:
+                  shippingCep,
+                product_id:
+                  product.id,
+                quantity,
+              }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Não foi possível calcular o frete."
+        );
+      }
+
+      setShippingOptions(
+        data
+          .slice()
+          .sort(
+            (first, second) =>
+              first.price -
+              second.price
+          )
+      );
+    } catch (error) {
+      setShippingError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível calcular o frete."
+      );
+    } finally {
+      setShippingLoading(false);
+    }
+  }
 
   if (loading) {
     return (
-      <div className="bg-helo-background min-h-screen py-16">
-        <div className="max-w-6xl mx-auto px-6 text-center text-helo-text/70">
+      <div className="min-h-screen bg-helo-background py-16">
+        <div className="mx-auto max-w-6xl px-6 text-center text-helo-text/70">
           Carregando produto...
         </div>
       </div>
@@ -93,136 +270,303 @@ export default function Produto() {
 
   if (!product) {
     return (
-      <div className="bg-helo-background min-h-screen py-16">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 className="text-3xl font-display text-helo-dark">Produto não encontrado</h1>
-          <p className="text-helo-text/80 mt-2">Verifique o link ou tente novamente.</p>
+      <div className="min-h-screen bg-helo-background py-16">
+        <div className="mx-auto max-w-6xl px-6 text-center">
+          <h1 className="font-display text-3xl text-helo-dark">Produto não encontrado</h1>
+          <p className="mt-2 text-helo-text/80">Verifique o link ou tente novamente.</p>
+          <Link
+            to="/produtos"
+            className="mt-8 inline-flex rounded-2xl bg-helo-dark px-8 py-4 font-semibold text-white"
+          >
+            Voltar aos produtos
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-helo-background min-h-screen py-16">
-      <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-14 items-start">
-        {/* COLUNA ESQUERDA: GALERIA + DICAS/FEEL */}
-        <div className="space-y-6">
-          {/* GALERIA */}
-          <div className="space-y-4">
-            <div className="rounded-2xl overflow-hidden shadow-xl bg-white/70 backdrop-blur-xl border border-white/40">
-              <div className="w-full h-[520px] bg-helo-background overflow-hidden">
+    <div className="product-sale-page min-h-screen pb-20">
+      <div className="border-b border-[#f1e3e8] bg-white">
+        <div className="product-sale-container flex items-center gap-2 py-3 text-sm text-zinc-500">
+          <Link to="/produtos" className="transition hover:text-helo-dark">
+            Produtos
+          </Link>
+          <ChevronRight size={14} />
+          <span className="line-clamp-1 text-zinc-700">{product.title}</span>
+        </div>
+      </div>
+
+      <main className="product-sale-container pb-12 pt-6 lg:pt-8">
+        <div className="product-sale-hero grid items-start gap-8">
+          <section className="product-sale-gallery space-y-4">
+            <div className="product-sale-media relative overflow-hidden bg-white">
+              <span className="absolute left-6 top-6 z-10 rounded-full border border-[#f4e1e7] bg-white px-5 py-2.5 text-sm font-medium text-[#ae415d] shadow-sm">
+                Favorito para seu ritual de cuidado
+              </span>
+              <div className="product-sale-image relative w-full">
                 {mainImage ? (
                   <img
                     src={mainImage}
                     alt={product.title}
-                    className="absolute inset-0 w-full h-full object-contain object-center rounded-t-2xl"
-                    style={{ objectPosition: "center top" }}
+                    className="h-full w-full object-contain object-center p-8 sm:p-12"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-helo-text/70">
+                  <div className="flex h-full items-center justify-center text-zinc-400">
                     Sem imagem
                   </div>
                 )}
               </div>
             </div>
 
-{gallery.length > 0 ? (
-  <div className="grid grid-cols-5 gap-3">
-    {Array.from(
-      new Map(
-        [{ id: "cover", full: cover }, ...gallery]
-          .filter((g) => Boolean(g.full))
-          .map((g) => [g.full, g]) // chave = url
-      ).values()
-    )
-      .slice(0, 10)
-      .map((img) => {
-        const active = img.full === mainImage;
-        return (
-          <button
-            key={img.id}
-            type="button"
-            onClick={() => setSelected(img.full)}
-            className={`rounded-xl overflow-hidden border bg-white/70 backdrop-blur-xl transition-all ${
-              active ? "border-helo-rose shadow-md" : "border-white/40 hover:shadow"
-            }`}
-            title="Ver imagem"
-          >
-            <div className="w-full h-20 bg-helo-background">
-              <img src={img.full} alt="" className="w-full h-full object-contain" />
-            </div>
-          </button>
-        );
-      })}
-  </div>
-) : null}
+            {images.length > 1 && (
+              <div className="grid grid-cols-5 gap-3 pt-1">
+                {images.map((image) => {
+                  const active = image.full === mainImage;
 
-          </div>
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => setSelected(image.full)}
+                      className={`h-[92px] overflow-hidden rounded-2xl border bg-white p-2 transition ${
+                        active
+                          ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
+                          : "border-[#f0e4e8] hover:border-[#e7bdc8]"
+                      }`}
+                      aria-label="Ver imagem do produto"
+                    >
+                      <img
+                        src={image.full}
+                        alt=""
+                        className="h-full w-full object-contain"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
-          {/* DICAS DE USO (abaixo da galeria) */}
-          {product.dicas_uso ? (
-            <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow p-6">
-              <h3 className="text-xl font-display text-helo-dark mb-2">Dicas de uso</h3>
-              <p className="text-helo-text/90 leading-relaxed">{product.dicas_uso}</p>
-            </div>
-          ) : null}
+          <section className="product-sale-panel-column">
+            <div className="product-sale-card bg-white">
+              <div className="flex items-center justify-between gap-4">
+                <p className="inline-flex items-center gap-2 rounded-full bg-[#fff0f4] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#b74662]">
+                  <Sparkles size={13} />
+                  {category}
+                </p>
+                <span className="text-sm font-medium text-[#b74662]">
+                  Helô
+                </span>
+              </div>
 
-          {/* O QUE VAI SENTIR (abaixo da galeria) */}
-          {sentirList.length > 0 ? (
-            <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow p-6">
-              <h3 className="text-xl font-display text-helo-dark mb-3">O que você vai sentir</h3>
-              <ul className="list-disc list-inside text-helo-text/90 space-y-1">
-                {sentirList.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
+              <h1 className="product-sale-title mt-4 font-display">
+                {product.title}
+              </h1>
+
+              {product.subtitle && (
+                <p className="product-sale-intro mt-3 text-zinc-600">
+                  {product.subtitle}
+                </p>
+              )}
+
+              <div className="product-sale-price-box mt-5 px-5 py-4">
+                <div className="product-sale-price-row">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.17em] text-[#a85a6d]">
+                      {quantity > 1 ? "Total" : "Preço"}
+                    </p>
+                    <p className="product-sale-price mt-2 font-semibold leading-none tracking-tight text-helo-text">
+                      {formatBRL(productTotal)}
+                    </p>
+                    {quantity > 1 && (
+                      <p className="mt-2 text-xs text-zinc-500">
+                        {quantity} x {formatBRL(product.price)}
+                      </p>
+                    )}
+                  </div>
+
+                  {!unavailable && (
+                    <div>
+                      <p className="mb-2 text-right text-sm font-semibold text-[#43232d]">Quantidade</p>
+                      <div className="flex h-12 items-center rounded-2xl border border-[#eadfe3] bg-white">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(quantity - 1)}
+                          className="flex h-full w-12 items-center justify-center text-zinc-600 transition hover:text-[#d85c7a]"
+                          aria-label="Diminuir quantidade"
+                        >
+                          <Minus size={17} />
+                        </button>
+                        <span className="w-8 text-center text-base font-semibold">{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(quantity + 1)}
+                          className="flex h-full w-12 items-center justify-center text-zinc-600 transition hover:text-[#d85c7a]"
+                          aria-label="Aumentar quantidade"
+                        >
+                          <Plus size={17} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-zinc-600">
+                  Consulte abaixo o frete para sua região.
+                </p>
+                <div className="product-sale-payment-info mt-3">
+                  <p>
+                    <strong>PIX:</strong> {formatBRL(pixTotal)} com 5% de desconto
+                  </p>
+                  <p>
+                    <strong>Cartão:</strong> parcele no checkout
+                  </p>
+                </div>
+              </div>
+
+              {unavailable ? (
+                <div className="mt-7 rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 text-base text-zinc-600">
+                  Este produto está indisponível no momento.
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 space-y-3">
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      className="product-sale-buy-button flex w-full items-center justify-center gap-2 rounded-2xl text-lg font-semibold text-white transition"
+                    >
+                      <ShoppingBag size={20} />
+                      Comprar agora
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      className="h-[58px] w-full rounded-2xl border border-[#e5bac5] bg-white text-base font-semibold text-[#b74662] transition hover:bg-[#fff5f7]"
+                    >
+                      {addedToCart ? "Adicionado ao carrinho" : "Adicionar ao carrinho"}
+                    </button>
+                  </div>
+
+                  <form
+                    className="product-sale-shipping mt-5"
+                    onSubmit={calculateProductShipping}
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[#43232d]">
+                      <Truck size={17} className="text-[#d85c7a]" />
+                      Calcule o frete
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={shippingCep}
+                        onChange={(event) => handleShippingCep(event.target.value)}
+                        placeholder="00000-000"
+                        aria-label="CEP para cálculo de frete"
+                        className="h-12 min-w-0 flex-1 rounded-xl border border-[#eadfe3] bg-white px-4 text-sm outline-none transition focus:border-[#d85c7a]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={shippingLoading}
+                        className="h-12 rounded-xl border border-[#e5bac5] px-5 text-sm font-semibold text-[#b74662] transition hover:bg-[#fff5f7] disabled:opacity-60"
+                      >
+                        {shippingLoading ? "Calculando..." : "Calcular"}
+                      </button>
+                    </div>
+
+                    {shippingError && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {shippingError}
+                      </p>
+                    )}
+
+                    {shippingOptions.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {shippingOptions.slice(0, 3).map((option) => (
+                          <div
+                            key={`${option.name}-${option.price}`}
+                            className="flex items-center justify-between gap-4 rounded-xl bg-white px-3.5 py-3 text-sm"
+                          >
+                            <span>
+                              <span className="block font-medium text-zinc-800">{option.name}</span>
+                              <span className="block text-xs text-zinc-500">{option.deadline}</span>
+                            </span>
+                            <span className="font-semibold text-[#b74662]">
+                              {formatBRL(option.price)}
+                            </span>
+                          </div>
+                        ))}
+                        <p className="pt-1 text-xs text-zinc-500">
+                          Frete confirmado no checkout.
+                        </p>
+                      </div>
+                    )}
+                  </form>
+                </>
+              )}
             </div>
-          ) : null}
+          </section>
         </div>
 
-        {/* COLUNA DIREITA: INFO (alinhada no topo da galeria) */}
-        <div className="flex flex-col justify-start md:sticky md:top-24 h-fit">
-          <h1 className="text-4xl md:text-5xl font-display text-helo-dark leading-tight">
-            {product.title}
-          </h1>
-
-          {product.subtitle ? (
-            <p className="text-helo-text/80 mt-3 font-body text-lg">{product.subtitle}</p>
-          ) : null}
-
-          <div className="mt-6 flex items-end gap-3">
-            <p className="text-helo-dark text-3xl font-display">R$ {formatBRL(product.price)}</p>
-            {product.is_active === false ? (
-              <span className="text-xs px-3 py-1 rounded-full bg-white/70 border border-white/40 text-helo-text/80">
-                Indisponível
-              </span>
-            ) : null}
+        <section className="product-sale-trust mt-10 grid gap-4 bg-white p-5 sm:p-7">
+          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+            <ShieldCheck size={25} className="shrink-0 text-[#d85c7a]" />
+            <div>
+              <p className="text-base font-semibold text-[#43232d]">Compra protegida</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">Pagamento seguro pelo Mercado Pago.</p>
+            </div>
           </div>
+          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+            <Truck size={25} className="shrink-0 text-[#d85c7a]" />
+            <div>
+              <p className="text-base font-semibold text-[#43232d]">Entrega por CEP</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">Opções exibidas antes do pagamento.</p>
+            </div>
+          </div>
+          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+            <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
+            <div>
+              <p className="text-base font-semibold text-[#43232d]">PIX ou cartão</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">Escolha como prefere finalizar.</p>
+            </div>
+          </div>
+        </section>
 
-          <button
-            className="mt-6 px-8 py-4 bg-helo-dark text-white rounded-xl text-lg font-semibold hover:bg-helo-rose transition-all shadow-md hover:shadow-lg disabled:opacity-60"
-            disabled={product.is_active === false}
-            onClick={() =>
-              addToCart({
-                id: product.id,
-                title: product.title,
-                price: Number(product.price || 0),
-                image: mainImage || cover || "",
-              })
-            }
-          >
-            Adicionar ao carrinho
-          </button>
-
-          {/* DESCRIÇÃO */}
-          <div className="mt-10">
-            <h2 className="text-2xl font-display text-helo-dark mb-3">Descrição</h2>
-            <p className="text-helo-text/90 leading-relaxed">
+        <section className="product-sale-details mt-10 grid gap-6">
+          <article className="product-sale-description bg-white p-7 sm:p-9">
+            <h2 className="font-display text-3xl text-[#43232d]">Sobre o produto</h2>
+            <p className="mt-5 whitespace-pre-line text-base leading-8 text-zinc-600">
               {product.description || "Sem descrição cadastrada."}
             </p>
-          </div>
-        </div>
-      </div>
+          </article>
+          {feelingList.length > 0 && (
+            <article className="product-sale-feelings bg-white p-7 sm:p-9">
+              <h2 className="font-display text-3xl text-[#43232d]">O que você vai sentir</h2>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                {feelingList.map((feeling) => (
+                  <div
+                    key={feeling}
+                    className="flex gap-3 rounded-2xl bg-[#fff7f9] px-4 py-3.5 text-sm leading-6 text-zinc-700"
+                  >
+                    <Sparkles size={16} className="mt-1 shrink-0 text-[#d85c7a]" />
+                    {feeling}
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
+
+          {product.dicas_uso && (
+            <article className="product-sale-usage p-7 sm:p-9">
+              <h2 className="font-display text-3xl text-[#43232d]">Como usar</h2>
+              <p className="mt-5 max-w-4xl whitespace-pre-line text-base leading-8 text-zinc-600">
+                {product.dicas_uso}
+              </p>
+            </article>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

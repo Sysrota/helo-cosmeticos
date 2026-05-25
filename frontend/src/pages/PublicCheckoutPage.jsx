@@ -1,1845 +1,950 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-
 import {
-  useParams,
-} from "react-router-dom";
-
-import {
+  ArrowLeft,
   Check,
   CheckCircle2,
   ChevronDown,
+  CreditCard,
   Lock,
   ShieldCheck,
   Sparkles,
   Truck,
 } from "lucide-react";
-
-import { api }
-  from "../services/api";
-
-import { socket }
-  from "../websocket/socket";
-
 import {
-  OrderPixCard,
-} from "../components/orders/OrderPixCard";
-
-import {
-  OrderCreditCardCard,
-} from "../components/orders/OrderCreditCardCard";
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import { OrderCreditCardCard } from "../components/orders/OrderCreditCardCard";
+import { OrderPixCard } from "../components/orders/OrderPixCard";
+import { useCart } from "../context/CartContext";
+import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
+import { socket } from "../websocket/socket";
+
+const steps = [
+  { id: 1, label: "Dados" },
+  { id: 2, label: "Entrega" },
+  { id: 3, label: "Pagamento" },
+];
+
+const emptyCustomer = {
+  email: "",
+  name: "",
+  phone: "",
+  cpf: "",
+  zipcode: "",
+  street: "",
+  number: "",
+  complement: "",
+  district: "",
+  city: "",
+  state: "",
+};
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function InputField({
+  className = "",
+  error,
+  label,
+  ...props
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-2 block text-[13px] font-medium text-zinc-700">
+        {label}
+      </span>
+      <input
+        {...props}
+        className={`
+          h-14 w-full rounded-2xl border bg-white px-4 text-sm text-zinc-900
+          outline-none transition
+          ${error
+            ? "border-red-300 ring-2 ring-red-50"
+            : "border-[#eadfe3] focus:border-[#d85c7a] focus:ring-4 focus:ring-[#fbe9ee]"}
+        `}
+      />
+      {error && (
+        <span className="mt-1.5 block text-xs text-red-600">
+          {error}
+        </span>
+      )}
+    </label>
+  );
+}
 
 export default function PublicCheckoutPage() {
+  const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { cart, clearCart } = useCart();
+  const directPurchaseItem =
+    location.state?.directPurchaseItem || null;
 
-  
-
-  const { id } =
-    useParams();
-
-  // =====================
-  // STATES
-  // =====================
-
-  const [step,
-    setStep] =
-      useState(1);
-
-  const [loading,
-    setLoading] =
-      useState(true);
-
-  const [order,
-    setOrder] =
-      useState(null);
-
-  const [paymentApproved,
-    setPaymentApproved] =
-      useState(false);
-
-  const [resumeOpen,
-    setResumeOpen] =
-      useState(false);
-
-  // =====================
-  // CUSTOMER
-  // =====================
-
-  const [customer,
-    setCustomer] =
-      useState({
-
-        email: "",
-        name: "",
-        phone: "",
-        cpf: "",
-
-        zipcode: "",
-        street: "",
-        number: "",
-        district: "",
-        city: "",
-        state: "",
-        complement: "",
-      });
-
-  // =====================
-  // SHIPPING
-  // =====================
-
-  const [shippingOptions,
-    setShippingOptions] =
-      useState([]);
-
-  const [selectedShipping,
-    setSelectedShipping] =
-      useState(null);
-
-  const [loadingShipping,
-    setLoadingShipping] =
-      useState(false);
-
-  // =====================
-  // PAYMENT
-  // =====================
-
-  const [selectedPaymentMethod,
-    setSelectedPaymentMethod] =
-      useState("pix");
-
-  const [pixData,
-    setPixData] =
-      useState(null);
-
-  const [loadingPix,
-    setLoadingPix] =
-      useState(false);
-
-  // =====================
-  // LOAD ORDER
-  // =====================
-
-
-  async function loadOrder() {
-
-    try {
-
-      const { data } =
-        await api.get(
-          `/orders/${id}`
-        );
-
-        console.log(data)
-
-      setOrder(data);
-
-    } catch (error) {
-
-      console.log(error);
-
-    } finally {
-
-      setLoading(false);
-    }
-  }
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(Boolean(id));
+  const [saving, setSaving] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [paymentApproved, setPaymentApproved] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
+  const [customer, setCustomer] = useState(emptyCustomer);
+  const [errors, setErrors] = useState({});
+  const [notice, setNotice] = useState("");
+  const [loadingAddress, setLoadingAddress] = useState(false);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [shippingOptions, setShippingOptions] = useState([]);
+  const [selectedShipping, setSelectedShipping] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
+  const [pixData, setPixData] = useState(null);
+  const [loadingPix, setLoadingPix] = useState(false);
+  const addressRequestRef = useRef(0);
 
   useEffect(() => {
-
-    loadOrder();
-
-  }, [id]);
-
-  // =====================
-  // SOCKET
-  // =====================
-
-  useEffect(() => {
-
-    socket.on(
-      "order_updated",
-      (updatedOrder) => {
-
-        if (
-          updatedOrder.id ===
-          Number(id)
-        ) {
-
-          setOrder(
-            updatedOrder
-          );
-
-          if (
-            updatedOrder.payment_status ===
-            "approved"
-          ) {
-
-            setPaymentApproved(
-              true
-            );
-          }
-        }
-      }
-    );
-
-    return () => {
-
-      socket.off(
-        "order_updated"
-      );
-    };
-
-  }, [id]);
-
-  // =====================
-  // TOTALS
-  // =====================
-
-  const subtotal =
-    useMemo(() => {
-
-      if (!order) {
-        return 0;
-      }
-
-      return (
-        order.items?.reduce(
-          (acc, item) => {
-
-            return (
-              acc +
-              (
-                Number(
-                  item.unit_price
-                ) *
-                Number(
-                  item.quantity
-                )
-              )
-            );
-
-          },
-          0
-        ) || 0
-      );
-
-    }, [order]);
-
-  const total =
-    subtotal +
-    Number(
-      selectedShipping?.price || 0
-    );
-
-  // =====================
-  // SHIPPING
-  // =====================
-
-  async function calculateShipping() {
-
-    try {
-
-      setLoadingShipping(
-        true
-      );
-
-      const { data } =
-        await api.post(
-          "/shipping/calculate",
-          {
-            cep:
-              customer.zipcode,
-
-            order_id:
-              order.id,
-          }
-        );
-
-      setShippingOptions(
-        data
-      );
-
-      if (
-        data?.length
-      ) {
-
-        setSelectedShipping(
-          data[0]
-        );
-      }
-
-    } catch (error) {
-
-      console.log(error);
-
-    } finally {
-
-      setLoadingShipping(
-        false
-      );
-    }
-  }
-
-  // =====================
-  // NEXT STEP
-  // =====================
-
-  async function nextStep() {
-
-    if (step === 1) {
-
-      if (
-        !customer.name ||
-        !customer.email ||
-        !customer.phone ||
-        !customer.cpf
-      ) {
-
-        return alert(
-          "Preencha todos os dados."
-        );
-      }
-
-      setStep(2);
-
+    if (
+      !id &&
+      !cart.length &&
+      !directPurchaseItem &&
+      !order &&
+      !saving
+    ) {
+      navigate("/carrinho", { replace: true });
       return;
     }
 
-    if (step === 2) {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
 
-      if (
-        !customer.zipcode ||
-        !customer.street ||
-        !customer.number ||
-        !customer.district ||
-        !customer.city ||
-        !customer.state
-      ) {
+    let active = true;
 
-        return alert(
-          "Preencha o endereço completo."
-        );
+    async function loadOrder() {
+      try {
+        const { data } = await api.get(`/orders/${id}`);
+
+        if (!active) {
+          return;
+        }
+
+        setOrder(data);
+        setCustomer((previous) => ({
+          ...previous,
+          name: data.contact?.name || previous.name,
+          email: data.contact?.email || previous.email,
+          phone: data.contact?.phone || previous.phone,
+          cpf: data.contact?.cpf || previous.cpf,
+        }));
+      } catch {
+        if (active) {
+          setNotice("Não foi possível carregar este pedido.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadOrder();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    cart.length,
+    directPurchaseItem,
+    id,
+    navigate,
+    order,
+    saving,
+  ]);
+
+  useEffect(() => {
+    if (!id) {
+      return undefined;
+    }
+
+    function handleOrderUpdated(updatedOrder) {
+      if (updatedOrder.id !== Number(id)) {
+        return;
       }
 
-      await calculateShipping();
+      setOrder(updatedOrder);
 
-      setStep(3);
+      if (
+        updatedOrder.payment_status === "approved" ||
+        updatedOrder.payment_status === "paid"
+      ) {
+        setPaymentApproved(true);
+      }
+    }
+
+    socket.on("order_updated", handleOrderUpdated);
+
+    return () => {
+      socket.off("order_updated", handleOrderUpdated);
+    };
+  }, [id]);
+
+  const checkoutCart = useMemo(
+    () => directPurchaseItem
+      ? [directPurchaseItem]
+      : cart,
+    [cart, directPurchaseItem]
+  );
+
+  const checkoutItems = useMemo(() => {
+    if (order?.items) {
+      return order.items;
+    }
+
+    return checkoutCart.map((item) => ({
+      quantity: item.quantity || 1,
+      unit_price: item.price,
+      product: {
+        title: item.title,
+        images: item.image ? [{ image_url: item.image }] : [],
+      },
+    }));
+  }, [checkoutCart, order]);
+
+  const subtotal = useMemo(
+    () =>
+      checkoutItems.reduce(
+        (value, item) =>
+          value + Number(item.unit_price) * Number(item.quantity || 1),
+        0
+      ),
+    [checkoutItems]
+  );
+
+  const shippingPrice = Number(selectedShipping?.price || order?.shipping || 0);
+  const total = subtotal + shippingPrice;
+  const pixDiscount =
+    step === 3 &&
+    selectedPaymentMethod === "pix"
+      ? Number((total * 0.05).toFixed(2))
+      : 0;
+  const paymentTotal =
+    Number(
+      (
+        total -
+        pixDiscount
+      ).toFixed(2)
+    );
+
+  function updateCustomer(field, value) {
+    setCustomer((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+    setErrors((previous) => ({
+      ...previous,
+      [field]: "",
+    }));
+    setNotice("");
+  }
+
+  function validatePersonalData() {
+    const nextErrors = {};
+
+    if (!customer.name.trim()) {
+      nextErrors.name = "Informe seu nome completo.";
+    }
+    if (!/\S+@\S+\.\S+/.test(customer.email)) {
+      nextErrors.email = "Informe um e-mail válido.";
+    }
+    if (Formatter.onlyNumbers(customer.phone).length < 10) {
+      nextErrors.phone = "Informe um celular válido.";
+    }
+    if (Formatter.onlyNumbers(customer.cpf).length !== 11) {
+      nextErrors.cpf = "Informe os 11 digitos do CPF.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  function validateAddress() {
+    const nextErrors = {};
+
+    if (Formatter.onlyNumbers(customer.zipcode).length !== 8) {
+      nextErrors.zipcode = "Informe um CEP válido.";
+    }
+    if (!customer.street.trim()) {
+      nextErrors.street = "Informe o endereço.";
+    }
+    if (!customer.number.trim()) {
+      nextErrors.number = "Informe o número.";
+    }
+    if (!customer.district.trim()) {
+      nextErrors.district = "Informe o bairro.";
+    }
+    if (!customer.city.trim()) {
+      nextErrors.city = "Informe a cidade.";
+    }
+    if (!customer.state.trim()) {
+      nextErrors.state = "Informe a UF.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  async function loadAddressByZipcode(zipcode, requestId) {
+    try {
+      setLoadingAddress(true);
+      const { data } = await api.get(
+        `/shipping/address/${Formatter.onlyNumbers(zipcode)}`
+      );
+
+      if (addressRequestRef.current !== requestId) {
+        return;
+      }
+
+      setCustomer((previous) => ({
+        ...previous,
+        zipcode: data.zipcode || previous.zipcode,
+        street: data.street || "",
+        district: data.district || "",
+        city: data.city || "",
+        state: data.state || "",
+      }));
+      setErrors((previous) => ({
+        ...previous,
+        zipcode: "",
+        street: "",
+        district: "",
+        city: "",
+        state: "",
+      }));
+    } catch {
+      if (addressRequestRef.current === requestId) {
+        setErrors((previous) => ({
+          ...previous,
+          zipcode: "CEP não encontrado.",
+        }));
+      }
+    } finally {
+      if (addressRequestRef.current === requestId) {
+        setLoadingAddress(false);
+      }
     }
   }
 
-  // =====================
-  // PIX
-  // =====================
+  function handleZipcodeChange(value) {
+    const zipcode = Formatter.cep(
+      Formatter.onlyNumbers(value).slice(0, 8)
+    );
+    const requestId = addressRequestRef.current + 1;
 
-  async function generatePix() {
+    addressRequestRef.current = requestId;
+    setShippingOptions([]);
+    setSelectedShipping(null);
+    setCustomer((previous) => ({
+      ...previous,
+      zipcode,
+      street: "",
+      district: "",
+      city: "",
+      state: "",
+    }));
+    setErrors((previous) => ({
+      ...previous,
+      zipcode: "",
+      street: "",
+      district: "",
+      city: "",
+      state: "",
+    }));
+
+    if (Formatter.onlyNumbers(zipcode).length === 8) {
+      loadAddressByZipcode(zipcode, requestId);
+    } else {
+      setLoadingAddress(false);
+    }
+  }
+
+  async function createOrderFromCart() {
+    const { data } = await api.post("/checkout", {
+      customer,
+      cart: checkoutCart,
+    });
+
+    setOrder(data);
+
+    if (!directPurchaseItem) {
+      clearCart();
+    }
+
+    navigate(`/checkout/${data.id}`, { replace: true });
+    return data;
+  }
+
+  async function continueFromPersonalData() {
+    if (!validatePersonalData()) {
+      setNotice("Revise os dados indicados para continuar.");
+      return;
+    }
 
     try {
+      setSaving(true);
 
-      setLoadingPix(
-        true
-      );
+      if (!order) {
+        await createOrderFromCart();
+      }
 
-      const { data } =
-        await api.post(
-          "/payment/pix",
-          {
-            order_id:
-              order.id,
-          }
-        );
-
-      setPixData(data);
-
-    } catch (error) {
-
-      alert(
-        "Erro ao gerar PIX"
-      );
-
+      setNotice("");
+      setStep(2);
+    } catch {
+      setNotice("Não foi possível iniciar seu pedido. Tente novamente.");
     } finally {
-
-      setLoadingPix(
-        false
-      );
+      setSaving(false);
     }
   }
 
-  // =====================
-  // LOADING
-  // =====================
+  async function calculateShipping() {
+    if (!validateAddress() || !order) {
+      setNotice("Preencha o endereço completo para consultar a entrega.");
+      return;
+    }
 
-  if (
-    loading ||
-    !order
-  ) {
+    try {
+      setLoadingShipping(true);
+      setNotice("");
+      const { data } = await api.post("/shipping/calculate", {
+        cep: customer.zipcode,
+        order_id: order.id,
+      });
 
+      setShippingOptions(data);
+      setSelectedShipping(null);
+    } catch {
+      setNotice("Não foi possível calcular a entrega para este CEP.");
+    } finally {
+      setLoadingShipping(false);
+    }
+  }
+
+  async function continueFromDelivery() {
+    if (!selectedShipping) {
+      setNotice("Selecione uma opção de entrega para continuar.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setNotice("");
+      const { data } = await api.put(`/checkout/${order.id}/delivery`, {
+        customer,
+        shipping_method: selectedShipping.name,
+      });
+
+      setOrder(data);
+      setStep(3);
+    } catch {
+      setNotice("Não foi possível salvar a entrega. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function generatePix() {
+    try {
+      setLoadingPix(true);
+      setNotice("");
+      const { data } = await api.post("/payment/pix", {
+        order_id: order.id,
+      });
+      setPixData(data);
+    } catch {
+      setNotice("Não foi possível gerar o PIX.");
+    } finally {
+      setLoadingPix(false);
+    }
+  }
+
+  function previousStep() {
+    setNotice("");
+    setErrors({});
+    setStep((current) => Math.max(1, current - 1));
+  }
+
+  if (loading || (!order && id)) {
     return (
-
-      <div className="
-        min-h-screen
-        flex
-        items-center
-        justify-center
-        bg-[#f6f3f4]
-      ">
-
-        <div className="
-          text-sm
-          text-zinc-500
-        ">
-          Carregando checkout...
-        </div>
-
+      <div className="flex min-h-screen items-center justify-center bg-[#fbf8f8]">
+        <p className="text-sm text-zinc-500">Carregando checkout seguro...</p>
       </div>
     );
   }
 
   return (
-
-    <div className="
-      min-h-screen
-      bg-[#f6f3f4]
-    ">
-
-      {/* HEADER */}
-
-      <div className="
-        h-[68px]
-        border-b
-        border-[#e8dfe2]
-        bg-white
-      ">
-
-        <div className="
-          max-w-[1280px]
-          mx-auto
-          h-full
-          px-4
-          lg:px-6
-          flex
-          items-center
-          justify-between
-        ">
-
-          <div className="
-            flex
-            items-center
-            gap-3
-          ">
-
-            <div className="
-              w-9
-              h-9
-              rounded-xl
-              bg-gradient-to-br
-              from-[#d85c7a]
-              to-[#f3b7c5]
-              flex
-              items-center
-              justify-center
-              text-white
-            ">
-
-              <Sparkles size={14} />
-
+    <div className="min-h-screen bg-[#fbf8f8] text-zinc-900">
+      <header className="border-b border-[#eee2e6] bg-white">
+        <div className="mx-auto flex h-[76px] max-w-[1200px] items-center justify-between px-5 lg:px-8">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#d85c7a] text-white">
+              <Sparkles size={17} />
             </div>
-
             <div>
-
-              <div className="
-                text-[15px]
-                font-semibold
-                text-zinc-900
-              ">
-                Helo Cosméticos
-              </div>
-
-              <div className="
-                text-xs
-                text-zinc-500
-              ">
-                Checkout seguro
-              </div>
-
+              <p className="font-display text-xl text-[#713a49]">
+                Helô Cosméticos
+              </p>
+              <p className="text-xs text-zinc-500">Checkout seguro</p>
             </div>
-
+          </Link>
+          <div className="hidden items-center gap-5 text-xs text-zinc-500 sm:flex">
+            <Link to="/carrinho" className="flex items-center gap-1.5 hover:text-[#d85c7a]">
+              <ArrowLeft size={14} />
+              Voltar ao carrinho
+            </Link>
+            <span className="h-4 w-px bg-[#eee2e6]" />
+            <span className="flex items-center gap-1.5">
+              <Lock size={14} className="text-[#d85c7a]" />
+              Ambiente protegido
+            </span>
           </div>
-
-          <div className="
-            hidden
-            lg:flex
-            items-center
-            gap-2
-            text-xs
-            text-zinc-500
-          ">
-
-            <ShieldCheck
-              size={14}
-              className="
-                text-[#d85c7a]
-              "
-            />
-
-            Ambiente protegido
-
-          </div>
-
         </div>
+      </header>
 
-      </div>
-
-      {/* CONTENT */}
-
-      <div className="
-        max-w-[1280px]
-        mx-auto
-        px-4
-        lg:px-6
-        py-5
-      ">
-
-        {/* SUCCESS */}
-
-        {paymentApproved && (
-
-          <div className="
-            mb-4
-            bg-green-500
-            text-white
-            rounded-2xl
-            p-4
-          ">
-
-            <div className="
-              flex
-              items-center
-              gap-3
-            ">
-
-              <CheckCircle2
-                size={22}
-              />
-
-              <div>
-
-                <div className="
-                  text-sm
-                  font-semibold
-                ">
-                  Pagamento aprovado
-                </div>
-
-                <div className="
-                  text-xs
-                  text-white/90
-                  mt-1
-                ">
-                  Seu pedido foi confirmado.
-                </div>
-
-              </div>
-
+      {paymentApproved && (
+        <div className="mx-auto mt-6 max-w-[1200px] px-5 lg:px-8">
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+            <CheckCircle2 size={20} />
+            <div>
+              <p className="text-sm font-semibold">Pagamento aprovado</p>
+              <p className="text-xs">Seu pedido foi confirmado com sucesso.</p>
             </div>
-
           </div>
-        )}
+        </div>
+      )}
 
-        {/* MOBILE SUMMARY */}
-
+      <main className="mx-auto max-w-[1200px] px-5 py-6 lg:px-8 lg:py-10">
         <button
-          onClick={() =>
-            setResumeOpen(
-              !resumeOpen
-            )
-          }
-          className="
-            xl:hidden
-            w-full
-            bg-white
-            border
-            border-[#e7dfe2]
-            rounded-xl
-            p-4
-            flex
-            items-center
-            justify-between
-            mb-4
-          "
+          onClick={() => setResumeOpen((open) => !open)}
+          className="mb-5 flex w-full items-center justify-between rounded-2xl border border-[#eee2e6] bg-white p-4 lg:hidden"
         >
-
-          <div className="
-            text-left
-          ">
-
-            <div className="
-              text-xs
-              text-zinc-500
-            ">
-              Resumo do pedido
-            </div>
-
-            <div className="
-              text-lg
-              font-bold
-              text-zinc-900
-              mt-1
-            ">
-
-              R$ {total.toFixed(2)}
-
-            </div>
-
-          </div>
-
-          <ChevronDown size={18} />
-
+          <span className="text-left">
+            <span className="block text-xs text-zinc-500">Resumo do pedido</span>
+            <span className="mt-1 block text-xl font-semibold">{formatMoney(paymentTotal)}</span>
+          </span>
+          <ChevronDown
+            size={18}
+            className={`transition-transform ${resumeOpen ? "rotate-180" : ""}`}
+          />
         </button>
 
-        {/* GRID */}
+        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
+          <section className="rounded-[28px] border border-[#eee2e6] bg-white p-5 shadow-[0_12px_40px_rgba(68,31,42,0.04)] sm:p-8 lg:p-10">
+            <div className="mb-9 flex items-center justify-between gap-2">
+              {steps.map((item, index) => {
+                const active = step >= item.id;
+                const current = step === item.id;
 
-        <div className="
-          grid
-          grid-cols-1
-          xl:grid-cols-[1fr_400px]
-          rounded-[24px]
-          overflow-hidden
-          border
-          border-[#e7dfe2]
-          bg-white
-        ">
-
-          {/* LEFT */}
-
-          <div className="
-            p-5
-            lg:p-6
-          ">
-
-            {/* STEPS */}
-
-            <div className="
-              flex
-              items-center
-              justify-center
-              mb-7
-            ">
-
-              <div className="
-                flex
-                items-center
-                gap-3
-              ">
-
-                {[1,2,3].map(
-                  (item) => {
-
-                    const active =
-                      step >= item;
-
-                    return (
-
-                      <div
-                        key={item}
-                        className="
-                          flex
-                          items-center
-                          gap-3
-                        "
-                      >
-
-                        <div className={`
-                          w-8
-                          h-8
-                          rounded-full
-                          flex
-                          items-center
-                          justify-center
-                          text-xs
-                          font-bold
-
-                          ${
-                            active
-
-                              ? `
-                                bg-[#d85c7a]
-                                text-white
-                              `
-
-                              : `
-                                bg-[#f2edf0]
-                                text-zinc-500
-                              `
-                          }
-                        `}>
-
-                          {
-                            step > item
-
-                              ? <Check size={14} />
-
-                              : item
-                          }
-
-                        </div>
-
-                        {
-                          item !== 3 && (
-
-                            <div className={`
-                              w-10
-                              h-[2px]
-
-                              ${
-                                step > item
-
-                                  ? `
-                                    bg-[#d85c7a]
-                                  `
-
-                                  : `
-                                    bg-[#ebe3e6]
-                                  `
-                              }
-                            `} />
-                          )
-                        }
-
-                      </div>
-                    );
-                  }
-                )}
-
-              </div>
-
+                return (
+                  <div key={item.id} className="flex flex-1 items-center last:flex-none">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`
+                        flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold
+                        ${active ? "bg-[#d85c7a] text-white" : "bg-[#f5eff1] text-zinc-400"}
+                      `}>
+                        {step > item.id ? <Check size={16} /> : item.id}
+                      </span>
+                      <span className={`hidden text-sm sm:block ${current ? "font-semibold text-zinc-900" : "text-zinc-500"}`}>
+                        {item.label}
+                      </span>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <span className={`mx-3 h-px flex-1 ${step > item.id ? "bg-[#d85c7a]" : "bg-[#eee2e6]"}`} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* STEP 1 */}
+            {notice && (
+              <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {notice}
+              </div>
+            )}
 
             {step === 1 && (
-              <div>
-
-                <h2 className="
-                  text-xl
-                  font-semibold
-                  text-zinc-900
-                ">
-                  Informações pessoais
-                </h2>
-
-                <p className="
-                  mt-1
-                  text-sm
-                  text-zinc-500
-                ">
-                  Dados necessários para o envio.
+              <>
+                <h1 className="font-display text-3xl text-[#43232d]">
+                  Seus dados
+                </h1>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Precisamos destas informações para preparar sua entrega.
                 </p>
-
-                <div className="
-                  mt-5
-                  grid
-                  grid-cols-1
-                  gap-1
-                ">
-
-                  <input
-                    placeholder="Nome completo"
+                <div className="mt-7 grid gap-5 sm:grid-cols-2">
+                  <InputField
+                    className="sm:col-span-2"
+                    label="Nome completo"
                     value={customer.name}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        name:
-                          e.target.value,
-                      })
-                    }
-                    className="
-                      h-12
-                      rounded-xl
-                      border
-                      border-[#e7dfe2]
-                      px-4
-                      text-sm
-                      outline-none
-                    "
+                    error={errors.name}
+                    onChange={(event) => updateCustomer("name", event.target.value)}
                   />
-
-                  <input
-                    placeholder="E-mail"
+                  <InputField
+                    className="sm:col-span-2"
+                    label="E-mail"
+                    type="email"
                     value={customer.email}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        email:
-                          e.target.value,
-                      })
-                    }
-                    className="
-                      h-12
-                      rounded-xl
-                      border
-                      border-[#e7dfe2]
-                      px-4
-                      text-sm
-                      outline-none
-                    "
+                    error={errors.email}
+                    onChange={(event) => updateCustomer("email", event.target.value)}
                   />
-
-
-                  <div className="
-                    grid
-                    grid-cols-2
-                    gap-3
-                  ">
-
-                    <input
-                      placeholder="Celular"
-                      value={Formatter.telefone(customer.phone)}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          phone:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                        outline-none
-                      "
-                    />
-
-                    <input
-                      placeholder="CPF"
-                      value={Formatter.cpfCnpj(customer.cpf)}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          cpf:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                        outline-none
-                      "
-                    />
-
-                  </div>
-
+                  <InputField
+                    label="Celular"
+                    value={Formatter.telefone(customer.phone)}
+                    error={errors.phone}
+                    onChange={(event) => updateCustomer("phone", event.target.value)}
+                  />
+                  <InputField
+                    label="CPF"
+                    value={Formatter.cpfCnpj(customer.cpf)}
+                    error={errors.cpf}
+                    onChange={(event) => updateCustomer("cpf", event.target.value)}
+                  />
                 </div>
-
-              </div>
+              </>
             )}
-
-            {/* STEP 2 */}
 
             {step === 2 && (
-
-              <div>
-
-                <h2 className="
-                  text-xl
-                  font-semibold
-                  text-zinc-900
-                ">
-                  Endereço
-                </h2>
-
-                <p className="
-                  mt-1
-                  text-sm
-                  text-zinc-500
-                ">
-                  Informe o local da entrega.
-                </p>
-
-                <div className="
-                  mt-5
-                  grid
-                  grid-cols-1
-                  gap-3
-                ">
-
-                  <input
-                    placeholder="CEP"
-                    value={customer.zipcode}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        zipcode:
-                          e.target.value,
-                      })
-                    }
-                    className="
-                      h-12
-                      rounded-xl
-                      border
-                      border-[#e7dfe2]
-                      px-4
-                      text-sm
-                    "
-                  />
-
-                  <input
-                    placeholder="Rua"
-                    value={customer.street}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        street:
-                          e.target.value,
-                      })
-                    }
-                    className="
-                      h-12
-                      rounded-xl
-                      border
-                      border-[#e7dfe2]
-                      px-4
-                      text-sm
-                    "
-                  />
-
-                  <div className="
-                    grid
-                    grid-cols-2
-                    gap-3
-                  ">
-
-                    <input
-                      placeholder="Número"
-                      value={customer.number}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          number:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                      "
-                    />
-
-                    <input
-                      placeholder="Complemento"
-                      value={customer.complement}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          complement:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                      "
-                    />
-
+              <>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="font-display text-3xl text-[#43232d]">
+                      Entrega
+                    </h1>
+                    <p className="mt-2 text-sm text-zinc-500">
+                      Informe o CEP e escolha a melhor forma de receber.
+                    </p>
                   </div>
-
-                  <input
-                    placeholder="Bairro"
-                    value={customer.district}
-                    onChange={(e) =>
-                      setCustomer({
-                        ...customer,
-                        district:
-                          e.target.value,
-                      })
-                    }
-                    className="
-                      h-12
-                      rounded-xl
-                      border
-                      border-[#e7dfe2]
-                      px-4
-                      text-sm
-                    "
-                  />
-
-                  <div className="
-                    grid
-                    grid-cols-2
-                    gap-3
-                  ">
-
-                    <input
-                      placeholder="Cidade"
-                      value={customer.city}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          city:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                      "
-                    />
-
-                    <input
-                      placeholder="Estado"
-                      value={customer.state}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          state:
-                            e.target.value,
-                        })
-                      }
-                      className="
-                        h-12
-                        rounded-xl
-                        border
-                        border-[#e7dfe2]
-                        px-4
-                        text-sm
-                      "
-                    />
-
-                  </div>
-
+                  <button
+                    type="button"
+                    onClick={previousStep}
+                    className="text-sm text-zinc-500 transition hover:text-[#d85c7a]"
+                  >
+                    Voltar
+                  </button>
                 </div>
 
-              </div>
-            )}
+                <div className="mt-7 grid gap-5 sm:grid-cols-2">
+                  <InputField
+                    className="sm:col-span-2"
+                    label="CEP"
+                    value={Formatter.cep(customer.zipcode)}
+                    error={errors.zipcode}
+                    onChange={(event) => handleZipcodeChange(event.target.value)}
+                  />
+                  {loadingAddress && (
+                    <p className="-mt-3 text-xs text-[#d85c7a] sm:col-span-2">
+                      Buscando endereço...
+                    </p>
+                  )}
+                  <InputField
+                    className="sm:col-span-2"
+                    label="Rua"
+                    value={customer.street}
+                    error={errors.street}
+                    onChange={(event) => updateCustomer("street", event.target.value)}
+                  />
+                  <InputField
+                    label="Número"
+                    value={customer.number}
+                    error={errors.number}
+                    onChange={(event) => updateCustomer("number", event.target.value)}
+                  />
+                  <InputField
+                    label="Complemento (opcional)"
+                    value={customer.complement}
+                    onChange={(event) => updateCustomer("complement", event.target.value)}
+                  />
+                  <InputField
+                    className="sm:col-span-2"
+                    label="Bairro"
+                    value={customer.district}
+                    error={errors.district}
+                    onChange={(event) => updateCustomer("district", event.target.value)}
+                  />
+                  <InputField
+                    label="Cidade"
+                    value={customer.city}
+                    error={errors.city}
+                    onChange={(event) => updateCustomer("city", event.target.value)}
+                  />
+                  <InputField
+                    label="UF"
+                    value={customer.state}
+                    error={errors.state}
+                    onChange={(event) => updateCustomer("state", event.target.value.toUpperCase().slice(0, 2))}
+                  />
+                </div>
 
-            {/* STEP 3 */}
+                {shippingOptions.length > 0 && (
+                  <div className="mt-8">
+                    <p className="mb-3 text-sm font-semibold text-zinc-900">
+                      Opções de entrega
+                    </p>
+                    <div className="space-y-3">
+                      {shippingOptions.map((option) => {
+                        const selected = selectedShipping?.name === option.name;
 
-            {step === 3 && (
-
-              <div>
-
-                <h2 className="
-                  text-xl
-                  font-semibold
-                  text-zinc-900
-                ">
-                  Pagamento
-                </h2>
-
-                <p className="
-                  mt-1
-                  text-sm
-                  text-zinc-500
-                ">
-                  Escolha como deseja pagar.
-                </p>
-
-                {/* SHIPPING */}
-
-                {selectedShipping && (
-
-                  <div className="
-                    mt-5
-                    rounded-xl
-                    border
-                    border-[#e7dfe2]
-                    p-4
-                    bg-[#faf7f8]
-                  ">
-
-                    <div className="
-                      flex
-                      items-center
-                      justify-between
-                    ">
-
-                      <div>
-
-                        <div className="
-                          text-sm
-                          font-semibold
-                          text-zinc-900
-                        ">
-                          {selectedShipping.name}
-                        </div>
-
-                        <div className="
-                          mt-1
-                          text-xs
-                          text-zinc-500
-                        ">
-                          Entrega em {selectedShipping.delivery_time} dias úteis
-                        </div>
-
-                      </div>
-
-                      <div className="
-                        text-lg
-                        font-bold
-                        text-[#d85c7a]
-                      ">
-
-                        R$ {
-                          Number(
-                            selectedShipping.price
-                          ).toFixed(2)
-                        }
-
-                      </div>
-
+                        return (
+                          <button
+                            key={`${option.name}-${option.price}`}
+                            type="button"
+                            onClick={() => {
+                              setSelectedShipping(option);
+                              setNotice("");
+                            }}
+                            className={`
+                              flex w-full items-center justify-between rounded-2xl border p-4 text-left transition
+                              ${selected
+                                ? "border-[#d85c7a] bg-[#fff5f7]"
+                                : "border-[#eee2e6] bg-white hover:border-[#e7bdc8]"}
+                            `}
+                          >
+                            <span className="flex items-center gap-3">
+                              <span className={`
+                                flex h-5 w-5 items-center justify-center rounded-full border
+                                ${selected ? "border-[#d85c7a]" : "border-zinc-300"}
+                              `}>
+                                {selected && <span className="h-2.5 w-2.5 rounded-full bg-[#d85c7a]" />}
+                              </span>
+                              <span>
+                                <span className="block text-sm font-semibold text-zinc-900">
+                                  {option.name}
+                                </span>
+                                <span className="block text-xs text-zinc-500">
+                                  {option.deadline}
+                                </span>
+                              </span>
+                            </span>
+                            <span className="text-sm font-semibold text-[#b74662]">
+                              {formatMoney(option.price)}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-
                   </div>
                 )}
-
-                {/* UPSELL */}
-
-                <div className="
-                  mt-5
-                  rounded-xl
-                  border
-                  border-[#f2dbe2]
-                  bg-[#fff8fa]
-                  p-4
-                ">
-
-                  <div className="
-                    text-sm
-                    font-semibold
-                    text-zinc-900
-                  ">
-                    Complete sua rotina ✨
-                  </div>
-
-                  <div className="
-                    mt-1
-                    text-xs
-                    text-zinc-500
-                  ">
-                    Aproveite antes de finalizar.
-                  </div>
-
-                  <div className="
-                    mt-4
-                    grid
-                    grid-cols-2
-                    gap-3
-                  ">
-
-                    <button className="
-                      border
-                      border-[#e7dfe2]
-                      bg-white
-                      rounded-xl
-                      p-3
-                      text-left
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                      ">
-                        Máscara Capilar
-                      </div>
-
-                      <div className="
-                        mt-1
-                        text-xs
-                        text-zinc-500
-                      ">
-                        Hidratação intensa
-                      </div>
-
-                      <div className="
-                        mt-2
-                        text-base
-                        font-bold
-                        text-[#d85c7a]
-                      ">
-                        + R$ 39,90
-                      </div>
-
-                    </button>
-
-                    <button className="
-                      border
-                      border-[#e7dfe2]
-                      bg-white
-                      rounded-xl
-                      p-3
-                      text-left
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                      ">
-                        Sérum Facial
-                      </div>
-
-                      <div className="
-                        mt-1
-                        text-xs
-                        text-zinc-500
-                      ">
-                        Pele luminosa
-                      </div>
-
-                      <div className="
-                        mt-2
-                        text-base
-                        font-bold
-                        text-[#d85c7a]
-                      ">
-                        + R$ 49,90
-                      </div>
-
-                    </button>
-
-                  </div>
-
-                </div>
-
-                {/* METHODS */}
-
-                <div className="
-                  mt-5
-                  grid
-                  grid-cols-2
-                  gap-3
-                ">
-
-                  <button
-                    onClick={() =>
-                      setSelectedPaymentMethod(
-                        "pix"
-                      )
-                    }
-                    className={`
-                      rounded-xl
-                      border
-                      p-4
-                      text-left
-
-                      ${
-                        selectedPaymentMethod ===
-                        "pix"
-
-                          ? `
-                            border-[#d85c7a]
-                            bg-[#fff4f7]
-                          `
-
-                          : `
-                            border-[#e7dfe2]
-                          `
-                      }
-                    `}
-                  >
-
-                    <div className="
-                      text-sm
-                      font-semibold
-                      text-zinc-900
-                    ">
-                      PIX
-                    </div>
-
-                    <div className="
-                      mt-1
-                      text-xs
-                      text-zinc-500
-                    ">
-                      Aprovação imediata
-                    </div>
-
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      setSelectedPaymentMethod(
-                        "credit_card"
-                      )
-                    }
-                    className={`
-                      rounded-xl
-                      border
-                      p-4
-                      text-left
-
-                      ${
-                        selectedPaymentMethod ===
-                        "credit_card"
-
-                          ? `
-                            border-[#d85c7a]
-                            bg-[#fff4f7]
-                          `
-
-                          : `
-                            border-[#e7dfe2]
-                          `
-                      }
-                    `}
-                  >
-
-                    <div className="
-                      text-sm
-                      font-semibold
-                      text-zinc-900
-                    ">
-                      Cartão
-                    </div>
-
-                    <div className="
-                      mt-1
-                      text-xs
-                      text-zinc-500
-                    ">
-                      Em até 12x
-                    </div>
-
-                  </button>
-
-                </div>
-
-                {/* PAYMENT */}
-
-                <div className="
-                  mt-5
-                ">
-
-                  {
-                    selectedPaymentMethod ===
-                    "pix" && (
-
-                      <OrderPixCard
-                        generatePix={
-                          generatePix
-                        }
-
-                        loadingPix={
-                          loadingPix
-                        }
-
-                        pixData={
-                          pixData
-                        }
-
-                        order={
-                          order
-                        }
-                      />
-                    )
-                  }
-
-                  {
-                    selectedPaymentMethod ===
-                    "credit_card" && (
-
-                      <OrderCreditCardCard
-                        order={order}
-                      />
-                    )
-                  }
-
-                </div>
-
-              </div>
+              </>
             )}
 
-            {/* ACTION */}
+            {step === 3 && (
+              <>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="font-display text-3xl text-[#43232d]">
+                      Pagamento
+                    </h1>
+                    <p className="mt-2 text-sm text-zinc-500">
+                      Escolha a forma de pagamento mais conveniente.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={previousStep}
+                    className="text-sm text-zinc-500 transition hover:text-[#d85c7a]"
+                  >
+                    Voltar
+                  </button>
+                </div>
+
+                <div className="mt-7 rounded-2xl border border-[#eee2e6] bg-[#fcf9fa] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      <span className="block text-sm font-semibold">{selectedShipping?.name}</span>
+                      <span className="block text-xs text-zinc-500">{selectedShipping?.deadline}</span>
+                    </span>
+                    <span className="text-sm font-semibold text-[#b74662]">
+                      {formatMoney(selectedShipping?.price)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod("pix")}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      selectedPaymentMethod === "pix"
+                        ? "border-[#d85c7a] bg-[#fff5f7]"
+                        : "border-[#eee2e6]"
+                    }`}
+                  >
+                    <Sparkles size={17} className="mb-3 text-[#d85c7a]" />
+                    <p className="text-sm font-semibold">PIX</p>
+                    <p className="mt-1 text-xs text-zinc-500">5% de desconto</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod("credit_card")}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      selectedPaymentMethod === "credit_card"
+                        ? "border-[#d85c7a] bg-[#fff5f7]"
+                        : "border-[#eee2e6]"
+                    }`}
+                  >
+                    <CreditCard size={17} className="mb-3 text-[#d85c7a]" />
+                    <p className="text-sm font-semibold">Cartão</p>
+                    <p className="mt-1 text-xs text-zinc-500">Pague parcelado</p>
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  {selectedPaymentMethod === "pix" && (
+                    <OrderPixCard
+                      generatePix={generatePix}
+                      loadingPix={loadingPix}
+                      pixData={pixData}
+                      order={order}
+                      pixDiscount={pixDiscount}
+                      pixTotal={paymentTotal}
+                    />
+                  )}
+                  {selectedPaymentMethod === "credit_card" && (
+                    <OrderCreditCardCard
+                      order={order}
+                      initialCustomer={customer}
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
             {step < 3 && (
-
-              <button
-                onClick={nextStep}
-                className="
-                  mt-6
-                  w-full
-                  h-12
-                  rounded-xl
-                  bg-[#d85c7a]
-                  text-white
-                  text-sm
-                  font-semibold
-                  hover:opacity-90
-                "
-              >
-
-                Continuar
-
-              </button>
-            )}
-
-          </div>
-
-          {/* RIGHT */}
-
-          <div className={`
-            bg-[#faf7f8]
-            border-l
-            border-[#e7dfe2]
-            p-5
-
-            ${
-              resumeOpen
-
-                ? "block"
-
-                : "hidden xl:block"
-            }
-          `}>
-
-            <div className="
-              space-y-4
-            ">
-
-              {order.items?.map(
-                (
-                  item,
-                  index
-                ) => (
-
-                  <div
-                    key={index}
-                    className="
-                      flex
-                      gap-3
-                    "
+              <div className="mt-8">
+                {step === 1 && (
+                  <button
+                    type="button"
+                    onClick={continueFromPersonalData}
+                    disabled={saving}
+                    className="h-14 w-full rounded-2xl bg-[#d85c7a] text-sm font-semibold text-white transition hover:bg-[#c9506d] disabled:opacity-50"
                   >
+                    {saving ? "Preparando pedido..." : "Continuar para entrega"}
+                  </button>
+                )}
+                {step === 2 && shippingOptions.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={calculateShipping}
+                    disabled={loadingAddress || loadingShipping}
+                    className="h-14 w-full rounded-2xl bg-[#d85c7a] text-sm font-semibold text-white transition hover:bg-[#c9506d] disabled:opacity-50"
+                  >
+                    {loadingShipping ? "Consultando entrega..." : "Ver opções de entrega"}
+                  </button>
+                )}
+                {step === 2 && shippingOptions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={continueFromDelivery}
+                    disabled={saving || !selectedShipping}
+                    className="h-14 w-full rounded-2xl bg-[#d85c7a] text-sm font-semibold text-white transition hover:bg-[#c9506d] disabled:opacity-50"
+                  >
+                    {saving ? "Salvando entrega..." : "Continuar para pagamento"}
+                  </button>
+                )}
+                <p className="mt-3 text-center text-xs text-zinc-500">
+                  Seus dados são protegidos e usados apenas para concluir a compra.
+                </p>
+              </div>
+            )}
+          </section>
 
-                    <div className="
-                      relative
-                      w-20
-                      h-20
-                      rounded-2xl
-                      overflow-hidden
-                      bg-white
-                      border
-                      border-[#e7dfe2]
-                      shrink-0
-                    ">
-                      <img
-                        src={`${import.meta.env.VITE_API_URL}${item.product?.images?.[0]?.image_url}`}
-                        alt={item.product?.title}
-                        className="
-                          w-full
-                          h-full
-                          object-cover
-                        "
-                      />
+          <aside className={`${resumeOpen ? "block" : "hidden"} lg:sticky lg:top-8 lg:block`}>
+            <div className="rounded-[28px] border border-[#eee2e6] bg-white p-5 shadow-[0_12px_40px_rgba(68,31,42,0.04)] sm:p-6">
+              <h2 className="font-display text-2xl text-[#43232d]">
+                Seu pedido
+              </h2>
+              <div className="mt-6 space-y-4">
+                {checkoutItems.map((item, index) => {
+                  const image = item.product?.images?.[0]?.image_url || "";
+                  const imageUrl = image.startsWith("http")
+                    ? image
+                    : `${import.meta.env.VITE_API_URL}${image}`;
 
-
+                  return (
+                    <div key={`${item.product?.title}-${index}`} className="flex gap-4">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee2e6] bg-[#fcf9fa]">
+                        {image && (
+                          <img
+                            src={imageUrl}
+                            alt={item.product?.title}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold leading-snug text-zinc-900">
+                          {item.product?.title}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Quantidade: {item.quantity}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold">
+                          {formatMoney(Number(item.unit_price) * Number(item.quantity || 1))}
+                        </p>
+                      </div>
                     </div>
-
-                    
-
-                    <div className="
-                      flex-1
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                        leading-snug
-                      ">
-
-                        {
-                          item.product
-                            ?.title
-                        }
-
-                      </div>
-
-                      <div className="
-                        mt-1
-                        text-xs
-                        text-zinc-500
-                      ">
-
-                        Unidade: R$ {
-                          Number(
-                            item.unit_price
-                          ).toFixed(2)
-                        }
-
-                      </div>
-
-                      <div className="
-                        mt-2
-                        text-lg
-                        font-bold
-                        text-zinc-900
-                      ">
-
-                        R$ {
-                          (
-                            Number(
-                              item.unit_price
-                            ) *
-                            Number(
-                              item.quantity
-                            )
-                          ).toFixed(2)
-                        }
-
-                      </div>
-
-                    </div>
-
-                  </div>
-                )
-              )}
-
-            </div>
-
-            {/* TOTAL */}
-
-            <div className="
-              mt-6
-              pt-6
-              border-t
-              border-[#e7dfe2]
-            ">
-
-              <div className="
-                space-y-2
-              ">
-
-                <div className="
-                  flex
-                  justify-between
-                  text-sm
-                  text-zinc-600
-                ">
-
-                  <span>
-                    Subtotal
-                  </span>
-
-                  <span>
-                    R$ {subtotal.toFixed(2)}
-                  </span>
-
-                </div>
-
-                <div className="
-                  flex
-                  justify-between
-                  text-sm
-                  text-zinc-600
-                ">
-
-                  <span>
-                    Frete 
-                  </span>
-
-                  <span>
-
-                    R$ {
-                      Number(
-                        selectedShipping?.price || 0
-                      ).toFixed(2)
-                    }
-
-                  </span>
-
-                </div>
-
+                  );
+                })}
               </div>
 
-              <div className="
-                mt-5
-                pt-5
-                border-t
-                border-[#e7dfe2]
-                flex
-                items-end
-                justify-between
-              ">
-
-                <div>
-
-                  <div className="
-                    text-xs
-                    text-zinc-500
-                  ">
-                    Total
-                  </div>
-
-                  <div className="
-                    mt-1
-                    text-3xl
-                    font-bold
-                    text-zinc-900
-                  ">
-
-                    R$ {total.toFixed(2)}
-
-                  </div>
-
+              <div className="mt-7 space-y-3 border-t border-[#eee2e6] pt-6 text-sm">
+                <div className="flex justify-between text-zinc-600">
+                  <span>Subtotal</span>
+                  <span>{formatMoney(subtotal)}</span>
                 </div>
-
-                <div className="
-                  text-right
-                ">
-
-                  <div className="
-                    text-xs
-                    text-zinc-500
-                  ">
-                    Em até
-                  </div>
-
-                  <div className="
-                    text-sm
-                    font-semibold
-                    text-zinc-900
-                  ">
-                    3x sem juros
-                  </div>
-
+                <div className="flex justify-between text-zinc-600">
+                  <span>Entrega</span>
+                  <span>{selectedShipping || order?.shipping ? formatMoney(shippingPrice) : "A calcular"}</span>
                 </div>
-
+                {pixDiscount > 0 && (
+                  <div className="flex justify-between font-medium text-emerald-700">
+                    <span>Desconto PIX (5%)</span>
+                    <span>- {formatMoney(pixDiscount)}</span>
+                  </div>
+                )}
+                <div className="flex items-end justify-between border-t border-[#eee2e6] pt-5">
+                  <span className="text-sm font-medium">Total</span>
+                  <span className="text-3xl font-semibold text-[#43232d]">
+                    {formatMoney(paymentTotal)}
+                  </span>
+                </div>
               </div>
 
-            </div>
-
-            {/* SECURITY */}
-
-            <div className="
-              mt-6
-              rounded-2xl
-              border
-              border-[#e7dfe2]
-              bg-white
-              p-4
-            ">
-
-              <div className="
-                flex
-                items-start
-                gap-3
-              ">
-                <div>
-                  <div className="
-                    text-lg
-                    font-semibold
-                    text-green-700
-                    text-center
-                  ">
-                    Compra segura
-                  </div>
-
-                {/* TRUST BADGES */}
-
-                <div className="
-                  mt-2
-                  space-y-3
-                ">
-
-                  {/* ITEM */}
-
-                  <div className="
-                    bg-white
-                    border
-                    border-[#e7dfe2]
-                    rounded-xl
-                    px-4
-                    py-3
-                    flex
-                    items-center
-                    gap-3
-                  ">
-                  <div className="
-                    w-10
-                    h-10
-                    rounded-xl
-                    bg-green-100
-                    flex
-                    items-center
-                    justify-center
-                    text-green-600
-                  ">
-                    <ShieldCheck size={16} />
-                  </div>
-
-                    <div className="
-                      flex-1
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                      ">
-                        Ambiente 100% seguro
-                      </div>
-
-                      <div className="
-                        text-xs
-                        text-zinc-500
-                        mt-0.5
-                      ">
-                        Dados protegidos com criptografia SSL
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* ITEM */}
-
-                  <div className="
-                    bg-white
-                    border
-                    border-[#e7dfe2]
-                    rounded-xl
-                    px-4
-                    py-3
-                    flex
-                    items-center
-                    gap-3
-                  ">
-
-                <div className="
-                  w-10
-                  h-10
-                  rounded-xl
-                  bg-emerald-100
-                  flex
-                  items-center
-                  justify-center
-                  text-emerald-600
-                ">
-                  <Lock size={16} />
-                </div>
-
-                    <div className="
-                      flex-1
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                      ">
-                        Pagamento protegido
-                      </div>
-
-                      <div className="
-                        text-xs
-                        text-zinc-500
-                        mt-0.5
-                      ">
-                        Processado via Mercado Pago
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* ITEM */}
-
-                  <div className="
-                    bg-white
-                    border
-                    border-[#e7dfe2]
-                    rounded-xl
-                    px-4
-                    py-3
-                    flex
-                    items-center
-                    gap-3
-                  ">
-
-                <div className="
-                  w-10
-                  h-10
-                  rounded-xl
-                  bg-yellow-100
-                  flex
-                  items-center
-                  justify-center
-                  text-yellow-600
-                ">
-                  <Truck size={16} />
-                </div>
-
-                    <div className="
-                      flex-1
-                    ">
-
-                      <div className="
-                        text-sm
-                        font-semibold
-                        text-zinc-900
-                      ">
-                        Entrega rápida
-                      </div>
-
-                      <div className="
-                        text-xs
-                        text-zinc-500
-                        mt-0.5
-                      ">
-                        Frete calculado via Melhor Envio
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                  
-
-                  <div className="
-                    mt-1
-                    text-sm
-                    text-green-900
-                  ">
-
-                    Pagamento processado com segurança pelo Mercado Pago.
-
-                  </div>
-
-                </div>
-
+              <div className="mt-7 space-y-3 rounded-2xl bg-[#fcf9fa] p-4 text-xs text-zinc-600">
+                <p className="flex items-center gap-2">
+                  <ShieldCheck size={15} className="text-[#d85c7a]" />
+                  Compra protegida pelo Mercado Pago
+                </p>
+                <p className="flex items-center gap-2">
+                  <Truck size={15} className="text-[#d85c7a]" />
+                  Entrega calculada com segurança
+                </p>
+                <p className="flex items-center gap-2">
+                  <Lock size={15} className="text-[#d85c7a]" />
+                  Seus dados permanecem protegidos
+                </p>
               </div>
-
             </div>
-
-          </div>
-
+          </aside>
         </div>
-
-      </div>
-
+      </main>
     </div>
   );
 }

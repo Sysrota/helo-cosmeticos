@@ -4,6 +4,7 @@ import ProductCard from "./ProductCard";
 
 // const API_URL = "http://localhost:3333";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 export default function ProductsSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,10 +14,14 @@ export default function ProductsSection() {
 
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/products?active=true&limit=3&sort=new`);
+        const res = await fetch(
+          `${API_URL}/products?active=true&limit=3&sort=new`
+        );
+
         const data = await res.json();
 
         if (!alive) return;
+
         setItems(Array.isArray(data.items) ? data.items : []);
       } catch {
         if (!alive) return;
@@ -28,48 +33,135 @@ export default function ProductsSection() {
     }
 
     load();
+
     return () => {
       alive = false;
     };
   }, []);
 
   return (
-    <section className="py-20 bg-helo-background">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-14">
-          <h2 className="text-4xl font-display text-helo-dark">Nossos Produtos</h2>
-          <p className="text-helo-text/80 mt-4 max-w-xl mx-auto">
-            Linha criada com delicadeza, cuidado e qualidade para sua beleza diária.
+    <section
+      className="
+        py-14
+        md:py-16
+        bg-helo-background
+      "
+    >
+      <div
+        className="
+          max-w-6xl
+          mx-auto
+          px-6
+        "
+      >
+        {/* Header */}
+        <div
+          className="
+            text-center
+            mb-10
+          "
+        >
+          <h2
+            className="
+              text-3xl
+              md:text-4xl
+              font-display
+              text-helo-dark
+            "
+          >
+            Nossos Produtos
+          </h2>
+
+          <p
+            className="
+              text-sm
+              md:text-base
+              text-helo-text/70
+              mt-3
+              max-w-xl
+              mx-auto
+              leading-relaxed
+            "
+          >
+            Linha criada com delicadeza, cuidado e qualidade
+            para sua beleza diária.
           </p>
         </div>
 
+        {/* Loading */}
         {loading ? (
-          <div className="text-center text-helo-text/70">Carregando produtos...</div>
+          <div
+            className="
+              text-center
+              text-helo-text/70
+            "
+          >
+            Carregando produtos...
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div
+            className="
+              grid
+              grid-cols-1
+              md:grid-cols-3
+              gap-6
+              lg:gap-8
+            "
+          >
             {items.map((p) => (
               <ProductCard
                 key={p.id}
                 id={p.id}
                 title={p.title}
-                price={`R$ ${Number(p.price || 0).toFixed(2)}`}
-                image={p.image_url ? `${API_URL}${p.image_url}` : ""}
+                price={`R$ ${Number(
+                  p.price || 0
+                ).toFixed(2)}`}
+                image={
+                  p.image_url
+                    ? `${API_URL}${p.image_url}`
+                    : ""
+                }
               />
             ))}
           </div>
         )}
 
+        {/* Empty */}
         {!loading && items.length === 0 ? (
-          <div className="text-center text-helo-text/70 mt-10">
+          <div
+            className="
+              text-center
+              text-helo-text/70
+              mt-8
+            "
+          >
             Nenhum produto cadastrado ainda.
           </div>
         ) : null}
 
-        {/* Botão Ver todos */}
-        <div className="flex justify-center mt-14">
+        {/* CTA */}
+        <div
+          className="
+            flex
+            justify-center
+            mt-10
+          "
+        >
           <Link
             to="/produtos"
-            className="px-10 py-4 bg-helo-dark text-white rounded-xl text-lg font-semibold shadow-md hover:bg-helo-rose transition-all hover:shadow-xl"
+            className="
+              px-8
+              py-3
+              bg-helo-dark
+              text-white
+              rounded-xl
+              text-base
+              font-semibold
+              shadow-md
+              hover:bg-helo-rose
+              transition-all
+              hover:shadow-lg
+            "
           >
             Ver todos os produtos
           </Link>

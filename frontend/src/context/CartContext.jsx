@@ -25,34 +25,29 @@ export function CartProvider({
   // =====================
 
   const [cart, setCart] =
-    useState([]);
+    useState(() => {
 
-  // =====================
-  // LOAD STORAGE
-  // =====================
+      const saved =
+        localStorage.getItem(
+          "helo_cart"
+        );
 
-  useEffect(() => {
+      if (!saved) {
 
-    const saved =
-      localStorage.getItem(
-        "helo_cart"
-      );
-
-    if (saved) {
+        return [];
+      }
 
       try {
 
-        setCart(
-          JSON.parse(saved)
+        return JSON.parse(
+          saved
         );
 
       } catch {
 
-        setCart([]);
+        return [];
       }
-    }
-
-  }, []);
+    });
 
   // =====================
   // SAVE STORAGE
@@ -81,9 +76,8 @@ export function CartProvider({
         const existing =
           prev.find(
             (item) =>
-
-              item.product_id ===
-              product.product_id
+              (item.product_id ?? item.id) ===
+              (product.product_id ?? product.id)
           );
 
         // =====================
@@ -96,8 +90,8 @@ export function CartProvider({
             (item) => {
 
               if (
-                item.product_id ===
-                product.product_id
+                (item.product_id ?? item.id) ===
+                (product.product_id ?? product.id)
               ) {
 
                 return {
@@ -128,6 +122,9 @@ export function CartProvider({
 
           {
             ...product,
+            product_id:
+              product.product_id ??
+              product.id,
 
             quantity:
               Number(

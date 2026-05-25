@@ -3,18 +3,23 @@ export function OrderPixCard({
   loadingPix,
   pixData,
   order,
+  pixDiscount,
+  pixTotal,
 }) {
+  const isPaid =
+    order.payment_status === "paid" ||
+    order.payment_status === "approved";
 
   return (
 <div className="
   bg-white
 
   border
-  border-zinc-200
+  border-[#eee2e6]
 
-  rounded-2xl
+  rounded-[22px]
 
-  p-4
+  p-5
 ">
 
       {/* HEADER */}
@@ -24,7 +29,8 @@ export function OrderPixCard({
 
         <h3 className="
           text-lg
-          font-bold
+          font-semibold
+          text-[#43232d]
         ">
           Pagamento PIX
         </h3>
@@ -34,8 +40,36 @@ export function OrderPixCard({
           text-zinc-500
           mt-1
         ">
-          Gere um QRCode PIX
-          para pagamento
+          Pague em segundos com confirmação rápida.
+        </p>
+
+        <div className="
+          mt-4
+          flex
+          items-center
+          justify-between
+          rounded-2xl
+          bg-emerald-50
+          px-4
+          py-3
+          text-sm
+        ">
+          <span className="text-emerald-700">
+            5% de desconto no PIX
+          </span>
+          <span className="font-semibold text-emerald-800">
+            {Number(pixTotal || 0).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
+          </span>
+        </div>
+
+        <p className="mt-2 text-xs text-emerald-700">
+          Você economiza {Number(pixDiscount || 0).toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}.
         </p>
       </div>
 
@@ -50,8 +84,7 @@ export function OrderPixCard({
         border
 
         ${
-          order.payment_status ===
-          "paid"
+          isPaid
 
             ? `
               bg-green-50
@@ -85,8 +118,7 @@ export function OrderPixCard({
               mt-1
 
               ${
-                order.payment_status ===
-                "paid"
+                isPaid
 
                   ? `
                     text-green-700
@@ -99,8 +131,7 @@ export function OrderPixCard({
             `}>
 
               {
-                order.payment_status ===
-                "paid"
+                isPaid
 
                   ? "Pagamento aprovado"
 
@@ -116,8 +147,7 @@ export function OrderPixCard({
             rounded-full
 
             ${
-              order.payment_status ===
-              "paid"
+              isPaid
 
                 ? `
                   bg-green-500
@@ -140,12 +170,12 @@ export function OrderPixCard({
         className="
           w-full
 
-          bg-green-600
-          hover:bg-green-700
+          bg-[#d85c7a]
+          hover:bg-[#c9506d]
 
           text-white
 
-          py-4
+          h-14
 
           rounded-2xl
 
@@ -159,7 +189,7 @@ export function OrderPixCard({
 
             ? "Gerando PIX..."
 
-            : "Gerar PIX"
+            : "Gerar QR Code PIX"
         }
       </button>
 
@@ -170,7 +200,7 @@ export function OrderPixCard({
           mt-5
 
           border
-          border-zinc-200
+          border-[#eee2e6]
 
           rounded-2xl
 
@@ -189,7 +219,8 @@ export function OrderPixCard({
 
             <div className="
               text-xl
-              font-bold
+              font-semibold
+              text-[#43232d]
             ">
               PIX Gerado
             </div>
@@ -199,7 +230,7 @@ export function OrderPixCard({
               text-zinc-500
               mt-1
             ">
-              Escaneie o QRCode
+              Escaneie o QR Code
               para pagar
             </div>
           </div>
@@ -233,7 +264,7 @@ export function OrderPixCard({
               h-28
 
               border
-              border-zinc-200
+              border-[#eee2e6]
 
               rounded-2xl
 
@@ -255,7 +286,8 @@ export function OrderPixCard({
             className="
               w-full
 
-              bg-black
+              bg-[#43232d]
+              hover:bg-[#532d38]
               text-white
 
               py-4

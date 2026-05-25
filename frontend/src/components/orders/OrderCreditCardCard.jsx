@@ -13,6 +13,7 @@ const API_URL =
 
 export function OrderCreditCardCard({
   order,
+  initialCustomer,
 }) {
 
   const mpRef =
@@ -46,14 +47,46 @@ export function OrderCreditCardCard({
     setCardBrand] =
     useState(null);
 
+  const [cardFieldsReady,
+    setCardFieldsReady] =
+    useState(false);
+
+  const [cardSetupError,
+    setCardSetupError] =
+    useState(null);
+
   const [formData,
     setFormData] =
     useState({
 
       cardholderName: "",
-      cardholderEmail: "",
-      identificationNumber: "",
+      cardholderEmail:
+        initialCustomer?.email || "",
+      identificationNumber:
+        Formatter.cpfCnpj(
+          initialCustomer?.cpf || ""
+        ),
     });
+
+  useEffect(() => {
+
+    setFormData((previous) => ({
+      ...previous,
+      cardholderEmail:
+        previous.cardholderEmail ||
+        initialCustomer?.email ||
+        "",
+      identificationNumber:
+        previous.identificationNumber ||
+        Formatter.cpfCnpj(
+          initialCustomer?.cpf || ""
+        ),
+    }));
+
+  }, [
+    initialCustomer?.cpf,
+    initialCustomer?.email,
+  ]);
 
   // =========================
   // HELPERS
@@ -611,132 +644,196 @@ export function OrderCreditCardCard({
 
   useEffect(() => {
 
+    let active =
+      true;
+
+    let cardForm =
+      null;
+
+    setCardFieldsReady(
+      false
+    );
+
+    setCardSetupError(
+      null
+    );
+
     if (!window.mp) {
+
+      setCardSetupError(
+        "Não foi possível carregar os campos seguros do cartão. Atualize a página e tente novamente."
+      );
+
       return;
     }
 
-    const timeout =
-      setTimeout(() => {
+    try {
 
-        mpRef.current =
-          window.mp.cardForm({
+      cardForm =
+        window.mp.cardForm({
 
-            amount:
-              String(
-                Number(
-                  order.total || 0
-                )
-              ),
+          amount:
+            String(
+              Number(
+                order.total || 0
+              )
+            ),
 
-            iframe: true,
+          iframe: true,
 
-            form: {
+          form: {
+
+            id:
+              "form-checkout",
+
+            cardNumber: {
 
               id:
-                "form-checkout",
+                "form-checkout__cardNumber",
 
-              cardNumber: {
-
-                id:
-                  "form-checkout__cardNumber",
-
-                placeholder:
-                  "Número do cartão",
-              },
-
-              expirationDate: {
-
-                id:
-                  "form-checkout__expirationDate",
-
-                placeholder:
-                  "MM/AA",
-              },
-
-              securityCode: {
-
-                id:
-                  "form-checkout__securityCode",
-
-                placeholder:
-                  "CVV",
-              },
-
-              cardholderName: {
-
-                id:
-                  "form-checkout__cardholderName",
-
-                placeholder:
-                  "Nome no cartão",
-              },
-
-              cardholderEmail: {
-
-                id:
-                  "form-checkout__email",
-
-                placeholder:
-                  "E-mail",
-              },
-
-
-              issuer: {
-
-                id:
-                  "form-checkout__issuer",
-              },
-
-              installments: {
-
-                id:
-                  "form-checkout__installments",
-              },
+              placeholder:
+                "Número do cartão",
             },
 
-            callbacks: {
+            expirationDate: {
 
-              onFormMounted:
-                (error) => {
+              id:
+                "form-checkout__expirationDate",
 
-                  if (error) {
-
-
-                    return;
-                  }
-
-                },
-
-              onValidityChange:
-                () => {
-
-                  setTimeout(() => {
-
-                    validateMercadoPagoFields();
-
-                  }, 150);
-                },
+              placeholder:
+                "MM/AA",
             },
-          });
 
-      }, 300);
+            securityCode: {
+
+              id:
+                "form-checkout__securityCode",
+
+              placeholder:
+                "CVV",
+            },
+
+            cardholderName: {
+
+              id:
+                "form-checkout__cardholderName",
+
+              placeholder:
+                "Nome no cartão",
+            },
+
+            cardholderEmail: {
+
+              id:
+                "form-checkout__cardholderEmail",
+
+              placeholder:
+                "E-mail",
+            },
+
+            identificationType: {
+
+              id:
+                "form-checkout__identificationType",
+            },
+
+            identificationNumber: {
+
+              id:
+                "form-checkout__identificationNumber",
+
+              placeholder:
+                "CPF ou CNPJ",
+            },
+
+            issuer: {
+
+              id:
+                "form-checkout__issuer",
+            },
+
+            installments: {
+
+              id:
+                "form-checkout__installments",
+            },
+          },
+
+          callbacks: {
+
+            onFormMounted:
+              (error) => {
+
+                if (!active) {
+                  return;
+                }
+
+                if (error) {
+
+                  setCardSetupError(
+                    "Não foi possível habilitar os campos do cartão. Atualize a página e tente novamente."
+                  );
+
+                  return;
+                }
+
+                setCardFieldsReady(
+                  true
+                );
+              },
+
+            onValidityChange:
+              () => {
+
+                if (
+                  !active ||
+                  !mpRef.current
+                ) {
+                  return;
+                }
+
+                const data =
+                  mpRef.current
+                    .getCardFormData();
+
+                setCardBrand(
+                  data.paymentMethodId
+                    ? data.paymentMethodId
+                        .toUpperCase()
+                    : null
+                );
+              },
+          },
+        });
+
+      mpRef.current =
+        cardForm;
+
+    } catch {
+
+      setCardSetupError(
+        "Não foi possível habilitar os campos do cartão. Atualize a página e tente novamente."
+      );
+    }
 
     return () => {
 
-      clearTimeout(
-        timeout
-      );
+      active =
+        false;
+
+      mpRef.current =
+        null;
 
       if (
-        mpRef.current
+        typeof cardForm?.unmount ===
+        "function"
       ) {
 
-        mpRef.current
-          .unmount();
+        cardForm.unmount();
       }
     };
 
-  }, [order]);
+  }, [order.id, order.total]);
 
   // =========================
   // PAYMENT
@@ -1066,8 +1163,8 @@ export function OrderCreditCardCard({
     <div className="
       bg-white
       border
-      border-zinc-200
-      rounded-[28px]
+      border-[#eee2e6]
+      rounded-[22px]
       p-5
       shadow-sm
     ">
@@ -1088,8 +1185,8 @@ export function OrderCreditCardCard({
 
             <h2 className="
               text-lg
-              font-bold
-              text-zinc-900
+              font-semibold
+              text-[#43232d]
             ">
               Cartão de Crédito
             </h2>
@@ -1191,6 +1288,22 @@ export function OrderCreditCardCard({
       )}
 
       {/* FORM */}
+      {cardSetupError && (
+        <div className="
+          mb-5
+          rounded-2xl
+          border
+          border-red-100
+          bg-red-50
+          px-4
+          py-3
+          text-sm
+          text-red-700
+        ">
+          {cardSetupError}
+        </div>
+      )}
+
       <form
         id="form-checkout"
 
@@ -1240,6 +1353,7 @@ export function OrderCreditCardCard({
             flex
             items-center
             bg-white
+            overflow-hidden
 
             focus-within:border-sky-500
             focus-within:ring-4
@@ -1250,10 +1364,19 @@ export function OrderCreditCardCard({
               id="form-checkout__cardNumber"
 
               className="
+                h-full
                 w-full
+                [&>iframe]:h-full
+                [&>iframe]:w-full
+                [&>iframe]:border-0
               "
             />
           </div>
+          {errors.cardNumber && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.cardNumber}
+            </p>
+          )}
         </div>
 
         {/* ROW */}
@@ -1296,10 +1419,19 @@ export function OrderCreditCardCard({
                 id="form-checkout__expirationDate"
 
                 className="
+                  h-full
                   w-full
+                  [&>iframe]:h-full
+                  [&>iframe]:w-full
+                  [&>iframe]:border-0
                 "
               />
             </div>
+            {errors.expirationDate && (
+              <p className="mt-1.5 text-xs text-red-600">
+                {errors.expirationDate}
+              </p>
+            )}
           </div>
 
           {/* CVV */}
@@ -1324,6 +1456,7 @@ export function OrderCreditCardCard({
               flex
               items-center
               bg-white
+              overflow-hidden
 
               focus-within:border-sky-500
               focus-within:ring-4
@@ -1334,10 +1467,19 @@ export function OrderCreditCardCard({
                 id="form-checkout__securityCode"
 
                 className="
+                  h-full
                   w-full
+                  [&>iframe]:h-full
+                  [&>iframe]:w-full
+                  [&>iframe]:border-0
                 "
               />
             </div>
+            {errors.securityCode && (
+              <p className="mt-1.5 text-xs text-red-600">
+                {errors.securityCode}
+              </p>
+            )}
           </div>
         </div>
 
@@ -1402,6 +1544,11 @@ export function OrderCreditCardCard({
               focus:ring-sky-100
             "
           />
+          {errors.cardholderName && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.cardholderName}
+            </p>
+          )}
         </div>
 
         {/* EMAIL */}
@@ -1418,7 +1565,7 @@ export function OrderCreditCardCard({
           </label>
 
           <input
-            id="form-checkout__email"
+            id="form-checkout__cardholderEmail"
 
             value={
               formData
@@ -1465,6 +1612,11 @@ export function OrderCreditCardCard({
               focus:ring-sky-100
             "
           />
+          {errors.cardholderEmail && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.cardholderEmail}
+            </p>
+          )}
         </div>
 
         {/* DOCUMENT */}
@@ -1530,6 +1682,11 @@ export function OrderCreditCardCard({
               focus:ring-sky-100
             "
           />
+          {errors.identificationNumber && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.identificationNumber}
+            </p>
+          )}
         </div>
 
         {/* INSTALLMENTS */}
@@ -1607,7 +1764,8 @@ export function OrderCreditCardCard({
           type="button"
 
           disabled={
-            loading
+            loading ||
+            !cardFieldsReady
           }
 
           onClick={
@@ -1618,8 +1776,8 @@ export function OrderCreditCardCard({
             w-full
             h-[58px]
 
-            bg-sky-600
-            hover:bg-sky-700
+            bg-[#d85c7a]
+            hover:bg-[#c9506d]
 
             disabled:opacity-50
             disabled:cursor-not-allowed
@@ -1641,7 +1799,11 @@ export function OrderCreditCardCard({
 
               ? "Processando pagamento..."
 
-              : "Pagar com Cartão"
+              : cardFieldsReady
+
+                ? "Pagar com cartão"
+
+                : "Carregando campos seguros..."
           }
         </button>
       </form>

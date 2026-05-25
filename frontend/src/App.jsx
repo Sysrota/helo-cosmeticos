@@ -41,6 +41,7 @@ export default function App() {
           <Route path="/produto-descricao/:id" element={<ProdutoDescricao />} />
           <Route path="/carrinho-ai/:token" element={<AiCartPage />}/>
 
+          <Route path="/checkout" element={<PublicCheckoutPage />}/>
           <Route path="/checkout/:id" element={<PublicCheckoutPage />}/>
 
 

@@ -80,6 +80,14 @@ export async function createCardPaymentService({
       "Pedido não encontrado"
     );
   }
+
+  const total =
+    Number(
+      (
+        Number(order.subtotal || 0) +
+        Number(order.shipping || 0)
+      ).toFixed(2)
+    );
   // =========================
   // PAYMENT CLIENT
   // =========================
@@ -99,9 +107,7 @@ export async function createCardPaymentService({
       body: {
 
         transaction_amount:
-          Number(
-            order.total
-          ),
+          total,
 
         token,
 
@@ -134,6 +140,11 @@ export async function createCardPaymentService({
 
         payment_method:
           "credit_card",
+
+        discount:
+          0,
+
+        total,
 
         payment_status:
           payment.status,
