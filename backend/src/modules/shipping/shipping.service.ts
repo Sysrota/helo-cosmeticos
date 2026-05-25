@@ -317,6 +317,15 @@ export async function requestShippingOptions({
             deadline:
               `${service.delivery_time} dias úteis`,
           })
+      )
+
+      .sort(
+        (
+          first: ShippingOption,
+          second: ShippingOption
+        ) =>
+          first.price -
+            second.price
       );
 
   if (
