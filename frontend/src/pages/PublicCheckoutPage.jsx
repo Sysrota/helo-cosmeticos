@@ -32,6 +32,10 @@ import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
 import { socket } from "../websocket/socket";
 
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "/api";
+
 const steps = [
   { id: 1, label: "Dados" },
   { id: 2, label: "Entrega" },
@@ -63,6 +67,21 @@ function formatShippingPrice(value) {
   return Number(value) === 0
     ? "Grátis"
     : formatMoney(value);
+}
+
+function getCheckoutImageUrl(item) {
+  const image =
+    item.product?.images?.[0]?.image_url ||
+    item.product?.image_url ||
+    "";
+
+  if (!image) {
+    return "";
+  }
+
+  return image.startsWith("http")
+    ? image
+    : `${API_URL}${image}`;
 }
 
 function itemProductId(item) {
@@ -1043,15 +1062,13 @@ export default function PublicCheckoutPage() {
               </h2>
               <div className="mt-6 space-y-4">
                 {checkoutItems.map((item, index) => {
-                  const image = item.product?.images?.[0]?.image_url || "";
-                  const imageUrl = image.startsWith("http")
-                    ? image
-                    : `${import.meta.env.VITE_API_URL}${image}`;
+                  const imageUrl =
+                    getCheckoutImageUrl(item);
 
                   return (
                     <div key={`${item.product?.title}-${index}`} className="flex gap-4">
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee2e6] bg-[#fcf9fa]">
-                        {image && (
+                        {imageUrl && (
                           <img
                             src={imageUrl}
                             alt={item.product?.title}
