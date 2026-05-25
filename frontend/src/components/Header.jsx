@@ -1,6 +1,6 @@
 import { Menu, ShoppingBag, X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "/helo-logo.png";
 
@@ -13,38 +13,78 @@ const navItems = [
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
   const { totalItems } = useCart();
   const hasItems = totalItems > 0;
 
+  useEffect(() => {
+    function handleScroll() {
+      setCompact(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 border-b border-[#f0dfe5] bg-white/95 backdrop-blur-xl">
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#fff1f5] px-4 py-2 text-center text-xs font-medium tracking-wide text-[#43232d] sm:text-sm">
+      <div className="hidden flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#fff1f5] px-4 py-2 text-center text-xs font-medium tracking-wide text-[#43232d] sm:flex sm:text-sm">
         <span className="font-bold">10% OFF no PIX</span>
-        <span className="hidden text-[#43232d] sm:inline">|</span>
+        <span className="text-[#d9a7b3]">|</span>
         <span className="font-bold">Frete grátis na região metropolitana de Goiânia</span>
-        <span className="hidden text-[#43232d] sm:inline">|</span>
+        <span className="text-[#d9a7b3]">|</span>
         <span className="font-bold">R$ 25,00 OFF para demais localizações</span>
-        <span className="hidden text-[#43232d] sm:inline">|</span>
+        <span className="text-[#d9a7b3]">|</span>
         <span className="font-bold">3x sem juros ou até 12x com juros</span>
       </div>
 
-      <div className="home-container flex h-[78px] items-center justify-between gap-5">
+      <div className={`
+        overflow-hidden bg-[#fff1f5] text-center text-[#43232d] transition-all duration-300 sm:hidden
+        ${compact ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
+      `}>
+        <p className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em]">
+          <span>10% OFF no PIX</span>
+          <span className="text-[#d9a7b3]">|</span>
+          <span>3x sem juros</span>
+        </p>
+        <p className="mt-1 text-[11px] font-medium tracking-[0.01em] text-[#874052]">
+          Frete grátis local <span className="mx-1 text-[#d9a7b3]">|</span> R$ 25 OFF no frete
+        </p>
+      </div>
+
+      <div className={`
+        home-container flex items-center justify-between gap-3 transition-all duration-300 sm:h-[78px] sm:gap-5
+        ${compact ? "h-[58px]" : "h-[68px]"}
+      `}>
         <Link
           to="/"
           onClick={() => setMenuOpen(false)}
-          className="flex shrink-0 items-center gap-3"
+          className="flex shrink-0 items-center gap-2.5 sm:gap-3"
           aria-label="Helô Cosméticos - Página inicial"
         >
           <img
             src={logo}
             alt=""
-            className="h-[54px] w-[54px] rounded-full object-cover"
+            className={`
+              rounded-full object-cover transition-all duration-300 sm:h-[54px] sm:w-[54px]
+              ${compact ? "h-[40px] w-[40px]" : "h-[46px] w-[46px]"}
+            `}
           />
-          <span className="hidden sm:block">
-            <span className="block font-display text-[1.4rem] leading-none text-[#43232d]">
+          <span className="block">
+            <span className={`
+              block font-display leading-none text-[#43232d] transition-all duration-300 sm:text-[1.4rem]
+              ${compact ? "text-[0.98rem]" : "text-[1.05rem]"}
+            `}>
               Helô
             </span>
-            <span className="mt-1 block text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-[#b74662]">
+            <span className={`
+              block font-semibold uppercase text-[#b74662] transition-all duration-300 sm:mt-1 sm:text-[0.62rem] sm:tracking-[0.3em]
+              ${compact ? "mt-0.5 text-[0.46rem] tracking-[0.2em]" : "mt-1 text-[0.5rem] tracking-[0.23em]"}
+            `}>
               Cosméticos
             </span>
           </span>
@@ -94,10 +134,14 @@ export default function Header() {
         <div className="flex items-center gap-2 md:hidden">
           <Link
             to="/carrinho"
-            className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#ecd9df] text-[#b74662] ${hasItems ? "cart-attention" : ""}`}
+            className={`
+              relative flex items-center justify-center rounded-xl border border-[#ecd9df] text-[#b74662] transition-all duration-300 sm:h-11 sm:w-11
+              ${compact ? "h-9 w-9" : "h-10 w-10"}
+              ${hasItems ? "cart-attention" : ""}
+            `}
             aria-label="Abrir carrinho"
           >
-            <ShoppingBag size={20} />
+            <ShoppingBag size={19} />
             {hasItems && (
               <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d9536f] px-1 text-[11px] font-semibold text-white">
                 {totalItems}
@@ -106,7 +150,10 @@ export default function Header() {
           </Link>
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#d9536f] text-white"
+            className={`
+              flex items-center justify-center rounded-xl bg-[#d9536f] text-white transition-all duration-300 sm:h-11 sm:w-11
+              ${compact ? "h-9 w-9" : "h-10 w-10"}
+            `}
             onClick={() => setMenuOpen((current) => !current)}
             aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={menuOpen}

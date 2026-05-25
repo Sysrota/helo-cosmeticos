@@ -7,7 +7,8 @@ import Formatter
   from "@/utils/Formatter";
 
 const API_URL =
-  import.meta.env.VITE_API_URL;
+  import.meta.env.VITE_API_URL ||
+  "/api";
 
 export function ProductSearch({
   products,
@@ -22,15 +23,25 @@ export function ProductSearch({
   const filteredProducts =
     useMemo(() => {
 
-      return (products || []).filter(
-        (product) => {
-          return product.title
-            ?.toLowerCase()
-            ?.includes(
-              search.toLowerCase()
-            );
-        }
-      );
+      return (products || [])
+        .filter(
+          (product) => {
+            return product.title
+              ?.toLowerCase()
+              ?.includes(
+                search.toLowerCase()
+              );
+          }
+        )
+        .sort(
+          (first, second) =>
+            Number(Boolean(second.is_featured)) -
+              Number(Boolean(first.is_featured)) ||
+            first.title.localeCompare(
+              second.title,
+              "pt-BR"
+            )
+        );
 
     }, [products, search]);
 
@@ -186,6 +197,22 @@ export function ProductSearch({
                 ">
                   {product.title}
                 </div>
+
+                {product.is_featured && (
+                  <span className="
+                    mt-1
+                    inline-flex
+                    rounded-full
+                    bg-[#fff0f4]
+                    px-2
+                    py-0.5
+                    text-[11px]
+                    font-semibold
+                    text-[#b74662]
+                  ">
+                    Destaque
+                  </span>
+                )}
 
                 <div className="
                   text-sm
