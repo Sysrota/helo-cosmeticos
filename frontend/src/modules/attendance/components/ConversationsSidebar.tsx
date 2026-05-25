@@ -33,6 +33,18 @@ export function ConversationsSidebar() {
 
     loadConversations();
 
+    socket.on(
+      "connect",
+      loadConversations
+    );
+
+    return () => {
+      socket.off(
+        "connect",
+        loadConversations
+      );
+    };
+
   }, []);
 
   useEffect(() => {

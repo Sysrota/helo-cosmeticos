@@ -1,9 +1,13 @@
-import axios
-  from "axios";
-
 import {
   prisma,
 } from "../../../config/prisma.js";
+
+import {
+  findAddressByCep,
+  isFreeShippingArea,
+  localFreeShippingOption,
+  requestShippingOptions,
+} from "../../shipping/shipping.service.js";
 
 interface Props {
   conversationId: number;
@@ -178,123 +182,63 @@ export async function calculateShippingTool({
     );
 
   // =========================
-  // MELHOR ENVIO
+  // OFFICIAL SHIPPING POLICY
   // =========================
 
-  const response =
-    await axios.post(
-
-      "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
-
-      {
-
-        from: {
-          postal_code:
-            "74976040",
-        },
-
-        to: {
-          postal_code:
-            cleanCep,
-        },
-
-        products: [
-          {
-            id: "1",
-
-            width:
-              Math.max(
-                maxWidth,
-                11
-              ),
-
-            height:
-              Math.max(
-                maxHeight,
-                2
-              ),
-
-            length:
-              Math.max(
-                totalLength,
-                16
-              ),
-
-            weight:
-              Math.max(
-                totalWeight,
-                0.3
-              ),
-
-            insurance_value:
-              total,
-
-            quantity: 1,
-          },
-        ],
-
-        options: {
-
-          receipt: false,
-
-          own_hand: false,
-        },
-      },
-
-      {
-        headers: {
-
-          Authorization:
-            `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-
-          Accept:
-            "application/json",
-
-          "Content-Type":
-            "application/json",
-
-          "User-Agent":
-            "HeloCosmeticos",
-        },
-      }
+  const address =
+    await findAddressByCep(
+      cleanCep
     );
-
-  // =========================
-  // FORMAT
-  // =========================
-
-  const shipping =
-    response.data
-
-      .filter(
-        (service: any) =>
-          !service.error
-      )
-
-      .map(
-        (service: any) => ({
-
-          name:
-            service.name,
-
-          price:
-            Number(
-              service.price
-            ),
-
-          deadline:
-            `${service.delivery_time} dias úteis`,
-        })
-      );
 
   if (
-    !shipping.length
+    isFreeShippingArea(
+      address
+    )
   ) {
-
-    throw new Error(
-      "Nenhuma transportadora disponível"
-    );
+    return {
+      policy:
+        "local_free_shipping",
+      destination:
+        `${address.city}/${address.state}`,
+      options:
+        localFreeShippingOption(),
+    };
   }
 
-  return shipping;
+  try {
+    return {
+      policy:
+        "shipping_subsidy",
+      destination:
+        `${address.city}/${address.state}`,
+      subsidy:
+        25,
+      options:
+        await requestShippingOptions({
+          cleanCep,
+          totalWeight,
+          maxHeight,
+          maxWidth,
+          totalLength,
+          insuranceValue:
+            total,
+        }),
+    };
+  } catch (error) {
+    console.error(
+      "Erro ao calcular frete solicitado pela IA:",
+      error instanceof Error
+        ? error.message
+        : error
+    );
+
+    return {
+      policy:
+        "shipping_unavailable",
+      destination:
+        `${address.city}/${address.state}`,
+      message:
+        "Não foi possível consultar o frete agora. O cliente pode continuar para o checkout e tentar o cálculo novamente na etapa de entrega.",
+    };
+  }
 }

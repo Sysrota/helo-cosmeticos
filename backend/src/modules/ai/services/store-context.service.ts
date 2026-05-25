@@ -27,9 +27,10 @@ ${config.shipping_info}
 
 CONDIÇÕES COMERCIAIS VIGENTES:
 - PIX: 10% de desconto no checkout.
-- Cartão: até 3x sem juros ou até 12x com juros, conforme opções exibidas no checkout.
+- Cartão: até 3x sem juros ou até 12x com juros.
 - Entrega: frete grátis para Goiânia e região metropolitana.
 - Demais localidades: abatimento de até R$ 25,00 no frete calculado pelo CEP.
+- O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.
 
 HORÁRIO DE ATENDIMENTO:
 ${config.business_hours}

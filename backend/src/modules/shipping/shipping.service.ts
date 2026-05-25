@@ -17,7 +17,7 @@ interface ProductShippingProps {
   quantity: number;
 }
 
-interface ShippingOption {
+export interface ShippingOption {
   name: string;
 
   price: number;
@@ -82,7 +82,7 @@ function normalizeLocation(
     .trim();
 }
 
-function isFreeShippingArea(
+export function isFreeShippingArea(
   address: {
     city: string;
     state: string;
@@ -100,7 +100,7 @@ function isFreeShippingArea(
   );
 }
 
-function localFreeShippingOption():
+export function localFreeShippingOption():
   ShippingOption[] {
   return [
     {
@@ -187,7 +187,7 @@ export async function findAddressByCep(
   };
 }
 
-async function requestShippingOptions({
+export async function requestShippingOptions({
   cleanCep,
   totalWeight,
   maxHeight,
@@ -198,8 +198,11 @@ async function requestShippingOptions({
   ShippingOption[]
 > {
 
-  const melhorEnvioResponse =
-    await axios.post(
+  let melhorEnvioResponse;
+
+  try {
+    melhorEnvioResponse =
+      await axios.post(
       "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
       {
         from: {
@@ -268,8 +271,29 @@ async function requestShippingOptions({
           "User-Agent":
             "HeloCosmeticos",
         },
-      }
-    );
+        }
+      );
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Melhor Envio recusou o cálculo de frete:",
+        {
+          status:
+            error.response?.status,
+          destination:
+            cleanCep,
+          response:
+            error.response?.data,
+        }
+      );
+
+      throw new Error(
+        "Não foi possível consultar o frete no Melhor Envio."
+      );
+    }
+
+    throw error;
+  }
 
   const shippingOptions =
     melhorEnvioResponse.data

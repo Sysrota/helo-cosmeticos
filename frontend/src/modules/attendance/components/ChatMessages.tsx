@@ -62,12 +62,28 @@ export function ChatMessages() {
     if (!selectedConversation)
       return;
 
-    socket.emit(
-      "join_conversation",
-      selectedConversation.id
+    function joinConversation() {
+      socket.emit(
+        "join_conversation",
+        selectedConversation!.id
+      );
+
+      loadMessages();
+    }
+
+    joinConversation();
+
+    socket.on(
+      "connect",
+      joinConversation
     );
 
-    loadMessages();
+    return () => {
+      socket.off(
+        "connect",
+        joinConversation
+      );
+    };
 
   }, [selectedConversation]);
 
