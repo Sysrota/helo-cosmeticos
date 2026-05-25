@@ -74,14 +74,23 @@ function getCheckoutImageUrl(item) {
     item.product?.images?.[0]?.image_url ||
     item.product?.image_url ||
     "";
+  const apiBase =
+    API_URL.replace(/\/$/, "");
 
   if (!image) {
     return "";
   }
 
-  return image.startsWith("http")
-    ? image
-    : `${API_URL}${image}`;
+  if (
+    image.startsWith("http") ||
+    image.startsWith("data:") ||
+    image === apiBase ||
+    image.startsWith(`${apiBase}/`)
+  ) {
+    return image;
+  }
+
+  return `${apiBase}${image.startsWith("/") ? "" : "/"}${image}`;
 }
 
 function itemProductId(item) {
