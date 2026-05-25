@@ -1,3 +1,6 @@
+import { Link } from "react-router-dom";
+import { buildWhatsAppUrl } from "../constants/store";
+
 export default function Footer() {
   return (
     <footer
@@ -68,57 +71,57 @@ export default function Footer() {
               font-medium
             "
           >
-            <a
-              href="/"
+            <Link
+              to="/"
               className="
                 hover:text-helo-rose
                 transition-colors
               "
             >
               Início
-            </a>
+            </Link>
 
             <span className="text-helo-rose/20">
               |
             </span>
 
-            <a
-              href="/produtos"
+            <Link
+              to="/produtos"
               className="
                 hover:text-helo-rose
                 transition-colors
               "
             >
               Produtos
-            </a>
+            </Link>
 
             <span className="text-helo-rose/20">
               |
             </span>
 
-            <a
-              href="/sobre"
+            <Link
+              to="/sobre"
               className="
                 hover:text-helo-rose
                 transition-colors
               "
             >
               Sobre
-            </a>
+            </Link>
 
             <span className="text-helo-rose/20">
               |
             </span>
 
-            <a
-              href="/contato"
+            <Link
+              to="/contato"
               className="
                 hover:text-helo-rose
                 transition-colors
               "
             >
               Contato
-            </a>
+            </Link>
           </nav>
 
           {/* Redes */}
@@ -131,18 +134,11 @@ export default function Footer() {
             "
           >
             <a
-              href="#"
-              className="
-                text-helo-rose/80
-                hover:text-helo-rose
-                transition-colors
-              "
-            >
-              Instagram
-            </a>
-
-            <a
-              href="#"
+              href={buildWhatsAppUrl(
+                "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento."
+              )}
+              target="_blank"
+              rel="noreferrer"
               className="
                 text-helo-rose/80
                 hover:text-helo-rose
@@ -152,16 +148,16 @@ export default function Footer() {
               WhatsApp
             </a>
 
-            <a
-              href="#"
+            <Link
+              to="/contato"
               className="
                 text-helo-rose/80
                 hover:text-helo-rose
                 transition-colors
               "
             >
-              E-mail
-            </a>
+              Contato
+            </Link>
           </div>
         </div>
 
@@ -190,9 +186,20 @@ export default function Footer() {
             |
           </span>
 
+          <a
+              href="https://grupohrg.com.br"
+              target="_blank"
+              rel="noreferrer"
+              className="
+                hover:text-helo-rose
+                transition-colors
+              "
+            >
+             
           <span>
             Uma marca do Grupo HRG
           </span>
+            </a>
 
           <span className="hidden md:block">
             |

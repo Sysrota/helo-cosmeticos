@@ -6,6 +6,7 @@ import {
 import {
   useCart,
 } from "../context/CartContext";
+import UpsellProducts from "../components/UpsellProducts";
 
 export default function Carrinho() {
 
@@ -16,6 +17,7 @@ export default function Carrinho() {
     cart,
     removeFromCart,
     clearCart,
+    addToCart,
     increaseQuantity,
     decreaseQuantity,
   } = useCart();
@@ -311,11 +313,11 @@ export default function Carrinho() {
                   </div>
 
                   <div>
-                    🚚 Frete via Melhor Envio
+                    🚚 Frete grátis local ou R$ 25,00 OFF
                   </div>
 
                   <div>
-                    💳 PIX e cartão de crédito
+                    💳 3x sem juros ou até 12x com juros
                   </div>
 
                 </div>
@@ -349,6 +351,19 @@ export default function Carrinho() {
           </div>
 
         </div>
+
+        <UpsellProducts
+          excludedIds={
+            cart.map(
+              (item) =>
+                item.product_id ??
+                item.id
+            )
+          }
+          onAdd={addToCart}
+          title="Leve também"
+          description="Produtos que combinam com sua escolha e podem ser adicionados em um clique."
+        />
 
       </div>
 

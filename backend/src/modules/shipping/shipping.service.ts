@@ -23,6 +23,10 @@ interface ShippingOption {
   price: number;
 
   deadline: string;
+
+  original_price?: number;
+
+  discount?: number;
 }
 
 interface ShippingPackage {
@@ -37,6 +41,108 @@ interface ShippingPackage {
   totalLength: number;
 
   insuranceValue: number;
+}
+
+const FREE_SHIPPING_CITIES = new Set([
+  "abadia de goias",
+  "aparecida de goiania",
+  "aragoiania",
+  "bela vista de goias",
+  "bonfinopolis",
+  "brazabrantes",
+  "caldazinha",
+  "caturai",
+  "goianapolis",
+  "goiania",
+  "goianira",
+  "guapo",
+  "hidrolandia",
+  "inhumas",
+  "neropolis",
+  "nova veneza",
+  "santa barbara de goias",
+  "santo antonio de goias",
+  "senador canedo",
+  "terezopolis de goias",
+  "trindade",
+]);
+
+const SHIPPING_SUBSIDY = 25;
+
+function normalizeLocation(
+  value: string
+) {
+  return value
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .trim();
+}
+
+function isFreeShippingArea(
+  address: {
+    city: string;
+    state: string;
+  }
+) {
+  return (
+    normalizeLocation(
+      address.state
+    ) === "go" &&
+    FREE_SHIPPING_CITIES.has(
+      normalizeLocation(
+        address.city
+      )
+    )
+  );
+}
+
+function localFreeShippingOption():
+  ShippingOption[] {
+  return [
+    {
+      name:
+        "Frete grátis local",
+      price:
+        0,
+      deadline:
+        "Entrega em até 2 dias",
+    },
+  ];
+}
+
+function applyShippingSubsidy(
+  option: ShippingOption
+): ShippingOption {
+  const originalPrice =
+    Number(
+      option.price
+    );
+  const price =
+    Number(
+      Math.max(
+        0,
+        originalPrice -
+        SHIPPING_SUBSIDY
+      ).toFixed(2)
+    );
+
+  return {
+    ...option,
+    price,
+    original_price:
+      originalPrice,
+    discount:
+      Number(
+        (
+          originalPrice -
+          price
+        ).toFixed(2)
+      ),
+  };
 }
 
 export async function findAddressByCep(
@@ -174,18 +280,19 @@ async function requestShippingOptions({
       )
 
       .map(
-        (service: any) => ({
-          name:
-            service.name,
+        (service: any) =>
+          applyShippingSubsidy({
+            name:
+              service.name,
 
-          price:
-            Number(
-              service.price
-            ),
+            price:
+              Number(
+                service.price
+              ),
 
-          deadline:
-            `${service.delivery_time} dias úteis`,
-        })
+            deadline:
+              `${service.delivery_time} dias úteis`,
+          })
       );
 
   if (
@@ -211,7 +318,8 @@ export async function calculateProductShipping({
   const cleanCep =
     cep.replace(/\D/g, "");
 
-  await findAddressByCep(
+  const address =
+    await findAddressByCep(
     cleanCep
   );
 
@@ -242,6 +350,14 @@ export async function calculateProductShipping({
         )
       )
     );
+
+  if (
+    isFreeShippingArea(
+      address
+    )
+  ) {
+    return localFreeShippingOption();
+  }
 
   return requestShippingOptions({
     cleanCep,
@@ -278,7 +394,8 @@ export async function calculateShipping({
   const cleanCep =
     cep.replace(/\D/g, "");
 
-  await findAddressByCep(
+  const address =
+    await findAddressByCep(
     cleanCep
   );
 
@@ -314,6 +431,14 @@ export async function calculateShipping({
     throw new Error(
       "Por favor, informe pelo menos um produto para calcular o frete"
     );
+  }
+
+  if (
+    isFreeShippingArea(
+      address
+    )
+  ) {
+    return localFreeShippingOption();
   }
 
 

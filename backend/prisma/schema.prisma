@@ -25,6 +25,7 @@ model Product {
   o_que_vai_sentir  String   @default("")
 
   is_active         Boolean  @default(true)
+  is_featured       Boolean  @default(false)
 
 
   weight Float @default(0)

@@ -157,35 +157,88 @@ export async function generateCheckoutLinkTool({
     );
 
   // =====================
-  // CREATE ORDER
+  // CREATE OR UPDATE PENDING ORDER
   // =====================
 
+  const previousOrder =
+    conversation.last_order_id
+      ? await prisma.order.findUnique({
+        where: {
+          id:
+            conversation.last_order_id,
+        },
+      })
+      : null;
+
+  const canUpdateOrder =
+    previousOrder?.status === "pending" &&
+    previousOrder?.payment_status === "pending" &&
+    !previousOrder?.mercado_pago_payment_id &&
+    !previousOrder?.pix_code;
+
   const order =
-    await prisma.order.create({
+    canUpdateOrder && previousOrder
+      ? await prisma.$transaction(
+        async (transaction) => {
+          await transaction.orderItem.deleteMany({
+            where: {
+              order_id:
+                previousOrder.id,
+            },
+          });
 
-      data: {
+          return transaction.order.update({
+            where: {
+              id:
+                previousOrder.id,
+            },
+            data: {
+              subtotal,
+              shipping:
+                0,
+              discount:
+                0,
+              total:
+                subtotal,
+              shipping_method:
+                null,
+              shipping_price:
+                0,
+              shipping_deadline:
+                null,
+              items: {
+                create:
+                  items,
+              },
+            },
+          });
+        }
+      )
+      : await prisma.order.create({
 
-        contact_id:
-          contact.id,
+        data: {
 
-        subtotal,
+          contact_id:
+            contact.id,
 
-        total:
           subtotal,
 
-        status:
-          "pending",
+          total:
+            subtotal,
 
-        payment_status:
-          "pending",
+          status:
+            "pending",
 
-        items: {
+          payment_status:
+            "pending",
 
-          create:
-            items,
+          items: {
+
+            create:
+              items,
+          },
         },
-      },
-    });
+      });
 
   // =====================
   // URL
@@ -193,6 +246,21 @@ export async function generateCheckoutLinkTool({
 
   const url =
     `${process.env.FRONTEND_URL}/checkout/${order.id}`;
+
+  await prisma.conversation.update({
+    where: {
+      id:
+        conversationId,
+    },
+    data: {
+      ai_stage:
+        "checkout",
+      checkout_url:
+        url,
+      last_order_id:
+        order.id,
+    },
+  });
 
   return {
     url,

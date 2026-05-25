@@ -18,6 +18,10 @@ import {
 } from "../tools/add-cart-item.tool.js";
 
 import {
+  updateCartItemTool,
+} from "../tools/update-cart-item.tool.js";
+
+import {
   calculateShippingTool,
 } from "../tools/calculate-shipping.tool.js";
 
@@ -117,12 +121,24 @@ IMPORTANTE:
 - Nunca gere resposta vazia
 - Sempre responda o cliente
 - Sempre finalize naturalmente
+- Condições vigentes: pagamento via PIX tem 10% de desconto no checkout
+- Condições vigentes: cartão pode ser parcelado em até 3x sem juros ou em até 12x com juros, sujeito às opções apresentadas no checkout
+- Condições vigentes: a entrega é grátis para Goiânia e região metropolitana
+- Condições vigentes: para demais localidades, há abatimento de até R$ 25,00 no frete calculado; se o valor do frete for menor ou igual ao abatimento, a entrega fica grátis
+- Para prazo e valor final de entrega, calcule o frete pelo CEP usando a tool e informe o resultado retornado
+- Use add_cart_item somente quando o cliente pedir para acrescentar unidades ou incluir um novo produto
+- Se o cliente pedir para trocar, corrigir, definir ou reduzir a quantidade de um produto que já está no carrinho, use update_cart_item; a quantidade informada é o total desejado, não um acréscimo
+- Para remover um produto do carrinho, use update_cart_item com quantity 0
+- Se um link de checkout já foi enviado e o cliente alterar o carrinho, atualize o item e gere o link novamente para sincronizar o pedido pendente
 
 MEMÓRIA:
 ${memory}
 
 CARRINHO:
 ${cart}
+
+LINK DE CHECKOUT ATUAL:
+${conversation.checkout_url || "Nenhum link enviado ainda."}
 `;
 
   // =====================
@@ -266,6 +282,51 @@ ${cart}
 
                   required: [
                     "productId",
+                  ],
+                },
+              },
+            },
+
+            // =====================
+            // UPDATE ITEM
+            // =====================
+
+            {
+              type:
+                "function",
+
+              function: {
+
+                name:
+                  "update_cart_item",
+
+                description:
+                  "Define a quantidade total de um produto que já está no carrinho ou o remove usando quantidade zero",
+
+                parameters: {
+
+                  type:
+                    "object",
+
+                  properties: {
+
+                    productId: {
+                      type:
+                        "number",
+                    },
+
+                    quantity: {
+                      type:
+                        "number",
+
+                      minimum:
+                        0,
+                    },
+                  },
+
+                  required: [
+                    "productId",
+                    "quantity",
                   ],
                 },
               },
@@ -435,6 +496,28 @@ ${cart}
 
             quantity:
               args.quantity || 1,
+          });
+      }
+
+      // =====================
+      // UPDATE ITEM
+      // =====================
+
+      if (
+        functionName ===
+        "update_cart_item"
+      ) {
+
+        toolResult =
+          await updateCartItemTool({
+
+            conversationId,
+
+            productId:
+              args.productId,
+
+            quantity:
+              args.quantity,
           });
       }
 

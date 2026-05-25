@@ -1,37 +1,105 @@
-import { Link } from "react-router-dom";
+import { ShoppingBag } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-export default function ProductCard({ id, image, title, price }) {
-  const hasImage = Boolean(image);
+function formatBRL(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+export default function ProductCard({
+  id,
+  image,
+  title,
+  price,
+  category,
+  isFeatured = false,
+}) {
+  const navigate = useNavigate();
+  const numericPrice =
+    typeof price === "number"
+      ? price
+      : Number(String(price || "").replace(/[^\d,.-]/g, "").replace(",", "."));
+  const pixPrice = numericPrice * 0.90;
+
+  function handleBuyNow() {
+    navigate("/checkout", {
+      state: {
+        directPurchaseItem: {
+          product_id: id,
+          title,
+          price: numericPrice,
+          image: image || "",
+          quantity: 1,
+        },
+      },
+    });
+  }
 
   return (
-    <Link to={`/produto/${id}`}>
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer">
-        <div className="relative w-full h-72 overflow-hidden bg-helo-background rounded-t-2xl">
-          {hasImage ? (
-            <img
-              src={image}
-              alt={title}
-              className="absolute inset-0 w-full h-full object-contain object-center rounded-t-2xl"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-helo-text/70 font-body">
-              Sem imagem
-            </div>
+    <article className="home-product-card flex h-full flex-col overflow-hidden bg-white">
+      <Link to={`/produto/${id}`} className="relative block h-72 bg-[#fffafb]">
+        <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+          {isFeatured && (
+            <span className="rounded-full bg-[#d9536f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+              Escolha Helô
+            </span>
           )}
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#b74662] shadow-sm">
+            10% OFF no PIX
+          </span>
+        </div>
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            className="h-full w-full object-contain p-7 transition duration-300 hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-400">
+            Sem imagem
+          </div>
+        )}
+      </Link>
+
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        {category && (
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#b74662]">
+            {category}
+          </p>
+        )}
+        <Link to={`/produto/${id}`} className="font-display text-xl text-[#43232d]">
+          {title}
+        </Link>
+        <div className="mt-4">
+          <p className="text-xl font-semibold tracking-tight text-[#43232d]">
+            {formatBRL(numericPrice)}
+          </p>
+          <p className="mt-1 text-sm text-zinc-500">
+            ou <strong className="text-[#b74662]">{formatBRL(pixPrice)}</strong> no PIX
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">3x sem juros ou até 12x com juros</p>
         </div>
 
-        <div className="p-5">
-          <h3 className="font-display text-xl text-helo-dark">{title}</h3>
-          <p className="text-helo-text/80 mt-1 font-body">{price}</p>
+        <div className="mt-6 grid gap-2">
           <button
             type="button"
-            className="mt-4 w-full py-3 bg-helo-dark text-white rounded-xl font-semibold hover:bg-helo-rose transition-colors"
+            onClick={handleBuyNow}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#d9536f] font-semibold text-white transition hover:bg-[#c84b67]"
           >
-            Ver Detalhes
+            <ShoppingBag size={17} />
+            Comprar agora
           </button>
+          <Link
+            to={`/produto/${id}`}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#eadfe3] text-sm font-semibold text-[#873c50] transition hover:bg-[#fff5f7]"
+          >
+            Ver detalhes
+          </Link>
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

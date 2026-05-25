@@ -12,6 +12,23 @@ export async function addCartItemTool({
   productId,
   quantity = 1,
 }: Props) {
+  if (
+    !Number.isFinite(
+      Number(quantity)
+    )
+  ) {
+    throw new Error(
+      "Quantidade inválida"
+    );
+  }
+
+  const quantityToAdd =
+    Math.max(
+      1,
+      Math.floor(
+        Number(quantity)
+      )
+    );
 
   const product =
     await prisma.product
@@ -68,8 +85,12 @@ export async function addCartItemTool({
 
   if (existingItem) {
 
-    existingItem.quantity +=
-      quantity;
+    existingItem.quantity =
+      Number(
+        existingItem.quantity ||
+        0
+      ) +
+      quantityToAdd;
 
   } else {
 
@@ -91,7 +112,8 @@ export async function addCartItemTool({
     price:
       Number(product.price),
 
-    quantity,
+    quantity:
+      quantityToAdd,
 
   });
   }

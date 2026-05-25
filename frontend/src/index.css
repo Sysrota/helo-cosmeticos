@@ -18,9 +18,84 @@
     animation: fade-in 0.8s ease 0.3s forwards;
     opacity: 0;
   }
+
+  @keyframes cart-attention {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 83, 111, 0.3); }
+    50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(217, 83, 111, 0); }
+  }
+
+  .cart-attention {
+    animation: cart-attention 1.8s ease-in-out infinite;
+  }
 }
 
 @layer components {
+  .home-container {
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .home-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(217, 83, 111, 0.10), transparent 33%),
+      linear-gradient(115deg, #fff8fa 0%, #fff3f6 49%, #fffafb 100%);
+  }
+
+  .home-hero-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(55px);
+    pointer-events: none;
+  }
+
+  .home-hero-glow-left {
+    top: -5rem;
+    left: -5rem;
+    height: 16rem;
+    width: 16rem;
+    background: rgba(234, 169, 184, 0.25);
+  }
+
+  .home-hero-glow-right {
+    bottom: 2rem;
+    right: -3rem;
+    height: 18rem;
+    width: 18rem;
+    background: rgba(217, 83, 111, 0.14);
+  }
+
+  .home-featured-product {
+    overflow: hidden;
+    border: 1px solid #f0dfe5;
+    border-radius: 2rem;
+    box-shadow: 0 25px 68px rgba(91, 39, 56, 0.1);
+  }
+
+  .home-featured-image {
+    height: 390px;
+    background: linear-gradient(140deg, #ffffff 0%, #fff6f8 100%);
+  }
+
+  .home-benefits {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .home-product-card {
+    border: 1px solid #f0e2e7;
+    border-radius: 1.5rem;
+    box-shadow: 0 14px 44px rgba(91, 39, 56, 0.06);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .home-product-card:hover {
+    box-shadow: 0 20px 54px rgba(91, 39, 56, 0.11);
+    transform: translateY(-3px);
+  }
+
   .product-sale-page {
     background: #fff8fa;
   }
@@ -125,6 +200,11 @@
   }
 
   @media (min-width: 1024px) {
+    .home-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
     .product-sale-container {
       padding-left: 2rem;
       padding-right: 2rem;
@@ -166,6 +246,10 @@
   }
 
   @media (max-width: 639px) {
+    .home-featured-image {
+      height: 320px;
+    }
+
     .product-sale-image {
       height: 420px;
     }

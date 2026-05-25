@@ -1,116 +1,280 @@
+import {
+  ArrowRight,
+  CreditCard,
+  Droplets,
+  Heart,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+} from "lucide-react";
+import { createElement, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
+import { buildWhatsAppUrl } from "../constants/store";
+
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
+const values = [
+  {
+    icon: Heart,
+    title: "Delicadeza",
+    text: "Cuidado pensado para transformar a rotina em um momento leve e especial.",
+  },
+  {
+    icon: Droplets,
+    title: "Conforto na pele",
+    text: "Texturas agradáveis para hidratação e limpeza sem pesar no dia a dia.",
+  },
+  {
+    icon: Sparkles,
+    title: "Beleza real",
+    text: "Produtos que valorizam autocuidado, bem-estar e confiança.",
+  },
+];
+
+const trustItems = [
+  {
+    icon: ShieldCheck,
+    title: "Compra protegida",
+    text: "Pagamento seguro pelo Mercado Pago.",
+  },
+  {
+    icon: Truck,
+    title: "Frete promocional",
+    text: "Grátis na região metropolitana de Goiânia ou R$ 25,00 OFF nas demais localizações.",
+  },
+  {
+    icon: CreditCard,
+    title: "PIX ou cartão",
+    text: "10% OFF no PIX, 3x sem juros ou até 12x com juros.",
+  },
+];
 
 export default function Sobre() {
+  const [featuredProduct, setFeaturedProduct] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProduct() {
+      try {
+        const featuredResponse = await fetch(
+          `${API_URL}/products?active=true&featured=true&limit=1`
+        );
+        const featuredData = await featuredResponse.json();
+        let product = featuredData.items?.[0];
+
+        if (!product) {
+          const fallbackResponse = await fetch(
+            `${API_URL}/products?active=true&limit=1&sort=new`
+          );
+          const fallbackData = await fallbackResponse.json();
+          product = fallbackData.items?.[0];
+        }
+
+        if (active) {
+          setFeaturedProduct(product || null);
+        }
+      } catch {
+        if (active) {
+          setFeaturedProduct(null);
+        }
+      }
+    }
+
+    loadProduct();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const productImage = featuredProduct?.image_url
+    ? `${API_URL}${featuredProduct.image_url}`
+    : logo;
+  const productRoute = featuredProduct
+    ? `/produto/${featuredProduct.id}`
+    : "/produtos";
+
   return (
-    <div className="bg-helo-background min-h-screen py-20">
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="min-h-screen bg-[#fff8fa]">
+      <section className="relative overflow-hidden border-b border-[#f0e2e7] bg-white">
+        <div className="absolute -left-24 top-16 h-64 w-64 rounded-full bg-[#fce8ed] blur-3xl" />
+        <div className="home-container relative grid items-center gap-10 py-12 lg:grid-cols-[1.02fr_0.98fr] lg:py-16">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full bg-[#fff1f5] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662]">
+              <Sparkles size={14} />
+              A essência Helô
+            </p>
+            <h1 className="mt-6 font-display text-4xl leading-tight text-[#43232d] sm:text-5xl">
+              Cuidado que nasceu
+              <span className="block text-[#d9536f]">de uma história de amor.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-8 text-zinc-600 sm:text-lg">
+              A Helô Cosméticos transforma carinho em rituais de autocuidado,
+              com produtos criados para uma beleza leve, confortável e real.
+            </p>
 
-        {/* TÍTULO PRINCIPAL */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-display text-helo-dark leading-tight animate-fade-in">
-            A história por trás da Helô Cosméticos
-          </h1>
-
-          <p className="mt-4 text-helo-text/80 max-w-2xl mx-auto font-body text-lg animate-fade-in-delay">
-            Uma marca criada com significado, carinho e um toque de delicadeza que nasce do amor.
-          </p>
-        </div>
-
-        {/* BLOCO 1 — A HOMENAGEM */}
-        <section className="grid md:grid-cols-2 gap-14 mb-24 items-center">
-
-          {/* Logo */}
-          <div className="rounded-2xl shadow-xl bg-white/60 backdrop-blur-xl p-6 border border-white/40 flex justify-center animate-fade-in">
-            <img
-              src={logo}
-              alt="Helô Cosméticos"
-              className="object-contain w-56 h-56 md:w-72 md:h-72"
-            />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to={productRoute}
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#d9536f] px-8 font-semibold text-white transition hover:bg-[#c84b67]"
+              >
+                Conhecer a linha
+                <ArrowRight size={18} />
+              </Link>
+              <a
+                href={buildWhatsAppUrl(
+                  "Olá! Quero conhecer melhor os produtos da Helô Cosméticos."
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#e6c8d0] bg-white px-7 font-semibold text-[#873c50] transition hover:border-[#d9536f]"
+              >
+                <MessageCircle size={18} />
+                Falar com a Helô
+              </a>
+            </div>
           </div>
 
-          {/* Texto */}
-          <div className="animate-fade-in-delay">
-            <h2 className="text-3xl font-display text-helo-dark mb-4">
+          <div className="relative mx-auto w-full max-w-[470px] rounded-[2rem] border border-[#f0e2e7] bg-[#fffafb] p-6 shadow-[0_22px_62px_rgba(91,39,56,0.08)] sm:p-8">
+            <div className="flex items-center gap-3 border-b border-[#f0e2e7] pb-5">
+              <img src={logo} alt="" className="h-14 w-14 rounded-full object-cover" />
+              <div>
+                <p className="font-display text-xl text-[#43232d]">Helô Cosméticos</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#b74662]">
+                  Cuidado com identidade
+                </p>
+              </div>
+            </div>
+            <Link to={productRoute} className="mt-6 block rounded-3xl bg-white p-4">
+              <div className="h-[270px]">
+                <img
+                  src={productImage}
+                  alt={featuredProduct?.title || "Helô Cosméticos"}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              {featuredProduct && (
+                <p className="mt-4 text-center font-display text-xl text-[#43232d]">
+                  {featuredProduct.title}
+                </p>
+              )}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-container py-16 lg:py-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+          <div className="rounded-[2rem] border border-[#f0e2e7] bg-[#fff1f5] p-8 text-[#43232d] sm:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#b74662]">
+              Nossa origem
+            </p>
+            <h2 className="mt-4 font-display text-3xl leading-tight">
               Inspirada em quem ilumina nossos dias
             </h2>
-
-            <p className="text-helo-text/90 font-body text-lg leading-relaxed">
-              A Helô Cosméticos nasceu como uma homenagem à nossa filha, Heloísa — uma luz constante,
-              cheia de vida e delicadeza.  
-              Seu nome carrega significado, beleza e amor — valores que se tornaram a base da marca.
+          </div>
+          <div className="space-y-5 text-base leading-8 text-zinc-600 sm:text-lg">
+            <p>
+              A Helô Cosméticos nasceu como uma homenagem à nossa filha,
+              Heloísa. Seu nome carrega amor, delicadeza e presença, valores
+              que orientam tudo o que construímos.
             </p>
+            <p>
+              Criamos uma marca para tornar o autocuidado mais prazeroso:
+              produtos que acompanham a rotina com leveza, conforto e atenção
+              aos detalhes.
+            </p>
+          </div>
+        </div>
+      </section>
 
-            <p className="text-helo-text/90 font-body text-lg leading-relaxed mt-4">
-              Cada produto é pensado para transmitir exatamente isso: cuidado de verdade,
-              carinho nos detalhes e uma experiência leve e prazerosa para todas as mulheres.
+      <section className="border-y border-[#f0e2e7] bg-white py-16 lg:py-20">
+        <div className="home-container">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#b74662]">
+              Nosso cuidado na prática
+            </p>
+            <h2 className="mt-4 font-display text-3xl text-[#43232d] sm:text-4xl">
+              Beleza leve para todos os dias
+            </h2>
+            <p className="mt-4 text-base leading-7 text-zinc-600">
+              Nossa linha foi pensada para integrar cuidado e conforto em uma
+              rotina simples, agradável e elegante.
             </p>
           </div>
 
-        </section>
+          <div className="mt-11 grid gap-5 md:grid-cols-3">
+            {values.map(({ icon, title, text }) => (
+              <article
+                key={title}
+                className="rounded-3xl border border-[#f0e2e7] bg-[#fffafb] p-7"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff0f4] text-[#d9536f]">
+                  {createElement(icon, { size: 23 })}
+                </span>
+                <h3 className="mt-5 font-display text-2xl text-[#43232d]">{title}</h3>
+                <p className="mt-3 text-sm leading-7 text-zinc-600">{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* BLOCO 2 — PROPÓSITO */}
-        <section className="mb-24 text-center animate-fade-in">
-          <h2 className="text-3xl font-display text-helo-dark mb-6">
-            Nosso Propósito
-          </h2>
+      <section className="home-container py-16 lg:py-20">
+        <div className="rounded-[2rem] border border-[#f0e2e7] bg-white p-7 sm:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#b74662]">
+                Confiança
+              </p>
+              <h2 className="mt-4 font-display text-3xl text-[#43232d]">
+                Compre com tranquilidade
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-zinc-600">
+                Da escolha à entrega, oferecemos uma experiência clara e
+                segura para seu cuidado chegar até você.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {trustItems.map(({ icon, title, text }) => (
+                <article key={title} className="rounded-2xl bg-[#fff7f9] p-5">
+                  {createElement(icon, {
+                    size: 21,
+                    className: "text-[#d9536f]",
+                  })}
+                  <h3 className="mt-4 text-sm font-semibold text-[#43232d]">{title}</h3>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">{text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <p className="text-helo-text/90 font-body text-lg leading-relaxed max-w-3xl mx-auto">
-            Criamos cosméticos que valorizam a beleza real — aquela que vem da autoestima, do carinho
-            próprio e da leveza do dia a dia.  
-            Cada fórmula, cada textura e cada aroma é desenvolvido para proporcionar bem-estar e confiança.
+      <section className="border-t border-[#f0e2e7] bg-[#fff1f5]">
+        <div className="home-container py-14 text-center sm:py-16">
+          <p className="mx-auto inline-flex rounded-full border border-[#ead1d8] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662]">
+            Marca e identidade
           </p>
-        </section>
-
-        {/* BLOCO 3 — VALORES (com ícones premium) */}
-        <section className="grid md:grid-cols-3 gap-10 mb-24">
-
-          <div className="bg-white/70 p-8 rounded-2xl shadow-lg backdrop-blur-xl border border-white/40 text-center animate-fade-in">
-            <div className="text-helo-dark text-5xl mb-4">💗</div>
-            <h3 className="font-display text-xl text-helo-dark mb-3">Delicadeza</h3>
-            <p className="font-body text-helo-text/80">
-              Desde o desenvolvimento até a entrega, cuidamos de cada detalhe com carinho.
-            </p>
-          </div>
-
-          <div className="bg-white/70 p-8 rounded-2xl shadow-lg backdrop-blur-xl border border-white/40 text-center animate-fade-in-delay">
-            <div className="text-helo-dark text-5xl mb-4">✨</div>
-            <h3 className="font-display text-xl text-helo-dark mb-3">Qualidade</h3>
-            <p className="font-body text-helo-text/80">
-              Trabalhamos com foco em resultados reais, mantendo suavidade e elegância.
-            </p>
-          </div>
-
-          <div className="bg-white/70 p-8 rounded-2xl shadow-lg backdrop-blur-xl border border-white/40 text-center animate-fade-in">
-            <div className="text-helo-dark text-5xl mb-4">🌸</div>
-            <h3 className="font-display text-xl text-helo-dark mb-3">Autenticidade</h3>
-            <p className="font-body text-helo-text/80">
-              Uma marca com alma, essência própria e identidade feminina verdadeira.
-            </p>
-          </div>
-
-        </section>
-
-        {/* BLOCO 4 — CHAMADA FINAL */}
-        <section className="text-center animate-fade-in">
-          <h2 className="text-3xl font-display text-helo-dark mb-6">
-            A beleza que nasce do carinho
+          <h2 className="mx-auto mt-6 max-w-3xl font-display text-3xl leading-tight text-[#43232d] sm:text-4xl">
+            Helô Cosméticos é uma marca devidamente registrada do Grupo HRG.
           </h2>
-
-          <p className="text-helo-text/90 font-body text-lg leading-relaxed max-w-3xl mx-auto mb-10">
-            A Helô Cosméticos é para mulheres que buscam cuidado diário com leveza,
-            qualidade e um toque especial.  
-            Tudo que fazemos carrega a mesma sensibilidade que inspirou o nome da marca.
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-zinc-600 sm:text-base">
+            Uma identidade construída com carinho para acompanhar seus
+            momentos de cuidado e autoestima.
           </p>
-
-          <a
-            href="/produtos"
-            className="px-10 py-4 bg-helo-dark text-white rounded-xl text-lg font-semibold shadow-md hover:bg-helo-rose transition-all hover:shadow-xl"
+          <Link
+            to="/produtos"
+            className="mt-9 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-[#d9536f] px-9 font-semibold text-white transition hover:bg-[#e56f89]"
           >
-            Conhecer Produtos
-          </a>
-        </section>
-
-      </div>
+            Comprar produtos
+            <ArrowRight size={18} />
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

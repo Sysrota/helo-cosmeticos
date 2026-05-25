@@ -17,6 +17,8 @@ export const createProductSchema = z.object({
 
   is_active: z.boolean().optional().default(true),
 
+  is_featured: z.boolean().optional().default(false),
+
   keywords: z.string().optional().default(""),
   weight: z.number().optional().default(0),
   height: z.number().optional().default(0),

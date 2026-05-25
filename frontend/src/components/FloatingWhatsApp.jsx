@@ -1,10 +1,15 @@
+import { buildWhatsAppUrl } from "../constants/store";
+
 export default function FloatingWhatsApp() {
   return (
     <a
-      href="https://wa.me/5562982287272"
+      href={buildWhatsAppUrl(
+        "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento."
+      )}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-green-500 rounded-full shadow-xl hover:scale-110 transition transform animate-pulse"
+      aria-label="Falar com a Helô pelo WhatsApp"
+      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-green-500 rounded-full shadow-xl hover:scale-110 transition transform"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

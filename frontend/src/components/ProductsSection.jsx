@@ -1,171 +1,61 @@
-import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 
-// const API_URL = "http://localhost:3333";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-export default function ProductsSection() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      try {
-        const res = await fetch(
-          `${API_URL}/products?active=true&limit=3&sort=new`
-        );
-
-        const data = await res.json();
-
-        if (!alive) return;
-
-        setItems(Array.isArray(data.items) ? data.items : []);
-      } catch {
-        if (!alive) return;
-        setItems([]);
-      } finally {
-        if (!alive) return;
-        setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
+export default function ProductsSection({ items, loading }) {
   return (
-    <section
-      className="
-        py-14
-        md:py-16
-        bg-helo-background
-      "
-    >
-      <div
-        className="
-          max-w-6xl
-          mx-auto
-          px-6
-        "
-      >
-        {/* Header */}
-        <div
-          className="
-            text-center
-            mb-10
-          "
-        >
-          <h2
-            className="
-              text-3xl
-              md:text-4xl
-              font-display
-              text-helo-dark
-            "
-          >
-            Nossos Produtos
-          </h2>
+    <section className="bg-[#fff8fa] pb-20 pt-16 md:pb-24 md:pt-20">
+      <div className="home-container">
+        <div className="mb-11 flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#b74662]">
+              Escolhas para começar
+            </p>
+            <h2 className="mt-3 font-display text-3xl text-[#43232d] md:text-4xl">
+              Produtos em destaque
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-zinc-600 md:text-base">
+              Cuidados escolhidos para uma rotina simples, prazerosa e com a
+              suavidade da Helô.
+            </p>
+          </div>
 
-          <p
-            className="
-              text-sm
-              md:text-base
-              text-helo-text/70
-              mt-3
-              max-w-xl
-              mx-auto
-              leading-relaxed
-            "
+          <Link
+            to="/produtos"
+            className="inline-flex items-center gap-2 font-semibold text-[#b74662] transition hover:text-[#d9536f]"
           >
-            Linha criada com delicadeza, cuidado e qualidade
-            para sua beleza diária.
-          </p>
+            Ver todos
+            <ArrowRight size={18} />
+          </Link>
         </div>
 
-        {/* Loading */}
         {loading ? (
-          <div
-            className="
-              text-center
-              text-helo-text/70
-            "
-          >
+          <div className="rounded-3xl bg-white py-14 text-center text-zinc-500">
             Carregando produtos...
           </div>
-        ) : (
-          <div
-            className="
-              grid
-              grid-cols-1
-              md:grid-cols-3
-              gap-6
-              lg:gap-8
-            "
-          >
-            {items.map((p) => (
+        ) : items.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
+            {items.map((product) => (
               <ProductCard
-                key={p.id}
-                id={p.id}
-                title={p.title}
-                price={`R$ ${Number(
-                  p.price || 0
-                ).toFixed(2)}`}
+                key={product.id}
+                id={product.id}
+                title={product.title}
+                price={Number(product.price || 0)}
                 image={
-                  p.image_url
-                    ? `${API_URL}${p.image_url}`
+                  product.image_url
+                    ? `${API_URL}${product.image_url}`
                     : ""
                 }
               />
             ))}
           </div>
-        )}
-
-        {/* Empty */}
-        {!loading && items.length === 0 ? (
-          <div
-            className="
-              text-center
-              text-helo-text/70
-              mt-8
-            "
-          >
-            Nenhum produto cadastrado ainda.
+        ) : (
+          <div className="rounded-3xl bg-white py-14 text-center text-zinc-500">
+            Nenhum produto disponível no momento.
           </div>
-        ) : null}
-
-        {/* CTA */}
-        <div
-          className="
-            flex
-            justify-center
-            mt-10
-          "
-        >
-          <Link
-            to="/produtos"
-            className="
-              px-8
-              py-3
-              bg-helo-dark
-              text-white
-              rounded-xl
-              text-base
-              font-semibold
-              shadow-md
-              hover:bg-helo-rose
-              transition-all
-              hover:shadow-lg
-            "
-          >
-            Ver todos os produtos
-          </Link>
-        </div>
+        )}
       </div>
     </section>
   );

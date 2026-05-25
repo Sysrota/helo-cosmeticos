@@ -16,6 +16,7 @@ import {
 } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import Formatter from "../utils/Formatter";
+import UpsellProducts from "../components/UpsellProducts";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -24,6 +25,12 @@ function formatBRL(value) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+function formatShippingPrice(value) {
+  return Number(value) === 0
+    ? "Grátis"
+    : formatBRL(value);
 }
 
 export default function Produto() {
@@ -143,7 +150,7 @@ export default function Produto() {
     Number(
       (
         productTotal *
-        0.95
+        0.90
       ).toFixed(2)
     );
 
@@ -416,10 +423,10 @@ export default function Produto() {
                 </p>
                 <div className="product-sale-payment-info mt-3">
                   <p>
-                    <strong>PIX:</strong> {formatBRL(pixTotal)} com 5% de desconto
+                    <strong>PIX:</strong> {formatBRL(pixTotal)} com 10% de desconto
                   </p>
                   <p>
-                    <strong>Cartão:</strong> parcele no checkout
+                    <strong>Cartão:</strong> 3x sem juros ou até 12x com juros
                   </p>
                 </div>
               </div>
@@ -456,6 +463,9 @@ export default function Produto() {
                       <Truck size={17} className="text-[#d85c7a]" />
                       Calcule o frete
                     </div>
+                    <p className="mt-1 text-xs text-[#a85a6d]">
+                      Frete grátis na região metropolitana de Goiânia. R$ 25,00 OFF nas demais localizações.
+                    </p>
                     <div className="mt-3 flex gap-2">
                       <input
                         type="text"
@@ -491,9 +501,21 @@ export default function Produto() {
                             <span>
                               <span className="block font-medium text-zinc-800">{option.name}</span>
                               <span className="block text-xs text-zinc-500">{option.deadline}</span>
+                              {Number(option.discount || 0) > 0 && (
+                                <span className="mt-1 block text-xs font-medium text-emerald-700">
+                                  Desconto de {formatBRL(option.discount)} aplicado
+                                </span>
+                              )}
                             </span>
-                            <span className="font-semibold text-[#b74662]">
-                              {formatBRL(option.price)}
+                            <span className="text-right">
+                              {Number(option.original_price) > Number(option.price) && (
+                                <span className="block text-xs text-zinc-400 line-through">
+                                  {formatBRL(option.original_price)}
+                                </span>
+                              )}
+                              <span className="block font-semibold text-[#b74662]">
+                                {formatShippingPrice(option.price)}
+                              </span>
                             </span>
                           </div>
                         ))}
@@ -528,10 +550,16 @@ export default function Produto() {
             <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
             <div>
               <p className="text-base font-semibold text-[#43232d]">PIX ou cartão</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">Escolha como prefere finalizar.</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">3x sem juros ou até 12x com juros.</p>
             </div>
           </div>
         </section>
+
+        <UpsellProducts
+          excludedIds={[product.id]}
+          onAdd={addToCart}
+          title="Combine com este cuidado"
+        />
 
         <section className="product-sale-details mt-10 grid gap-6">
           <article className="product-sale-description bg-white p-7 sm:p-9">

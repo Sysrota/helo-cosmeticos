@@ -12,10 +12,47 @@ import { createProductSchema, updateProductSchema } from "./products.validators.
 
 
 export async function listProducts(
-  _req: Request,
+  req: Request,
   res: Response
 ) {
-  const products = await findAllProducts();
+  const rawLimit = Number(req.query.limit);
+  const limit =
+    Number.isInteger(rawLimit) && rawLimit > 0
+      ? Math.min(rawLimit, 100)
+      : undefined;
+  const active =
+    req.query.active === "true"
+      ? true
+      : req.query.active === "false"
+        ? false
+        : undefined;
+  const featured =
+    req.query.featured === "true"
+      ? true
+      : req.query.featured === "false"
+        ? false
+        : undefined;
+  const sort =
+    req.query.sort === "low" || req.query.sort === "high"
+      ? req.query.sort
+      : "new";
+  const category =
+    typeof req.query.category === "string"
+      ? req.query.category
+      : undefined;
+  const search =
+    typeof req.query.search === "string"
+      ? req.query.search.trim()
+      : undefined;
+
+  const products = await findAllProducts({
+    active,
+    category,
+    featured,
+    limit,
+    search,
+    sort,
+  });
 
   return res.json({
     items: products,

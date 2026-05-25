@@ -1,74 +1,103 @@
-import { useState } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
-export default function ProductsFilter({ onFilter }) {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [sort, setSort] = useState("default");
+export default function ProductsFilter({
+  categories,
+  filters,
+  onChange,
+  resultCount,
+  totalCount,
+}) {
+  const hasFilters =
+    filters.search ||
+    filters.category !== "all" ||
+    filters.sort !== "default";
 
-  const handleFilter = () => {
-    onFilter({ search, category, sort });
-  };
+  function updateFilter(key, value) {
+    onChange({
+      ...filters,
+      [key]: value,
+    });
+  }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-sm mb-12 border border-white/40">
-
-      {/* GRID DOS FILTROS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        {/* BUSCA */}
-        <div>
-          <label className="text-sm font-body text-helo-text">Buscar</label>
-          <input
-            type="text"
-            className="w-full mt-2 px-4 py-3 rounded-xl border border-helo-rose/40 focus:ring-2 focus:ring-helo-rose outline-none"
-            placeholder="Procurar produto..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              handleFilter();
-            }}
-          />
-        </div>
-
-        {/* CATEGORIA */}
-        <div>
-          <label className="text-sm font-body text-helo-text">Categoria</label>
-          <select
-            className="w-full mt-2 px-4 py-3 rounded-xl border border-helo-rose/40 focus:ring-2 focus:ring-helo-rose outline-none"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              handleFilter();
-            }}
-          >
-            <option value="all">Todas</option>
-            <option value="shampoo">Shampoo</option>
-            <option value="mascara">Máscara</option>
-            <option value="leavein">Leave-in</option>
-            <option value="finalizador">Finalizador</option>
-          </select>
-        </div>
-
-        {/* ORDENAR */}
-        <div>
-          <label className="text-sm font-body text-helo-text">Ordenar por</label>
-          <select
-            className="w-full mt-2 px-4 py-3 rounded-xl border border-helo-rose/40 focus:ring-2 focus:ring-helo-rose outline-none"
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value);
-              handleFilter();
-            }}
-          >
-            <option value="default">Padrão</option>
-            <option value="low">Preço menor</option>
-            <option value="high">Preço maior</option>
-            <option value="featured">Destaques</option>
-          </select>
-        </div>
-
+    <section className="rounded-[1.5rem] border border-[#f0e2e7] bg-white p-5 shadow-[0_12px_32px_rgba(91,39,56,0.04)] sm:p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#43232d]">
+          <SlidersHorizontal size={17} className="text-[#d9536f]" />
+          Filtre sua rotina
+        </p>
+        <p className="text-sm text-zinc-500">
+          <strong className="text-[#43232d]">{resultCount}</strong>{" "}
+          {resultCount === 1 ? "produto encontrado" : "produtos encontrados"}
+          {hasFilters && totalCount !== resultCount ? ` de ${totalCount}` : ""}
+        </p>
       </div>
 
-    </div>
+      <div className="grid gap-4 md:grid-cols-[1.25fr_0.8fr_0.8fr_auto] md:items-end">
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium text-zinc-600">Buscar</span>
+          <span className="relative block">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c7798d]"
+            />
+            <input
+              type="search"
+              className="h-[52px] w-full rounded-xl border border-[#eadfe3] bg-[#fffafb] py-3 pl-11 pr-4 text-sm text-[#43232d] outline-none transition focus:border-[#d9536f] focus:ring-2 focus:ring-[#f8dfe5]"
+              placeholder="Busque por produto..."
+              value={filters.search}
+              onChange={(event) => updateFilter("search", event.target.value)}
+            />
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium text-zinc-600">Categoria</span>
+          <select
+            className="h-[52px] w-full rounded-xl border border-[#eadfe3] bg-[#fffafb] px-4 py-3 text-sm text-[#43232d] outline-none transition focus:border-[#d9536f]"
+            value={filters.category}
+            onChange={(event) => updateFilter("category", event.target.value)}
+          >
+            <option value="all">Todas as linhas</option>
+            {categories.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium text-zinc-600">Ordenar</span>
+          <select
+            className="h-[52px] w-full rounded-xl border border-[#eadfe3] bg-[#fffafb] px-4 py-3 text-sm text-[#43232d] outline-none transition focus:border-[#d9536f]"
+            value={filters.sort}
+            onChange={(event) => updateFilter("sort", event.target.value)}
+          >
+            <option value="default">Mais recentes</option>
+            <option value="featured">Destaques primeiro</option>
+            <option value="low">Menor preço</option>
+            <option value="high">Maior preço</option>
+          </select>
+        </label>
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                search: "",
+                category: "all",
+                sort: "default",
+              })
+            }
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-[#b74662] transition hover:bg-[#fff1f5]"
+          >
+            <X size={16} />
+            Limpar
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

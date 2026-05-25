@@ -1,127 +1,151 @@
+import {
+  ArrowRight,
+  CreditCard,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+} from "lucide-react";
+import { motion as Motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
-import { motion } from "framer-motion";
+import { buildWhatsAppUrl } from "../constants/store";
 
-export default function Hero() {
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-  const whatsappMessage = encodeURIComponent(
-    "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento."
-  );
+function formatBRL(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+export default function Hero({ featuredProduct }) {
+  const featuredImage = featuredProduct?.image_url
+    ? `${API_URL}${featuredProduct.image_url}`
+    : logo;
+  const pixPrice = Number(featuredProduct?.price || 0) * 0.90;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-helo-light to-helo-background pt-6 md:pt-12 pb-6 md:pb-10">
-      {/* Glow premium */}
-      <div className="absolute top-[-120px] left-[-120px] w-[300px] h-[300px] bg-helo-rose/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-140px] right-[-140px] w-[320px] h-[320px] bg-helo-rose/25 rounded-full blur-[140px] opacity-70" />
+    <section className="home-hero relative overflow-hidden">
+      <div className="home-hero-glow home-hero-glow-left" />
+      <div className="home-hero-glow home-hero-glow-right" />
 
-      {/* Noise */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%22200%22 height=%22200%22 filter=%22url(%23n)%22 opacity=%220.35%22/></svg>')",
-          backgroundSize: "220px 220px",
-        }}
-      />
-
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-8 md:gap-10 items-center relative z-10">
-        {/* LEFT */}
-        <div className="animate-fade-in text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-display text-helo-dark leading-[1.05] tracking-tight mb-4">
-            Beleza com <span className="text-helo-rose">delicadeza</span>.
-          </h1>
-
-          <p className="text-base md:text-lg text-helo-text/80 font-body max-w-lg mx-auto md:mx-0 leading-relaxed mb-6">
-            Cosméticos desenvolvidos para realçar sua beleza
-            com suavidade e elegância.
+      <div className="home-container relative z-10 grid items-center gap-10 py-10 lg:grid-cols-[1.02fr_0.98fr] lg:py-16">
+        <div className="animate-fade-in text-center lg:text-left">
+          <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-[#f0dfe5] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662] lg:mx-0">
+            <Sparkles size={14} />
+            Cuidado premium para sua rotina
           </p>
 
-          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-            <Link
-              to="/produtos"
-              className="group px-6 py-3 bg-helo-dark text-white font-semibold rounded-xl shadow-md transition-all hover:bg-helo-rose"
-            >
-              <span className="inline-flex items-center gap-2">
-                Ver Produtos →
-              </span>
-            </Link>
+          <h1 className="font-display text-4xl leading-[1.08] tracking-tight text-[#43232d] sm:text-5xl lg:text-[3.65rem]">
+            Sua pele merece um cuidado
+            <span className="block text-[#d9536f]">delicado e irresistível.</span>
+          </h1>
 
+          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-zinc-600 sm:text-lg lg:mx-0">
+            Descubra cosméticos Helô para um ritual leve, elegante e
+            confortável. Compre online com frete grátis na região metropolitana
+            de Goiânia e R$ 25,00 OFF no frete para demais localizações.
+          </p>
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            {featuredProduct ? (
+              <Link
+                to={`/produto/${featuredProduct.id}`}
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#d9536f] px-8 font-semibold text-white shadow-[0_15px_30px_rgba(217,83,111,0.27)] transition hover:bg-[#c84b67]"
+              >
+                Comprar agora
+                <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link
+                to="/produtos"
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#d9536f] px-8 font-semibold text-white shadow-[0_15px_30px_rgba(217,83,111,0.27)] transition hover:bg-[#c84b67]"
+              >
+                Ver produtos
+                <ArrowRight size={18} />
+              </Link>
+            )}
             <a
-              href={`https://wa.me/5562994445197?text=${whatsappMessage}`}
+              href={buildWhatsAppUrl(
+                "Olá! Vim pelo site da Helô Cosméticos e gostaria de ajuda para escolher meus produtos."
+              )}
               target="_blank"
               rel="noreferrer"
-              className="
-                px-6
-                py-3
-                bg-helo-rose
-                text-white
-                font-semibold
-                rounded-xl
-                shadow-sm
-                transition-all
-                hover:bg-helo-light
-                hover:text-helo-dark
-              "
+              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#e7c6cf] bg-white px-7 font-semibold text-[#873c50] transition hover:border-[#d9536f] hover:text-[#d9536f]"
             >
-              💬 Falar com a Helô
+              <MessageCircle size={18} />
+              Falar com a Helô
             </a>
           </div>
 
-          {/* Badges */}
-          <div className="mt-5 flex flex-wrap gap-2 justify-center md:justify-start">
-            <span className="px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-xs text-helo-text/80 shadow-sm">
-              🚚 Envio rápido
+          <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-zinc-600 lg:justify-start">
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck size={17} className="text-[#d9536f]" />
+              Compra segura
             </span>
-
-            <span className="px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-xs text-helo-text/80 shadow-sm">
-              🔒 Compra segura
+            <span className="inline-flex items-center gap-2">
+              <Truck size={17} className="text-[#d9536f]" />
+              Frete grátis local ou R$ 25,00 OFF
             </span>
-
-            <span className="px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-xs text-helo-text/80 shadow-sm">
-              💗 WhatsApp
+            <span className="inline-flex items-center gap-2">
+              <CreditCard size={17} className="text-[#d9536f]" />
+              3x sem juros
             </span>
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div className="flex justify-center animate-fade-in-delay">
-          <div className="relative group">
-            <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-helo-rose/20 to-white/10 blur-[2px]" />
+        <div className="animate-fade-in-delay">
+          <Motion.div
+            className="mx-auto max-w-[500px]"
+            initial={{ y: 12 }}
+            animate={{ y: 0 }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "easeInOut",
+            }}
+          >
+            <Link
+              to={featuredProduct ? `/produto/${featuredProduct.id}` : "/produtos"}
+              className="home-featured-product group relative block bg-white transition hover:-translate-y-1 hover:shadow-[0_30px_72px_rgba(91,39,56,0.14)]"
+            >
+              <span className="absolute left-5 top-5 z-10 rounded-full bg-[#fff1f5] px-4 py-2 text-xs font-semibold text-[#b74662]">
+                Destaque Helô
+              </span>
 
-            <div className="
-              relative
-              w-52
-              h-52
-              md:w-64
-              md:h-64
-              lg:w-72
-              lg:h-72
-              rounded-full
-              shadow-[0_12px_40px_rgba(0,0,0,0.12)]
-              bg-white/70
-              backdrop-blur-xl
-              flex
-              items-center
-              justify-center
-              border
-              border-white/50
-              overflow-hidden
-            ">
-              <motion.img
-                src={logo}
-                alt="Logo Helo Cosméticos"
-                className="w-full h-full object-cover"
-                initial={{ scale: 1.03 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
-          </div>
+              <div className="home-featured-image">
+                <img
+                  src={featuredImage}
+                  alt={featuredProduct?.title || "Helô Cosméticos"}
+                  className="h-full w-full object-contain p-9 transition duration-300 group-hover:scale-[1.02] sm:p-12"
+                />
+              </div>
+
+              {featuredProduct && (
+                <div className="border-t border-[#f2e6ea] px-6 py-5">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="font-display text-xl text-[#43232d]">
+                        {featuredProduct.title}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        No PIX por{" "}
+                        <strong className="text-[#b74662]">
+                          {formatBRL(pixPrice)}
+                        </strong>
+                      </p>
+                    </div>
+                    <p className="text-lg font-semibold text-[#43232d]">
+                      {formatBRL(featuredProduct.price)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Link>
+          </Motion.div>
         </div>
       </div>
     </section>

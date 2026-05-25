@@ -41,6 +41,7 @@ export default function AdminProdutos() {
   const [price, setPrice] = useState("");
   const [formCategory, setFormCategory] = useState("Selecione");
   const [isActive, setIsActive] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
 
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
@@ -186,6 +187,7 @@ export default function AdminProdutos() {
     setPrice("0,00");
     setFormCategory("");
     setIsActive(true);
+    setIsFeatured(false);
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
@@ -204,6 +206,7 @@ export default function AdminProdutos() {
     setPrice(String(p.price ?? 0).replace(".", ","));
     setFormCategory(p.category || "");
     setIsActive(Boolean(p.is_active));
+    setIsFeatured(Boolean(p.is_featured));
     setTagsIA(p.keywords || "");
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
@@ -237,6 +240,7 @@ export default function AdminProdutos() {
     price: reaisToNumber(price),
     category: formCategory,
     is_active: isActive,
+    is_featured: isFeatured,
     dicas_uso: dicasUso,
     o_que_vai_sentir: oQueVaiSentir,
     keywords: tagsIA,
@@ -577,12 +581,11 @@ export default function AdminProdutos() {
       </div>
 
       {/* STATUS */}
-      <div className="
-        md:col-span-2
-        flex
-        items-center
-        gap-3
-      ">
+      <div className="md:col-span-2 grid gap-3 sm:grid-cols-2">
+        <label
+          htmlFor="ativo"
+          className="flex items-center gap-3 rounded-xl border border-helo-dark/10 bg-white px-4 py-3 text-sm text-zinc-700"
+        >
 
         <input
           id="ativo"
@@ -602,15 +605,28 @@ export default function AdminProdutos() {
           }
         />
 
-        <label
-          htmlFor="ativo"
-
-          className="
-            text-sm
-            text-zinc-700
-          "
-        >
           Produto ativo
+        </label>
+
+        <label
+          htmlFor="destaque"
+          className="flex items-start gap-3 rounded-xl border border-[#efd8de] bg-[#fff7f9] px-4 py-3 text-sm text-zinc-700"
+        >
+          <input
+            id="destaque"
+            type="checkbox"
+            className="mt-0.5 h-5 w-5"
+            checked={isFeatured}
+            onChange={(e) => setIsFeatured(e.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold text-helo-dark">
+              Destacar na home
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500">
+              Substitui o produto principal atual.
+            </span>
+          </span>
         </label>
       </div>
 
@@ -1004,7 +1020,7 @@ export default function AdminProdutos() {
           image/webp
         "
 
-        disabled={!editingId}
+        disabled={!editingId || uploadingGallery}
 
         onChange={
           handleUploadToGallery
@@ -1015,6 +1031,11 @@ export default function AdminProdutos() {
           max-w-full
         "
       />
+      {uploadingGallery && (
+        <span className="text-sm font-medium text-helo-dark">
+          Enviando imagem...
+        </span>
+      )}
     </div>
 
     {!editingId && (
@@ -1295,6 +1316,11 @@ export default function AdminProdutos() {
                       <div className="text-xs text-helo-text/70 mt-1">
                         Status: {p.is_active ? "Ativo" : "Inativo"}
                       </div>
+                      {p.is_featured && (
+                        <div className="mt-2 inline-flex rounded-full bg-[#fff0f4] px-3 py-1 text-xs font-semibold text-[#b74662]">
+                          Destaque da home
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-2">

@@ -11,8 +11,11 @@ import {
   ChevronDown,
   CreditCard,
   Lock,
+  Minus,
+  Plus,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Truck,
 } from "lucide-react";
 import {
@@ -23,6 +26,7 @@ import {
 } from "react-router-dom";
 import { OrderCreditCardCard } from "../components/orders/OrderCreditCardCard";
 import { OrderPixCard } from "../components/orders/OrderPixCard";
+import UpsellProducts from "../components/UpsellProducts";
 import { useCart } from "../context/CartContext";
 import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
@@ -53,6 +57,47 @@ function formatMoney(value) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+function formatShippingPrice(value) {
+  return Number(value) === 0
+    ? "Grátis"
+    : formatMoney(value);
+}
+
+function itemProductId(item) {
+  return item.product_id ?? item.id;
+}
+
+function mergeCartItems(items) {
+  return items.reduce((combined, item) => {
+    const existingIndex = combined.findIndex(
+      (currentItem) =>
+        itemProductId(currentItem) ===
+        itemProductId(item)
+    );
+
+    if (existingIndex < 0) {
+      return [
+        ...combined,
+        {
+          ...item,
+          quantity: Number(item.quantity || 1),
+        },
+      ];
+    }
+
+    return combined.map((currentItem, index) =>
+      index === existingIndex
+        ? {
+          ...currentItem,
+          quantity:
+            Number(currentItem.quantity || 1) +
+            Number(item.quantity || 1),
+        }
+        : currentItem
+    );
+  }, []);
 }
 
 function InputField({
@@ -89,7 +134,15 @@ export default function PublicCheckoutPage() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, clearCart } = useCart();
+  const {
+    cart,
+    clearCart,
+    addToCart,
+    removeFromCart,
+    setCart,
+    increaseQuantity,
+    decreaseQuantity,
+  } = useCart();
   const directPurchaseItem =
     location.state?.directPurchaseItem || null;
 
@@ -109,6 +162,11 @@ export default function PublicCheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
+  const [directPurchaseCart, setDirectPurchaseCart] = useState(() =>
+    directPurchaseItem
+      ? mergeCartItems([directPurchaseItem, ...cart])
+      : []
+  );
   const addressRequestRef = useRef(0);
 
   useEffect(() => {
@@ -200,9 +258,9 @@ export default function PublicCheckoutPage() {
 
   const checkoutCart = useMemo(
     () => directPurchaseItem
-      ? [directPurchaseItem]
+      ? directPurchaseCart
       : cart,
-    [cart, directPurchaseItem]
+    [cart, directPurchaseCart, directPurchaseItem]
   );
 
   const checkoutItems = useMemo(() => {
@@ -230,12 +288,16 @@ export default function PublicCheckoutPage() {
     [checkoutItems]
   );
 
-  const shippingPrice = Number(selectedShipping?.price || order?.shipping || 0);
+  const shippingPrice = Number(
+    selectedShipping?.price ??
+    order?.shipping ??
+    0
+  );
   const total = subtotal + shippingPrice;
   const pixDiscount =
     step === 3 &&
     selectedPaymentMethod === "pix"
-      ? Number((total * 0.05).toFixed(2))
+      ? Number((total * 0.10).toFixed(2))
       : 0;
   const paymentTotal =
     Number(
@@ -255,6 +317,75 @@ export default function PublicCheckoutPage() {
       [field]: "",
     }));
     setNotice("");
+  }
+
+  function addCheckoutExtra(item) {
+    if (
+      directPurchaseItem
+    ) {
+      setDirectPurchaseCart(
+        (previous) =>
+          mergeCartItems([
+            ...previous,
+            item,
+          ])
+      );
+    }
+
+    addToCart(
+      item
+    );
+  }
+
+  function removeCheckoutItem(index) {
+    if (directPurchaseItem) {
+      const item = checkoutCart[index];
+      const removedProductId = itemProductId(item);
+
+      setDirectPurchaseCart((previous) =>
+        previous.filter((_, itemIndex) => itemIndex !== index)
+      );
+      setCart((previous) =>
+        previous.filter(
+          (cartItem) =>
+            itemProductId(cartItem) !== removedProductId
+        )
+      );
+
+      if (checkoutCart.length === 1) {
+        navigate("/carrinho", { replace: true });
+      }
+
+      return;
+    }
+
+    removeFromCart(index);
+  }
+
+  function updateCheckoutQuantity(index, change) {
+    if (directPurchaseItem) {
+      setDirectPurchaseCart((previous) =>
+        previous.map((item, itemIndex) =>
+          itemIndex === index
+            ? {
+              ...item,
+              quantity: Math.max(
+                1,
+                Number(item.quantity || 1) + change
+              ),
+            }
+            : item
+        )
+      );
+      return;
+    }
+
+    if (change > 0) {
+      increaseQuantity(index);
+      return;
+    }
+
+    decreaseQuantity(index);
   }
 
   function validatePersonalData() {
@@ -385,9 +516,7 @@ export default function PublicCheckoutPage() {
 
     setOrder(data);
 
-    if (!directPurchaseItem) {
-      clearCart();
-    }
+    clearCart();
 
     navigate(`/checkout/${data.id}`, { replace: true });
     return data;
@@ -430,7 +559,17 @@ export default function PublicCheckoutPage() {
       });
 
       setShippingOptions(data);
-      setSelectedShipping(null);
+      setSelectedShipping(
+        data.reduce(
+          (bestOption, option) =>
+            !bestOption ||
+            Number(option.price) <
+              Number(bestOption.price)
+              ? option
+              : bestOption,
+          null
+        )
+      );
     } catch {
       setNotice("Não foi possível calcular a entrega para este CEP.");
     } finally {
@@ -630,6 +769,9 @@ export default function PublicCheckoutPage() {
                     <p className="mt-2 text-sm text-zinc-500">
                       Informe o CEP e escolha a melhor forma de receber.
                     </p>
+                    <p className="mt-2 text-xs font-medium text-[#b74662]">
+                      Frete grátis na região metropolitana de Goiânia. R$ 25,00 OFF nas demais localizações.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -730,10 +872,22 @@ export default function PublicCheckoutPage() {
                                 <span className="block text-xs text-zinc-500">
                                   {option.deadline}
                                 </span>
+                                {Number(option.discount || 0) > 0 && (
+                                  <span className="mt-1 block text-xs font-medium text-emerald-700">
+                                    Abatimento de {formatMoney(option.discount)} aplicado
+                                  </span>
+                                )}
                               </span>
                             </span>
-                            <span className="text-sm font-semibold text-[#b74662]">
-                              {formatMoney(option.price)}
+                            <span className="text-right">
+                              {Number(option.original_price) > Number(option.price) && (
+                                <span className="block text-xs text-zinc-400 line-through">
+                                  {formatMoney(option.original_price)}
+                                </span>
+                              )}
+                              <span className="block text-sm font-semibold text-[#b74662]">
+                                {formatShippingPrice(option.price)}
+                              </span>
                             </span>
                           </button>
                         );
@@ -770,10 +924,27 @@ export default function PublicCheckoutPage() {
                       <span className="block text-sm font-semibold">{selectedShipping?.name}</span>
                       <span className="block text-xs text-zinc-500">{selectedShipping?.deadline}</span>
                     </span>
-                    <span className="text-sm font-semibold text-[#b74662]">
-                      {formatMoney(selectedShipping?.price)}
+                    <span className="text-right">
+                      {Number(selectedShipping?.original_price) > Number(selectedShipping?.price) && (
+                        <span className="block text-xs text-zinc-400 line-through">
+                          {formatMoney(selectedShipping.original_price)}
+                        </span>
+                      )}
+                      <span className="block text-sm font-semibold text-[#b74662]">
+                        {formatShippingPrice(selectedShipping?.price)}
+                      </span>
                     </span>
                   </div>
+                  {Number(selectedShipping?.discount || 0) > 0 && (
+                    <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                      Você ganhou {formatMoney(selectedShipping.discount)} de abatimento no frete.
+                    </p>
+                  )}
+                  {selectedShipping?.name === "Frete grátis local" && (
+                    <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                      Frete grátis na região metropolitana de Goiânia.
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
@@ -788,7 +959,7 @@ export default function PublicCheckoutPage() {
                   >
                     <Sparkles size={17} className="mb-3 text-[#d85c7a]" />
                     <p className="text-sm font-semibold">PIX</p>
-                    <p className="mt-1 text-xs text-zinc-500">5% de desconto</p>
+                    <p className="mt-1 text-xs text-zinc-500">10% de desconto</p>
                   </button>
                   <button
                     type="button"
@@ -801,7 +972,7 @@ export default function PublicCheckoutPage() {
                   >
                     <CreditCard size={17} className="mb-3 text-[#d85c7a]" />
                     <p className="text-sm font-semibold">Cartão</p>
-                    <p className="mt-1 text-xs text-zinc-500">Pague parcelado</p>
+                    <p className="mt-1 text-xs text-zinc-500">3x sem juros ou até 12x com juros</p>
                   </button>
                 </div>
 
@@ -892,12 +1063,47 @@ export default function PublicCheckoutPage() {
                         <p className="text-sm font-semibold leading-snug text-zinc-900">
                           {item.product?.title}
                         </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          Quantidade: {item.quantity}
-                        </p>
+                        {!order ? (
+                          <div className="mt-2 inline-flex items-center rounded-full border border-[#eee2e6] bg-white">
+                            <button
+                              type="button"
+                              aria-label={`Diminuir quantidade de ${item.product?.title}`}
+                              onClick={() => updateCheckoutQuantity(index, -1)}
+                              disabled={Number(item.quantity || 1) <= 1}
+                              className="flex h-8 w-8 items-center justify-center text-zinc-500 transition hover:text-[#d85c7a] disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span className="min-w-7 text-center text-xs font-semibold text-zinc-700">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Aumentar quantidade de ${item.product?.title}`}
+                              onClick={() => updateCheckoutQuantity(index, 1)}
+                              className="flex h-8 w-8 items-center justify-center text-zinc-500 transition hover:text-[#d85c7a]"
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Quantidade: {item.quantity}
+                          </p>
+                        )}
                         <p className="mt-2 text-sm font-semibold">
                           {formatMoney(Number(item.unit_price) * Number(item.quantity || 1))}
                         </p>
+                        {!order && (
+                          <button
+                            type="button"
+                            onClick={() => removeCheckoutItem(index)}
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-zinc-500 transition hover:text-[#d85c7a]"
+                          >
+                            <Trash2 size={13} />
+                            Remover
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -911,11 +1117,23 @@ export default function PublicCheckoutPage() {
                 </div>
                 <div className="flex justify-between text-zinc-600">
                   <span>Entrega</span>
-                  <span>{selectedShipping || order?.shipping ? formatMoney(shippingPrice) : "A calcular"}</span>
+                  <span>
+                    {selectedShipping || order?.shipping_method
+                      ? Number(selectedShipping?.discount || 0) > 0
+                        ? formatMoney(selectedShipping.original_price)
+                        : formatShippingPrice(shippingPrice)
+                      : "A calcular"}
+                  </span>
                 </div>
+                {Number(selectedShipping?.discount || 0) > 0 && (
+                  <div className="flex justify-between font-medium text-emerald-700">
+                    <span>Desconto no frete</span>
+                    <span>- {formatMoney(selectedShipping.discount)}</span>
+                  </div>
+                )}
                 {pixDiscount > 0 && (
                   <div className="flex justify-between font-medium text-emerald-700">
-                    <span>Desconto PIX (5%)</span>
+                    <span>Desconto PIX (10%)</span>
                     <span>- {formatMoney(pixDiscount)}</span>
                   </div>
                 )}
@@ -944,6 +1162,21 @@ export default function PublicCheckoutPage() {
             </div>
           </aside>
         </div>
+
+        {!order && step === 1 && (
+          <UpsellProducts
+            excludedIds={
+              checkoutCart.map(
+                (item) =>
+                  item.product_id ??
+                  item.id
+              )
+            }
+            onAdd={addCheckoutExtra}
+            title="Adicione ao seu pedido"
+            description="Complete sua rotina agora; o item entrará no mesmo checkout."
+          />
+        )}
       </main>
     </div>
   );

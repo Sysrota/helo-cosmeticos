@@ -11,6 +11,47 @@ const API_URL =
   import.meta.env
     .VITE_API_URL;
 
+function formatMoney(value) {
+  return Number(
+    value || 0
+  ).toLocaleString(
+    "pt-BR",
+    {
+      style:
+        "currency",
+      currency:
+        "BRL",
+    }
+  );
+}
+
+function extractInstallmentTotal(
+  label
+) {
+  const amounts =
+    Array.from(
+      String(label || "")
+        .matchAll(
+          /R\$\s*([\d.]+,\d{2})/g
+        )
+    ).map(
+      (result) =>
+        Number(
+          result[1]
+            .replace(/\./g, "")
+            .replace(",", ".")
+        )
+    );
+
+  if (!amounts.length) {
+    return null;
+  }
+
+  return amounts[
+    amounts.length - 1
+  ];
+}
+
 export function OrderCreditCardCard({
   order,
   initialCustomer,
@@ -55,6 +96,14 @@ export function OrderCreditCardCard({
     setCardSetupError] =
     useState(null);
 
+  const [installmentPlans,
+    setInstallmentPlans] =
+    useState([]);
+
+  const [selectedInstallments,
+    setSelectedInstallments] =
+    useState("");
+
   const [formData,
     setFormData] =
     useState({
@@ -67,6 +116,19 @@ export function OrderCreditCardCard({
           initialCustomer?.cpf || ""
         ),
     });
+
+  const bestInterestFreePlan =
+    installmentPlans
+      .filter(
+        (plan) =>
+          plan.interestFree &&
+          plan.installments > 1
+      )
+      .sort(
+        (first, second) =>
+          second.installments -
+          first.installments
+      )[0];
 
   useEffect(() => {
 
@@ -650,6 +712,18 @@ export function OrderCreditCardCard({
     let cardForm =
       null;
 
+    let installmentsObserver =
+      null;
+
+    let installmentsInterval =
+      null;
+
+    let paymentFormElement =
+      null;
+
+    let installmentPlansSignature =
+      "";
+
     setCardFieldsReady(
       false
     );
@@ -657,6 +731,150 @@ export function OrderCreditCardCard({
     setCardSetupError(
       null
     );
+
+    setInstallmentPlans(
+      []
+    );
+
+    setSelectedInstallments(
+      ""
+    );
+
+    function syncInstallmentPlans() {
+
+      const installmentsElement =
+        document.getElementById(
+          "form-checkout__installments"
+        );
+
+      if (
+        !installmentsElement
+      ) {
+        return;
+      }
+
+      const rawPlans =
+        Array.from(
+          installmentsElement
+            .options || []
+        )
+          .filter(
+            (option) =>
+              /parcela/i.test(
+                String(
+                  option.textContent || ""
+                )
+              )
+          )
+          .map(
+            (option, index) => {
+
+              const label =
+                String(
+                  option.textContent || ""
+                )
+                  .replace(
+                    /\s*-\s*sem juros$/i,
+                    ""
+                  )
+                  .trim();
+
+              const installments =
+                Number(
+                  option.value
+                ) ||
+                Number(
+                  label.match(
+                    /^(\d+)\s+parcela/i
+                  )?.[1] || 0
+                );
+
+              return {
+                value:
+                  String(
+                    option.value ||
+                    installments ||
+                    index + 1
+                  ),
+                installments:
+                  installments,
+                label,
+                chargedTotal:
+                  extractInstallmentTotal(
+                    label
+                  ),
+              };
+            }
+          );
+
+      const referenceTotal =
+        rawPlans.find(
+          (plan) =>
+            plan.installments === 1
+        )?.chargedTotal ??
+        Number(
+          order.total || 0
+        );
+
+      const plans =
+        rawPlans.map(
+          (plan) => {
+
+            const interestFree =
+              plan.chargedTotal !== null &&
+              Math.abs(
+                plan.chargedTotal -
+                referenceTotal
+              ) < 0.01;
+
+            const cleanLabel =
+              plan.label
+                .trim();
+
+            const displayedLabel =
+              interestFree &&
+              plan.installments > 1
+                ? `${cleanLabel} - sem juros`
+                : cleanLabel;
+
+            return {
+              value:
+                plan.value,
+              installments:
+                plan.installments,
+              label:
+                cleanLabel,
+              displayLabel:
+                displayedLabel,
+              interestFree,
+            };
+          }
+        );
+
+      const nextSignature =
+        JSON.stringify(
+          plans
+        );
+
+      if (
+        nextSignature !==
+        installmentPlansSignature
+      ) {
+        installmentPlansSignature =
+          nextSignature;
+        setInstallmentPlans(
+          plans
+        );
+        setSelectedInstallments(
+          String(
+            installmentsElement
+              .value ||
+            plans[0]?.value ||
+            ""
+          )
+        );
+      }
+    }
 
     if (!window.mp) {
 
@@ -780,6 +998,48 @@ export function OrderCreditCardCard({
                 setCardFieldsReady(
                   true
                 );
+
+                paymentFormElement =
+                  document.getElementById(
+                    "form-checkout"
+                  );
+
+                if (
+                  paymentFormElement
+                ) {
+
+                  installmentsObserver =
+                    new MutationObserver(
+                      syncInstallmentPlans
+                    );
+
+                  installmentsObserver
+                    .observe(
+                      paymentFormElement,
+                      {
+                        childList:
+                          true,
+                        subtree:
+                          true,
+                        characterData:
+                          true,
+                      }
+                    );
+
+                  paymentFormElement
+                    .addEventListener(
+                      "change",
+                      syncInstallmentPlans
+                    );
+
+                  syncInstallmentPlans();
+
+                  installmentsInterval =
+                    window.setInterval(
+                      syncInstallmentPlans,
+                      400
+                    );
+                }
               },
 
             onValidityChange:
@@ -831,9 +1091,56 @@ export function OrderCreditCardCard({
 
         cardForm.unmount();
       }
+
+      installmentsObserver
+        ?.disconnect();
+
+      if (
+        installmentsInterval
+      ) {
+        window.clearInterval(
+          installmentsInterval
+        );
+      }
+
+      paymentFormElement
+        ?.removeEventListener(
+          "change",
+          syncInstallmentPlans
+        );
     };
 
   }, [order.id, order.total]);
+
+  function handleInstallmentChange(
+    value
+  ) {
+
+    const installmentsElement =
+      document.getElementById(
+        "form-checkout__installments"
+      );
+
+    setSelectedInstallments(
+      value
+    );
+
+    if (
+      installmentsElement
+    ) {
+      installmentsElement.value =
+        value;
+      installmentsElement.dispatchEvent(
+        new Event(
+          "change",
+          {
+            bubbles:
+              true,
+          }
+        )
+      );
+    }
+  }
 
   // =========================
   // PAYMENT
@@ -1702,10 +2009,44 @@ export function OrderCreditCardCard({
             Parcelamento
           </label>
 
+          {installmentPlans.length > 0 && (
+            <select
+              value={selectedInstallments}
+              onChange={(event) =>
+                handleInstallmentChange(
+                  event.target.value
+                )
+              }
+              className="
+                w-full
+                h-[58px]
+                border
+                border-zinc-200
+                rounded-2xl
+                px-4
+                outline-none
+                bg-white
+
+                focus:border-sky-500
+                focus:ring-4
+                focus:ring-sky-100
+              "
+              aria-label="Parcelamento disponível"
+            >
+              {installmentPlans.map((plan) => (
+                <option
+                  key={plan.value}
+                  value={plan.value}
+                >
+                  {plan.displayLabel}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
             id="form-checkout__installments"
-
-            className="
+            className={`
               w-full
               h-[58px]
               border
@@ -1718,8 +2059,41 @@ export function OrderCreditCardCard({
               focus:border-sky-500
               focus:ring-4
               focus:ring-sky-100
-            "
+
+              ${installmentPlans.length > 0 ? "hidden" : ""}
+            `}
           />
+          {bestInterestFreePlan ? (
+            <div className="
+              mt-3
+              rounded-xl
+              border
+              border-emerald-100
+              bg-emerald-50
+              px-4
+              py-3
+              text-sm
+              text-emerald-700
+            ">
+              <p className="font-semibold">
+                Até {bestInterestFreePlan.installments}x sem juros neste cartão
+              </p>
+              <p className="mt-1 text-xs">
+                {bestInterestFreePlan.displayLabel}
+              </p>
+            </div>
+          ) : (
+            <p className="
+              mt-2
+              text-xs
+              leading-5
+              text-zinc-500
+            ">
+              {installmentPlans.length
+                ? "Parcelas disponíveis conforme as condições do seu cartão."
+                : `Informe o cartão para consultar parcelamento sem juros sobre ${formatMoney(order.total)}.`}
+            </p>
+          )}
         </div>
 
         {/* HIDDEN */}

@@ -48,7 +48,7 @@ export async function createPixPaymentService({
     Number(
       (
         regularTotal *
-        0.05
+        0.10
       ).toFixed(2)
     );
 
