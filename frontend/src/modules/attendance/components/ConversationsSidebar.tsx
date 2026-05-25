@@ -12,6 +12,9 @@ import {
 import { socket }
   from "../../../websocket/socket";
 
+const CONVERSATION_SYNC_INTERVAL_MS =
+  5000;
+
 export function ConversationsSidebar() {
 
   const {
@@ -33,12 +36,22 @@ export function ConversationsSidebar() {
 
     loadConversations();
 
+    const syncInterval =
+      window.setInterval(
+        loadConversations,
+        CONVERSATION_SYNC_INTERVAL_MS
+      );
+
     socket.on(
       "connect",
       loadConversations
     );
 
     return () => {
+      window.clearInterval(
+        syncInterval
+      );
+
       socket.off(
         "connect",
         loadConversations

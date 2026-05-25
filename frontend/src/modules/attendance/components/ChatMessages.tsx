@@ -20,6 +20,22 @@ import { socket }
 import EmojiPicker
   from "emoji-picker-react";
 
+const MESSAGE_SYNC_INTERVAL_MS =
+  4000;
+
+function getMessageVersion(
+  messages: any[]
+) {
+  const lastMessage =
+    messages[messages.length - 1];
+
+  return [
+    messages.length,
+    lastMessage?.id || "",
+    lastMessage?.content || "",
+  ].join(":");
+}
+
 export function ChatMessages() {
 
   const {
@@ -51,6 +67,9 @@ export function ChatMessages() {
       null
     );
 
+  const messagesVersionRef =
+    useRef("");
+
   const fileInputRef =
     useRef<HTMLInputElement | null>(
       null
@@ -62,16 +81,57 @@ export function ChatMessages() {
     if (!selectedConversation)
       return;
 
+    let isActive = true;
+    messagesVersionRef.current = "";
+
+    async function syncMessages() {
+
+      try {
+
+        const data =
+          await getMessages(
+            selectedConversation!.id
+          );
+
+        const version =
+          getMessageVersion(data);
+
+        if (
+          isActive &&
+          version !==
+            messagesVersionRef.current
+        ) {
+          messagesVersionRef.current =
+            version;
+
+          setMessages(data);
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao sincronizar mensagens:",
+          error
+        );
+      }
+    }
+
     function joinConversation() {
       socket.emit(
         "join_conversation",
         selectedConversation!.id
       );
 
-      loadMessages();
+      syncMessages();
     }
 
     joinConversation();
+
+    const syncInterval =
+      window.setInterval(
+        syncMessages,
+        MESSAGE_SYNC_INTERVAL_MS
+      );
 
     socket.on(
       "connect",
@@ -79,6 +139,12 @@ export function ChatMessages() {
     );
 
     return () => {
+      isActive = false;
+
+      window.clearInterval(
+        syncInterval
+      );
+
       socket.off(
         "connect",
         joinConversation
@@ -86,6 +152,11 @@ export function ChatMessages() {
     };
 
   }, [selectedConversation]);
+
+  useEffect(() => {
+    messagesVersionRef.current =
+      getMessageVersion(messages);
+  }, [messages]);
 
   // REALTIME
   useEffect(() => {
@@ -158,19 +229,6 @@ export function ChatMessages() {
       });
 
   }, [messages]);
-
-  async function loadMessages() {
-
-    if (!selectedConversation)
-      return;
-
-    const data =
-      await getMessages(
-        selectedConversation.id
-      );
-
-    setMessages(data);
-  }
 
   async function handleSendMessage() {
 

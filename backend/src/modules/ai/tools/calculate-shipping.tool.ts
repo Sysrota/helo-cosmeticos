@@ -30,9 +30,12 @@ export async function calculateShippingTool({
     cleanCep.length !== 8
   ) {
 
-    throw new Error(
-      "CEP inválido"
-    );
+    return {
+      policy:
+        "invalid_zipcode",
+      message:
+        "O CEP informado é inválido. Solicite ao cliente um CEP válido com 8 números.",
+    };
   }
 
   // =========================
@@ -185,10 +188,45 @@ export async function calculateShippingTool({
   // OFFICIAL SHIPPING POLICY
   // =========================
 
-  const address =
-    await findAddressByCep(
-      cleanCep
+  let address;
+
+  try {
+    address =
+      await findAddressByCep(
+        cleanCep
+      );
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "";
+
+    if (
+      message ===
+        "CEP inválido" ||
+      message ===
+        "CEP não encontrado"
+    ) {
+      return {
+        policy:
+          "invalid_zipcode",
+        message:
+          "O CEP informado não foi encontrado. Solicite ao cliente que confira e envie um CEP válido com 8 números.",
+      };
+    }
+
+    console.error(
+      "Erro ao consultar CEP solicitado pela IA:",
+      message || error
     );
+
+    return {
+      policy:
+        "address_unavailable",
+      message:
+        "A consulta do CEP não está disponível no momento. Solicite ao cliente que tente novamente em instantes ou calcule o frete no checkout.",
+    };
+  }
 
   if (
     isFreeShippingArea(

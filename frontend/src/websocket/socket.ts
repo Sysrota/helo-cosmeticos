@@ -34,8 +34,8 @@ export const socket =
         socketPath,
 
       transports: [
-        "websocket",
         "polling",
+        "websocket",
       ],
     }
   );
