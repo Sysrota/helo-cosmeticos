@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 
 import http from "http";
 
@@ -7,8 +7,6 @@ import { app } from "./app.js";
 import { initSocket } from "./websocket/socket.js";
 
 import "./modules/ai/workers/ai.worker.js";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 3333;
 

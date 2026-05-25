@@ -23,6 +23,8 @@ import OrderDetailsPage from "./pages/orders/OrderDetailsPage";
 import StoreSettingsPage from "./pages/settings/StoreSettingsPage";
 import AiCartPage from "./pages/AiCartPage";
 import PublicCheckoutPage from "./pages/PublicCheckoutPage";
+import OrderTrackingPage from "./pages/OrderTrackingPage";
+import AdminLayout from "./components/admin/AdminLayout";
 
 
 export default function App() {
@@ -43,75 +45,29 @@ export default function App() {
 
           <Route path="/checkout" element={<PublicCheckoutPage />}/>
           <Route path="/checkout/:id" element={<PublicCheckoutPage />}/>
+          <Route path="/acompanhar-pedido" element={<OrderTrackingPage />}/>
 
 
           {/* admin */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
           <Route
-            path="/admin/produtos"
+            path="/admin"
             element={
               <PrivateRoute>
-                <AdminProdutos />
+                <AdminLayout />
               </PrivateRoute>
             }
-          />
-
-          {/* se alguém entrar em /admin, manda para /admin/produtos */}
-          <Route path="/admin" element={<Navigate to="/admin/produtos" replace />} />
-
-          <Route
-            path="/admin/attendance"
-            element={
-              <PrivateRoute>
-                <AttendancePage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin/clientes"
-            element={
-              <PrivateRoute>
-                <ClientesPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/clientes/:id"
-            element={
-              <PrivateRoute>
-                <ClienteDetalhesPage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin/orders"
-            element={
-              <PrivateRoute>
-                <OrdersPage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin/orders/:id"
-            element={
-              <PrivateRoute>
-                <OrderDetailsPage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin/settings"
-            element={
-              <PrivateRoute>
-                <StoreSettingsPage />
-              </PrivateRoute>
-            }
-          />
+          >
+            <Route index element={<Navigate to="produtos" replace />} />
+            <Route path="produtos" element={<AdminProdutos />} />
+            <Route path="attendance" element={<AttendancePage />} />
+            <Route path="clientes" element={<ClientesPage />} />
+            <Route path="clientes/:id" element={<ClienteDetalhesPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetailsPage />} />
+            <Route path="settings" element={<StoreSettingsPage />} />
+          </Route>
           
 
           {/* fallback */}

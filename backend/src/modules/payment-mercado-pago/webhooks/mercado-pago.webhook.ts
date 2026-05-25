@@ -12,6 +12,9 @@ import {
 import { mercadoPagoClient } from "../mercado-pago.provider";
 
 import { io } from '../../../websocket/socket'
+import {
+  sendOrderConfirmationEmail,
+} from "../../notification/order-email.service.js";
 
 export async function mercadoPagoWebhook(
   req: Request,
@@ -105,6 +108,15 @@ export async function mercadoPagoWebhook(
         io.emit(
         "order_paid",
         updatedOrder
+        );
+
+        io.emit(
+        "order_updated",
+        updatedOrder
+        );
+
+        await sendOrderConfirmationEmail(
+          order.id
         );
     }
 

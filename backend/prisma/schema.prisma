@@ -249,6 +249,10 @@ model Order {
 
   mercado_pago_payment_id String?
 
+  pending_email_sent_at DateTime?
+
+  confirmation_email_sent_at DateTime?
+
   notes String?
 
   shipping_method String?

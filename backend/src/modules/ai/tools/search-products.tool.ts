@@ -60,19 +60,28 @@ ${product.o_que_vai_sentir}
         }
 
         if (
+          product.keywords
+            ?.toLowerCase()
+            .includes(word)
+        ) {
+
+          score += 9;
+        }
+
+        if (
           product.category
             .toLowerCase()
             .includes(word)
         ) {
 
-          score += 8;
+          score += 7;
         }
 
         if (
           text.includes(word)
         ) {
 
-          score += 3;
+          score += 2;
         }
       }
 
@@ -108,6 +117,15 @@ ${product.o_que_vai_sentir}
 
         description:
           item.product.description,
+
+        indications:
+          item.product.keywords,
+
+        usage_tips:
+          item.product.dicas_uso,
+
+        expected_experience:
+          item.product.o_que_vai_sentir,
 
         image:
           item.product.image_url,

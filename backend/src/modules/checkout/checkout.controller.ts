@@ -9,6 +9,9 @@ import {
 import {
   calculateShipping,
 } from "../shipping/shipping.service.js";
+import {
+  sendOrderPendingPaymentEmail,
+} from "../notification/order-email.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -451,6 +454,17 @@ export async function updateCheckoutDeliveryController(
         },
       });
 
+    void sendOrderPendingPaymentEmail(
+      updatedOrder.id
+    ).catch(
+      (error) => {
+        console.error(
+          "Erro ao iniciar e-mail de pedido pendente:",
+          error
+        );
+      }
+    );
+
     return res.json(
       updatedOrder
     );
@@ -464,4 +478,114 @@ export async function updateCheckoutDeliveryController(
           : "Erro ao salvar entrega",
     });
   }
+}
+
+export async function trackOrderController(
+  req: Request,
+  res: Response
+) {
+  const orderId =
+    Number(
+      req.body.order_id
+    );
+  const email =
+    String(
+      req.body.email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    !Number.isInteger(orderId) ||
+    orderId <= 0 ||
+    !email
+  ) {
+    return res.status(400).json({
+      error:
+        "Informe o número do pedido e o e-mail da compra.",
+    });
+  }
+
+  const order =
+    await prisma.order.findUnique({
+      where: {
+        id:
+          orderId,
+      },
+      include: {
+        contact: true,
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+  if (
+    !order ||
+    order.contact.email
+      ?.trim()
+      .toLowerCase() !==
+      email
+  ) {
+    return res.status(404).json({
+      error:
+        "Pedido não encontrado para os dados informados.",
+    });
+  }
+
+  return res.json({
+    id:
+      order.id,
+    status:
+      order.status,
+    payment_status:
+      order.payment_status,
+    payment_method:
+      order.payment_method,
+    paid_at:
+      order.paid_at,
+    subtotal:
+      order.subtotal,
+    shipping:
+      order.shipping,
+    discount:
+      order.discount,
+    total:
+      order.total,
+    pix_code:
+      order.pix_code,
+    pix_qrcode:
+      order.pix_qrcode,
+    shipping_method:
+      order.shipping_method,
+    shipping_deadline:
+      order.shipping_deadline,
+    created_at:
+      order.created_at,
+    customer_name:
+      order.contact.name,
+    items:
+      order.items.map(
+        (item) => ({
+          id:
+            item.id,
+          quantity:
+            item.quantity,
+          unit_price:
+            item.unit_price,
+          product: {
+            title:
+              item.product.title,
+            images:
+              item.product.images,
+          },
+        })
+      ),
+  });
 }

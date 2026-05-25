@@ -10,6 +10,9 @@ import {
 import {
   Payment,
 } from "mercadopago";
+import {
+  sendOrderConfirmationEmail,
+} from "../notification/order-email.service.js";
 
 interface Props {
 
@@ -171,6 +174,15 @@ export async function createCardPaymentService({
     "order_updated",
     updatedOrder
   );
+
+  if (
+    payment.status ===
+    "approved"
+  ) {
+    await sendOrderConfirmationEmail(
+      order.id
+    );
+  }
 
   // =========================
   // RETURN

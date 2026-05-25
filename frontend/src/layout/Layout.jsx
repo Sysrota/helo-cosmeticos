@@ -14,6 +14,14 @@ export default function Layout({
     location.pathname === "/checkout" ||
     location.pathname.startsWith("/checkout/");
 
+  const isAdmin =
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/admin/");
+
+  const hideSiteChrome =
+    isCheckout ||
+    isAdmin;
+
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -31,15 +39,15 @@ export default function Layout({
         flex-col
       "
     >
-      {!isCheckout && <Header />}
+      {!hideSiteChrome && <Header />}
 
       <main className="flex-grow">
         {children}
       </main>
 
-      {!isCheckout && <FloatingWhatsApp />}
+      {!hideSiteChrome && <FloatingWhatsApp />}
 
-      {!isCheckout && <Footer />}
+      {!hideSiteChrome && <Footer />}
     </div>
   );
 }

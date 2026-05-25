@@ -247,6 +247,9 @@ ${product.description}
 Dicas de uso:
 ${product.dicas_uso}
 
+Indicado para / necessidades relacionadas:
+${product.keywords || "Não informado"}
+
 O que vai sentir:
 ${product.o_que_vai_sentir}
 
@@ -273,6 +276,9 @@ Categoria: ${product.category}
 
 Descrição:
 ${product.description}
+
+Indicado para / necessidades relacionadas:
+${product.keywords || "Não informado"}
 
 -------------------
 `;

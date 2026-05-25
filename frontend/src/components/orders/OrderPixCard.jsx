@@ -189,7 +189,11 @@ export function OrderPixCard({
 
             ? "Gerando PIX..."
 
-            : "Gerar QR Code PIX"
+            : pixData
+
+              ? "Gerar novo PIX"
+
+              : "Gerar QR Code PIX"
         }
       </button>
 

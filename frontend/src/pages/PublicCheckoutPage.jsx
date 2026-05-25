@@ -693,6 +693,18 @@ export default function PublicCheckoutPage() {
             <div>
               <p className="text-sm font-semibold">Pagamento aprovado</p>
               <p className="text-xs">Seu pedido foi confirmado com sucesso.</p>
+              <Link
+                to="/acompanhar-pedido"
+                state={{
+                  orderId:
+                    order?.id,
+                  email:
+                    customer.email,
+                }}
+                className="mt-2 inline-block text-xs font-semibold underline"
+              >
+                Acompanhar meu pedido
+              </Link>
             </div>
           </div>
         </div>

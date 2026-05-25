@@ -122,6 +122,20 @@ export default function Footer() {
             >
               Contato
             </Link>
+
+            <span className="text-helo-rose/20">
+              |
+            </span>
+
+            <Link
+              to="/acompanhar-pedido"
+              className="
+                hover:text-helo-rose
+                transition-colors
+              "
+            >
+              Acompanhar pedido
+            </Link>
           </nav>
 
           {/* Redes */}
