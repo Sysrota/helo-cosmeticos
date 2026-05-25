@@ -8,6 +8,9 @@ import { prisma }
 import {
   Payment,
 } from "mercadopago";
+import {
+  buildPaymentDescription,
+} from "./payment-description.js";
 
 interface Props {
   order_id: number;
@@ -26,6 +29,11 @@ export async function createPixPaymentService({
 
       include: {
         contact: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -90,7 +98,13 @@ export async function createPixPaymentService({
           total,
 
         description:
-          `Pedido #${order.id}`,
+          buildPaymentDescription(
+            order.id,
+            order.items
+          ),
+
+        external_reference:
+          String(order.id),
 
         payment_method_id:
           "pix",

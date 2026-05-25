@@ -13,6 +13,9 @@ import {
 import {
   sendOrderConfirmationEmail,
 } from "../notification/order-email.service.js";
+import {
+  buildPaymentDescription,
+} from "./payment-description.js";
 
 interface Props {
 
@@ -74,6 +77,11 @@ export async function createCardPaymentService({
 
       include: {
         contact: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -115,7 +123,13 @@ export async function createCardPaymentService({
         token,
 
         description:
-          `Pedido #${order.id}`,
+          buildPaymentDescription(
+            order.id,
+            order.items
+          ),
+
+        external_reference:
+          String(order.id),
 
         installments:
           Number(
