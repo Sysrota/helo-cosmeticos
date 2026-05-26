@@ -10,6 +10,7 @@ import { motion as Motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
 import { buildWhatsAppUrl } from "../constants/store";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -21,10 +22,17 @@ function formatBRL(value) {
 }
 
 export default function Hero({ featuredProduct }) {
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    card_interest_free_installments: interestFreeInstallments,
+    freeShippingLabel,
+  } = useCommercialPolicy();
   const featuredImage = featuredProduct?.image_url
     ? `${API_URL}${featuredProduct.image_url}`
     : logo;
-  const pixPrice = Number(featuredProduct?.price || 0) * 0.90;
+  const pixPrice =
+    Number(featuredProduct?.price || 0) *
+    (1 - pixDiscountPercent / 100);
 
   return (
     <section className="home-hero relative overflow-hidden">
@@ -45,8 +53,7 @@ export default function Hero({ featuredProduct }) {
 
           <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-zinc-600 sm:text-lg lg:mx-0">
             Descubra cosméticos Helô para um ritual leve, elegante e
-            confortável. Compre online com frete grátis na região metropolitana
-            de Goiânia e R$ 25,00 OFF no frete para demais localizações.
+            confortável. Compre online com {freeShippingLabel.toLowerCase()}.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
@@ -87,11 +94,11 @@ export default function Hero({ featuredProduct }) {
             </span>
             <span className="inline-flex items-center gap-2">
               <Truck size={17} className="text-[#d9536f]" />
-              Frete grátis local ou R$ 25,00 OFF
+              {freeShippingLabel}
             </span>
             <span className="inline-flex items-center gap-2">
               <CreditCard size={17} className="text-[#d9536f]" />
-              3x sem juros
+              {interestFreeInstallments}x sem juros
             </span>
           </div>
         </div>

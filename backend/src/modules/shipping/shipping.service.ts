@@ -2,6 +2,9 @@ import axios from "axios";
 
 import { prisma }
   from "../../config/prisma.js";
+import {
+  getCommercialPolicy,
+} from "../store-config/store-config.service.js";
 
 interface Props {
   cep: string;
@@ -27,6 +30,10 @@ export interface ShippingOption {
   original_price?: number;
 
   discount?: number;
+
+  payment_on_delivery?: boolean;
+
+  external_payment?: boolean;
 }
 
 interface ShippingPackage {
@@ -41,9 +48,11 @@ interface ShippingPackage {
   totalLength: number;
 
   insuranceValue: number;
+
+  freeShipping?: boolean;
 }
 
-const FREE_SHIPPING_CITIES = new Set([
+const MOTO_UBER_CITIES = new Set([
   "abadia de goias",
   "aparecida de goiania",
   "aragoiania",
@@ -67,8 +76,6 @@ const FREE_SHIPPING_CITIES = new Set([
   "trindade",
 ]);
 
-const SHIPPING_SUBSIDY = 25;
-
 function normalizeLocation(
   value: string
 ) {
@@ -82,39 +89,42 @@ function normalizeLocation(
     .trim();
 }
 
-export function isFreeShippingArea(
+export function getMotoUberShippingOption(
   address: {
     city: string;
     state: string;
+  },
+  enabled: boolean
+): ShippingOption | null {
+  const isCovered =
+    normalizeLocation(address.state) === "go" &&
+    MOTO_UBER_CITIES.has(
+      normalizeLocation(address.city)
+    );
+
+  if (
+    !enabled ||
+    !isCovered
+  ) {
+    return null;
   }
-) {
-  return (
-    normalizeLocation(
-      address.state
-    ) === "go" &&
-    FREE_SHIPPING_CITIES.has(
-      normalizeLocation(
-        address.city
-      )
-    )
-  );
+
+  return {
+    name:
+      "Moto Uber - pagamento pelo cliente",
+    price:
+      0,
+    deadline:
+      "Entrega rápida local",
+    payment_on_delivery:
+      true,
+    external_payment:
+      true,
+  };
 }
 
-export function localFreeShippingOption():
-  ShippingOption[] {
-  return [
-    {
-      name:
-        "Frete grátis local",
-      price:
-        0,
-      deadline:
-        "Entrega em até 2 dias",
-    },
-  ];
-}
-
-function applyShippingSubsidy(
+function applyFreeShipping(
+  freeShipping: boolean,
   option: ShippingOption
 ): ShippingOption {
   const originalPrice =
@@ -122,13 +132,9 @@ function applyShippingSubsidy(
       option.price
     );
   const price =
-    Number(
-      Math.max(
-        0,
-        originalPrice -
-        SHIPPING_SUBSIDY
-      ).toFixed(2)
-    );
+    freeShipping
+      ? 0
+      : originalPrice;
 
   return {
     ...option,
@@ -136,12 +142,9 @@ function applyShippingSubsidy(
     original_price:
       originalPrice,
     discount:
-      Number(
-        (
-          originalPrice -
-          price
-        ).toFixed(2)
-      ),
+      freeShipping
+        ? originalPrice
+        : 0,
   };
 }
 
@@ -194,6 +197,7 @@ export async function requestShippingOptions({
   maxWidth,
   totalLength,
   insuranceValue,
+  freeShipping = false,
 }: ShippingPackage): Promise<
   ShippingOption[]
 > {
@@ -305,7 +309,7 @@ export async function requestShippingOptions({
 
       .map(
         (service: any) =>
-          applyShippingSubsidy({
+          applyFreeShipping(freeShipping, {
             name:
               service.name,
 
@@ -384,37 +388,60 @@ export async function calculateProductShipping({
       )
     );
 
-  if (
-    isFreeShippingArea(
-      address
-    )
-  ) {
-    return localFreeShippingOption();
-  }
+  const policy =
+    await getCommercialPolicy();
+  const subtotal =
+    Number(product.price || 0) *
+    safeQuantity;
 
-  return requestShippingOptions({
-    cleanCep,
-    totalWeight:
-      Number(
-        product.weight || 0
-      ) * safeQuantity,
-    maxHeight:
-      Number(
-        product.height || 1
-      ),
-    maxWidth:
-      Number(
-        product.width || 1
-      ),
-    totalLength:
-      Number(
-        product.length || 1
-      ) * safeQuantity,
-    insuranceValue:
-      Number(
-        product.price || 0
-      ) * safeQuantity,
-  });
+  const motoUberOption =
+    getMotoUberShippingOption(
+      address,
+      policy.moto_uber_enabled
+    );
+
+  try {
+    const carrierOptions =
+      await requestShippingOptions({
+        cleanCep,
+        totalWeight:
+          Number(
+            product.weight || 0
+          ) * safeQuantity,
+        maxHeight:
+          Number(
+            product.height || 1
+          ),
+        maxWidth:
+          Number(
+            product.width || 1
+          ),
+        totalLength:
+          Number(
+            product.length || 1
+          ) * safeQuantity,
+        insuranceValue:
+          subtotal,
+        freeShipping:
+          subtotal >
+          policy.free_shipping_minimum,
+      });
+
+    return motoUberOption
+      ? [
+        ...carrierOptions,
+        motoUberOption,
+      ]
+      : carrierOptions;
+  } catch (error) {
+    if (motoUberOption) {
+      return [
+        motoUberOption,
+      ];
+    }
+
+    throw error;
+  }
 }
 
 export async function calculateShipping({
@@ -466,13 +493,13 @@ export async function calculateShipping({
     );
   }
 
-  if (
-    isFreeShippingArea(
-      address
-    )
-  ) {
-    return localFreeShippingOption();
-  }
+  const policy =
+    await getCommercialPolicy();
+  const motoUberOption =
+    getMotoUberShippingOption(
+      address,
+      policy.moto_uber_enabled
+    );
 
 
   // PESO TOTAL
@@ -548,15 +575,36 @@ export async function calculateShipping({
   // });
 
 
-  return requestShippingOptions({
-    cleanCep,
-    totalWeight,
-    maxHeight,
-    maxWidth,
-    totalLength,
-    insuranceValue:
-      Number(
-        order.total || 0
-      ),
-  });
+  try {
+    const carrierOptions =
+      await requestShippingOptions({
+        cleanCep,
+        totalWeight,
+        maxHeight,
+        maxWidth,
+        totalLength,
+        insuranceValue:
+          Number(
+            order.subtotal || 0
+          ),
+        freeShipping:
+          Number(order.subtotal || 0) >
+          policy.free_shipping_minimum,
+      });
+
+    return motoUberOption
+      ? [
+        ...carrierOptions,
+        motoUberOption,
+      ]
+      : carrierOptions;
+  } catch (error) {
+    if (motoUberOption) {
+      return [
+        motoUberOption,
+      ];
+    }
+
+    throw error;
+  }
 }

@@ -5,6 +5,7 @@ export function OrderPixCard({
   order,
   pixDiscount,
   pixTotal,
+  pixDiscountPercent = 10,
 }) {
   const isPaid =
     order.payment_status === "paid" ||
@@ -55,7 +56,7 @@ export function OrderPixCard({
           text-sm
         ">
           <span className="text-emerald-700">
-            10% de desconto no PIX
+            {pixDiscountPercent}% de desconto no PIX
           </span>
           <span className="font-semibold text-emerald-800">
             {Number(pixTotal || 0).toLocaleString("pt-BR", {

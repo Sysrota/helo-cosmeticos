@@ -25,13 +25,15 @@ import AiCartPage from "./pages/AiCartPage";
 import PublicCheckoutPage from "./pages/PublicCheckoutPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import AdminLayout from "./components/admin/AdminLayout";
+import { CommercialPolicyProvider } from "./context/CommercialPolicyContext";
 
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
+      <CommercialPolicyProvider>
+        <Layout>
+          <Routes>
           {/* públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/produtos" element={<Produtos />} />
@@ -72,8 +74,9 @@ export default function App() {
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
+          </Routes>
+        </Layout>
+      </CommercialPolicyProvider>
     </BrowserRouter>
   );
 }

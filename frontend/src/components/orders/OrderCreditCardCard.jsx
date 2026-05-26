@@ -55,6 +55,7 @@ function extractInstallmentTotal(
 export function OrderCreditCardCard({
   order,
   initialCustomer,
+  maxInstallments = 12,
 }) {
 
   const mpRef =
@@ -817,7 +818,13 @@ export function OrderCreditCardCard({
         );
 
       const plans =
-        rawPlans.map(
+        rawPlans
+          .filter(
+            (plan) =>
+              plan.installments <=
+              maxInstallments
+          )
+          .map(
           (plan) => {
 
             const interestFree =
@@ -1110,7 +1117,7 @@ export function OrderCreditCardCard({
         );
     };
 
-  }, [order.id, order.total]);
+  }, [maxInstallments, order.id, order.total]);
 
   function handleInstallmentChange(
     value

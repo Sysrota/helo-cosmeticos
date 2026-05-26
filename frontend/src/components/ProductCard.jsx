@@ -1,5 +1,6 @@
 import { ShoppingBag } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 function formatBRL(value) {
   return Number(value || 0).toLocaleString("pt-BR", {
@@ -17,11 +18,16 @@ export default function ProductCard({
   isFeatured = false,
 }) {
   const navigate = useNavigate();
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    pixLabel,
+    cardLabel,
+  } = useCommercialPolicy();
   const numericPrice =
     typeof price === "number"
       ? price
       : Number(String(price || "").replace(/[^\d,.-]/g, "").replace(",", "."));
-  const pixPrice = numericPrice * 0.90;
+  const pixPrice = numericPrice * (1 - pixDiscountPercent / 100);
 
   function handleBuyNow() {
     navigate("/checkout", {
@@ -47,7 +53,7 @@ export default function ProductCard({
             </span>
           )}
           <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#b74662] shadow-sm">
-            10% OFF no PIX
+            {pixLabel}
           </span>
         </div>
         {image ? (
@@ -80,7 +86,7 @@ export default function ProductCard({
           <p className="mt-1 text-sm text-zinc-500">
             ou <strong className="text-[#b74662]">{formatBRL(pixPrice)}</strong> no PIX
           </p>
-          <p className="mt-1 text-xs text-zinc-500">3x sem juros ou até 12x com juros</p>
+          <p className="mt-1 text-xs text-zinc-500">{cardLabel}</p>
         </div>
 
         <div className="mt-6 grid gap-2">

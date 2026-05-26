@@ -37,6 +37,25 @@ export async function getMessages(
   return response.data;
 }
 
+export async function deleteConversation(
+  conversationId: number
+) {
+  const token =
+    localStorage.getItem(
+      "auth_token"
+    );
+
+  await api.delete(
+    `/attendance/${conversationId}`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+}
+
 export async function sendMessage(
   data: {
     conversation_id: number;

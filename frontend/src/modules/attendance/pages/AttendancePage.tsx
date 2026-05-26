@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import { ConversationsSidebar }
   from "../components/ConversationsSidebar";
 
@@ -11,13 +13,41 @@ import {
   useAttendanceStore,
 } from "../store/attendance.store";
 
+import { socket }
+  from "../../../websocket/socket";
+
 export function AttendancePage() {
 
   const {
     selectedConversation,
     mobileView,
+    removeConversation,
   } =
     useAttendanceStore();
+
+  useEffect(() => {
+    function handleConversationDeleted(
+      conversation: {
+        id: number;
+      }
+    ) {
+      removeConversation(
+        conversation.id
+      );
+    }
+
+    socket.on(
+      "conversation_deleted",
+      handleConversationDeleted
+    );
+
+    return () => {
+      socket.off(
+        "conversation_deleted",
+        handleConversationDeleted
+      );
+    };
+  }, [removeConversation]);
 
   return (
     <div

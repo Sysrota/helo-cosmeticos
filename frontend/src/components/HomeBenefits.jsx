@@ -1,30 +1,36 @@
 import { createElement } from "react";
 import { CreditCard, ShieldCheck, Tag, Truck } from "lucide-react";
-
-const benefits = [
-  {
-    icon: Tag,
-    title: "10% OFF no PIX",
-    text: "Economia aplicada na finalização.",
-  },
-  {
-    icon: CreditCard,
-    title: "3x sem juros",
-    text: "Ou até 12x com juros no cartão.",
-  },
-  {
-    icon: Truck,
-    title: "Frete grátis local",
-    text: "R$ 25,00 OFF nas demais localizações.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Compra protegida",
-    text: "Pagamento via Mercado Pago.",
-  },
-];
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 export default function HomeBenefits() {
+  const {
+    pixLabel,
+    card_interest_free_installments: interestFreeInstallments,
+    card_max_installments: maxInstallments,
+    freeShippingLabel,
+  } = useCommercialPolicy();
+  const benefits = [
+    {
+      icon: Tag,
+      title: pixLabel,
+      text: "Economia aplicada na finalização.",
+    },
+    {
+      icon: CreditCard,
+      title: `${interestFreeInstallments}x sem juros`,
+      text: `Ou até ${maxInstallments}x com juros no cartão.`,
+    },
+    {
+      icon: Truck,
+      title: freeShippingLabel,
+      text: "Condição válida para localidades atendidas.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Compra protegida",
+      text: "Pagamento via Mercado Pago.",
+    },
+  ];
   return (
     <section className="home-benefits bg-white">
       <div className="home-container grid gap-px overflow-hidden rounded-[1.5rem] border border-[#f0e2e7] bg-[#f0e2e7] sm:grid-cols-2 lg:grid-cols-4">

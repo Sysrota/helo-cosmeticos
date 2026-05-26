@@ -5,6 +5,7 @@ import {
   createConversationController,
   listMessagesController,
   createMessageController,
+  deleteConversationController,
   markAsReadController,
   uploadAttendanceFileController,
 } from "./attendance.controller.js";
@@ -29,6 +30,14 @@ router.post(
   auth,
   asyncHandler(
     createConversationController
+  )
+);
+
+router.delete(
+  "/:id",
+  auth,
+  asyncHandler(
+    deleteConversationController
   )
 );
 

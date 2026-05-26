@@ -7,8 +7,11 @@ import {
   useCart,
 } from "../context/CartContext";
 import UpsellProducts from "../components/UpsellProducts";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 export default function Carrinho() {
+  const { cardLabel, freeShippingLabel } =
+    useCommercialPolicy();
 
   const navigate =
     useNavigate();
@@ -313,11 +316,11 @@ export default function Carrinho() {
                   </div>
 
                   <div>
-                    🚚 Frete grátis local ou R$ 25,00 OFF
+                    🚚 {freeShippingLabel}
                   </div>
 
                   <div>
-                    💳 3x sem juros ou até 12x com juros
+                    💳 {cardLabel}
                   </div>
 
                 </div>

@@ -260,6 +260,32 @@ export default function OrderDetailsPage() {
     Number(
       order?.discount || 0
     );
+  const pixDiscountPercent =
+    Number(
+      storeConfig?.pix_discount_percent ??
+      10
+    );
+  const pixDiscount =
+    Number(
+      (
+        (
+          subtotal +
+          Number(order?.shipping || 0)
+        ) *
+        (
+          pixDiscountPercent /
+          100
+        )
+      ).toFixed(2)
+    );
+  const pixTotal =
+    Number(
+      (
+        subtotal +
+        Number(order?.shipping || 0) -
+        pixDiscount
+      ).toFixed(2)
+    );
 
   // =========================
   // ITEMS
@@ -761,6 +787,12 @@ return (
               pixData={pixData}
 
               order={order}
+
+              pixDiscount={pixDiscount}
+
+              pixTotal={pixTotal}
+
+              pixDiscountPercent={pixDiscountPercent}
             />
           )
         }
@@ -771,6 +803,12 @@ return (
 
             <OrderCreditCardCard
               order={order}
+              maxInstallments={
+                Number(
+                  storeConfig?.card_max_installments ??
+                  12
+                )
+              }
             />
           )
         }

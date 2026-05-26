@@ -211,10 +211,23 @@ export function OrderShipping({
                       text-xl
                       font-bold
                     ">
-                      {Formatter.formataMoeda(
-                        option.price
-                      )}
+                      {option.external_payment
+                        ? "Pago no envio"
+                        : Formatter.formataMoeda(
+                          option.price
+                        )}
                     </div>
+
+                    {option.external_payment && (
+                      <div className="
+                        mt-1
+                        text-xs
+                        font-medium
+                        text-zinc-500
+                      ">
+                        Cliente paga a corrida
+                      </div>
+                    )}
 
                     {selected && (
 

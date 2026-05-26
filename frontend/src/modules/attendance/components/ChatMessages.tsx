@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import {
+  deleteConversation,
   getMessages,
   sendMessage,
   uploadFile,
@@ -19,6 +20,9 @@ import { socket }
 
 import EmojiPicker
   from "emoji-picker-react";
+
+import { Trash2 }
+  from "lucide-react";
 
 const MESSAGE_SYNC_INTERVAL_MS =
   4000;
@@ -47,6 +51,8 @@ export function ChatMessages() {
 
     addMessage,
 
+    removeConversation,
+
     setMobileView,
   } =
     useAttendanceStore();
@@ -61,6 +67,11 @@ export function ChatMessages() {
 
   const [isTyping, setIsTyping] =
     useState(false);
+
+  const [
+    isDeleting,
+    setIsDeleting,
+  ] = useState(false);
 
   const messagesEndRef =
     useRef<HTMLDivElement | null>(
@@ -296,6 +307,47 @@ export function ChatMessages() {
     );
   }
 
+  async function handleDeleteConversation() {
+    if (
+      !selectedConversation ||
+      isDeleting
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Apagar esta conversa e todas as mensagens? Esta ação não pode ser desfeita."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteConversation(
+        selectedConversation.id
+      );
+
+      removeConversation(
+        selectedConversation.id
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao apagar conversa:",
+        error
+      );
+
+      window.alert(
+        "Não foi possível apagar a conversa."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (!selectedConversation) {
 
     return (
@@ -454,32 +506,76 @@ export function ChatMessages() {
             </div>
           </div>
 
-          {/* CLIENTE */}
-          <button
-            onClick={() =>
-              setMobileView(
-                "customer"
-              )
-            }
+          <div className="
+            flex
+            items-center
+            gap-2
+            shrink-0
+          ">
+            {/* CLIENTE */}
+            <button
+              onClick={() =>
+                setMobileView(
+                  "customer"
+                )
+              }
 
-            className="
-              lg:hidden
+              className="
+                lg:hidden
 
-              px-3
-              py-2
+                px-3
+                py-2
 
-              rounded-xl
+                rounded-xl
 
-              bg-white
-              border
+                bg-white
+                border
 
-              text-sm
+                text-sm
+              "
+            >
+              Cliente
+            </button>
 
-              shrink-0
-            "
-          >
-            Cliente
-          </button>
+            <button
+              type="button"
+              onClick={
+                handleDeleteConversation
+              }
+              disabled={isDeleting}
+              title="Apagar conversa"
+              className="
+                inline-flex
+                items-center
+                gap-2
+
+                h-10
+                px-3
+
+                rounded-xl
+
+                border
+                border-[#eccfc9]
+                bg-white
+
+                text-sm
+                text-[#a54545]
+
+                hover:bg-[#fff3f1]
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+
+                transition-colors
+              "
+            >
+              <Trash2 size={16} />
+              <span className="hidden md:inline">
+                {isDeleting
+                  ? "Apagando..."
+                  : "Apagar"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

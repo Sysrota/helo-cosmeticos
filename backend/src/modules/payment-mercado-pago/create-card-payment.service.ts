@@ -16,6 +16,9 @@ import {
 import {
   buildPaymentDescription,
 } from "./payment-description.js";
+import {
+  getCommercialPolicy,
+} from "../store-config/store-config.service.js";
 
 interface Props {
 
@@ -89,6 +92,18 @@ export async function createCardPaymentService({
 
     throw new Error(
       "Pedido não encontrado"
+    );
+  }
+
+  const commercialPolicy =
+    await getCommercialPolicy();
+
+  if (
+    Number(installments) >
+    commercialPolicy.card_max_installments
+  ) {
+    throw new Error(
+      `Escolha no máximo ${commercialPolicy.card_max_installments} parcelas.`
     );
   }
 

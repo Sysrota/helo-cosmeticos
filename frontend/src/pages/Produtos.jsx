@@ -2,6 +2,7 @@ import { CreditCard, ShieldCheck, Sparkles, Tag, Truck } from "lucide-react";
 import { createElement, useEffect, useMemo, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import ProductsFilter from "../components/ProductsFilter";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -15,13 +16,6 @@ const CATEGORY_LABELS = {
   skincare: "Skincare",
 };
 
-const benefits = [
-  { icon: Tag, text: "10% OFF no PIX" },
-  { icon: CreditCard, text: "3x sem juros ou até 12x com juros" },
-  { icon: Truck, text: "Frete grátis local ou R$ 25,00 OFF" },
-  { icon: ShieldCheck, text: "Compra segura" },
-];
-
 function normalizeSearch(value) {
   return String(value || "")
     .normalize("NFD")
@@ -31,6 +25,13 @@ function normalizeSearch(value) {
 }
 
 export default function Produtos() {
+  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
+  const benefits = [
+    { icon: Tag, text: pixLabel },
+    { icon: CreditCard, text: cardLabel },
+    { icon: Truck, text: freeShippingLabel },
+    { icon: ShieldCheck, text: "Compra segura" },
+  ];
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

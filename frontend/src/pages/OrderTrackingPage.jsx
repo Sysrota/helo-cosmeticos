@@ -27,6 +27,9 @@ import {
 import {
   socket,
 } from "../websocket/socket";
+import {
+  useCommercialPolicy,
+} from "../context/useCommercialPolicy";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -135,6 +138,11 @@ function getPaymentInfo(
 }
 
 export default function OrderTrackingPage() {
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    card_interest_free_installments: interestFreeInstallments,
+    card_max_installments: maxInstallments,
+  } = useCommercialPolicy();
   const location =
     useLocation();
   const initialData =
@@ -384,7 +392,7 @@ export default function OrderTrackingPage() {
     Number(
       (
         regularTotal *
-        0.10
+        (pixDiscountPercent / 100)
       ).toFixed(2)
     );
   const pixTotal =
@@ -522,6 +530,11 @@ export default function OrderTrackingPage() {
                     {order.shipping_deadline}
                   </p>
                 )}
+                {String(order.shipping_method || "").startsWith("Moto Uber") && (
+                  <p className="mt-2 text-xs font-medium text-[#b74662]">
+                    Valor do envio pago diretamente pelo cliente.
+                  </p>
+                )}
               </div>
 
               <div className="rounded-2xl bg-[#fff7f9] p-4">
@@ -599,7 +612,7 @@ export default function OrderTrackingPage() {
                   Escolha como pagar
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[#78636b]">
-                  Seu pedido está reservado. Pague por PIX com 10% de desconto ou cartão.
+                  Seu pedido está reservado. Pague por PIX com {pixDiscountPercent}% de desconto ou cartão.
                 </p>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
@@ -620,7 +633,7 @@ export default function OrderTrackingPage() {
                       PIX
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      10% de desconto
+                      {pixDiscountPercent}% de desconto
                     </p>
                   </button>
                   <button
@@ -640,7 +653,7 @@ export default function OrderTrackingPage() {
                       Cartão
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      3x sem juros
+                      {interestFreeInstallments}x sem juros
                     </p>
                   </button>
                 </div>
@@ -670,11 +683,17 @@ export default function OrderTrackingPage() {
                       pixTotal={
                         pixTotal
                       }
+                      pixDiscountPercent={
+                        pixDiscountPercent
+                      }
                     />
                   )}
                   {paymentMethod === "credit_card" && (
                     <OrderCreditCardCard
                       order={cardOrder}
+                      maxInstallments={
+                        maxInstallments
+                      }
                       initialCustomer={{
                         email,
                       }}

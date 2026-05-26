@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "/helo-logo.png";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const navItems = [
   { to: "/", label: "Início" },
@@ -17,6 +18,12 @@ export default function Header() {
   const [compact, setCompact] = useState(false);
   const { totalItems } = useCart();
   const hasItems = totalItems > 0;
+  const {
+    pixLabel,
+    cardLabel,
+    freeShippingLabel,
+    card_interest_free_installments: interestFreeInstallments,
+  } = useCommercialPolicy();
 
   useEffect(() => {
     function handleScroll() {
@@ -34,13 +41,11 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#f0dfe5] bg-white/95 backdrop-blur-xl">
       <div className="hidden flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#fff1f5] px-4 py-2 text-center text-xs font-medium tracking-wide text-[#43232d] sm:flex sm:text-sm">
-        <span className="font-bold">10% OFF no PIX</span>
+        <span className="font-bold">{pixLabel}</span>
         <span className="text-[#d9a7b3]">|</span>
-        <span className="font-bold">Frete grátis na região metropolitana de Goiânia</span>
+        <span className="font-bold">{freeShippingLabel}</span>
         <span className="text-[#d9a7b3]">|</span>
-        <span className="font-bold">R$ 25,00 OFF para demais localizações</span>
-        <span className="text-[#d9a7b3]">|</span>
-        <span className="font-bold">3x sem juros ou até 12x com juros</span>
+        <span className="font-bold">{cardLabel}</span>
       </div>
 
       <div className={`
@@ -48,12 +53,12 @@ export default function Header() {
         ${compact ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
       `}>
         <p className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em]">
-          <span>10% OFF no PIX</span>
+          <span>{pixLabel}</span>
           <span className="text-[#d9a7b3]">|</span>
-          <span>3x sem juros</span>
+          <span>{interestFreeInstallments}x sem juros</span>
         </p>
         <p className="mt-1 text-[11px] font-medium tracking-[0.01em] text-[#874052]">
-          Frete grátis local <span className="mx-1 text-[#d9a7b3]">|</span> R$ 25 OFF no frete
+          {freeShippingLabel}
         </p>
       </div>
 

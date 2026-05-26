@@ -59,7 +59,22 @@ async function main() {
       ],
 
       shipping_info:
-        "Frete grátis para Goiânia e região metropolitana. Para demais localidades, abatimento de até R$ 25,00 no frete; valor e prazo finais são calculados pelo CEP.",
+        "Frete grátis em compras acima de R$ 99,00 para todo o Brasil. Valor e prazo finais são calculados pelo CEP.",
+
+      free_shipping_minimum:
+        99,
+
+      moto_uber_enabled:
+        true,
+
+      pix_discount_percent:
+        10,
+
+      card_interest_free_installments:
+        3,
+
+      card_max_installments:
+        12,
 
       business_hours:
         "Segunda a sexta das 08h às 18h",
@@ -68,7 +83,7 @@ async function main() {
         "Trocas em até 7 dias",
 
       ai_rules:
-        "Nunca inventar informações. PIX com 10% de desconto no checkout. Cartão em até 3x sem juros ou até 12x com juros, conforme opções exibidas no checkout.",
+        "Nunca inventar informações. Use as condições comerciais configuradas no sistema e os valores finais retornados pelo cálculo de frete.",
     },
   });
 

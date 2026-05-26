@@ -11,6 +11,9 @@ import {
 import {
   buildPaymentDescription,
 } from "./payment-description.js";
+import {
+  getCommercialPolicy,
+} from "../store-config/store-config.service.js";
 
 interface Props {
   order_id: number;
@@ -52,11 +55,17 @@ export async function createPixPaymentService({
       ).toFixed(2)
     );
 
+  const commercialPolicy =
+    await getCommercialPolicy();
+
   const discount =
     Number(
       (
         regularTotal *
-        0.10
+        (
+          commercialPolicy.pix_discount_percent /
+          100
+        )
       ).toFixed(2)
     );
 

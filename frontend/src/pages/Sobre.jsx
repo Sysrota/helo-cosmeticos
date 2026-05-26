@@ -12,6 +12,7 @@ import { createElement, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
 import { buildWhatsAppUrl } from "../constants/store";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -33,26 +34,26 @@ const values = [
   },
 ];
 
-const trustItems = [
-  {
-    icon: ShieldCheck,
-    title: "Compra protegida",
-    text: "Pagamento seguro pelo Mercado Pago.",
-  },
-  {
-    icon: Truck,
-    title: "Frete promocional",
-    text: "Grátis na região metropolitana de Goiânia ou R$ 25,00 OFF nas demais localizações.",
-  },
-  {
-    icon: CreditCard,
-    title: "PIX ou cartão",
-    text: "10% OFF no PIX, 3x sem juros ou até 12x com juros.",
-  },
-];
-
 export default function Sobre() {
+  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
   const [featuredProduct, setFeaturedProduct] = useState(null);
+  const trustItems = [
+    {
+      icon: ShieldCheck,
+      title: "Compra protegida",
+      text: "Pagamento seguro pelo Mercado Pago.",
+    },
+    {
+      icon: Truck,
+      title: "Frete promocional",
+      text: `${freeShippingLabel} para qualquer localidade atendida.`,
+    },
+    {
+      icon: CreditCard,
+      title: "PIX ou cartão",
+      text: `${pixLabel}, ${cardLabel}.`,
+    },
+  ];
 
   useEffect(() => {
     let active = true;

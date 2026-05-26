@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import {
   createConversation,
   createMessage,
+  deleteConversation,
   listConversations,
   listMessages,
   markConversationAsRead,
@@ -42,6 +43,36 @@ export async function createConversationController(
   return res.status(201).json(
     conversation
   );
+}
+
+export async function deleteConversationController(
+  req: Request,
+  res: Response
+) {
+  const conversationId =
+    Number(req.params.id);
+
+  if (
+    !Number.isInteger(conversationId) ||
+    conversationId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Conversa inválida",
+    });
+  }
+
+  const deleted =
+    await deleteConversation(
+      conversationId
+    );
+
+  if (!deleted) {
+    return res.status(404).json({
+      error: "Conversa não encontrada",
+    });
+  }
+
+  return res.status(204).send();
 }
 
 export async function createMessageController(

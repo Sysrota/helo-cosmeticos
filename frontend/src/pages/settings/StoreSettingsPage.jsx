@@ -4,7 +4,8 @@ import {
 } from "react";
 
 const API_URL =
-  import.meta.env.VITE_API_URL;
+  import.meta.env.VITE_API_URL ||
+  "/api";
 
 export default function StoreSettingsPage() {
 
@@ -47,6 +48,8 @@ export default function StoreSettingsPage() {
           headers: {
             "Content-Type":
               "application/json",
+            Authorization:
+              `Bearer ${localStorage.getItem("auth_token") || ""}`,
           },
 
           body: JSON.stringify(
@@ -183,6 +186,69 @@ export default function StoreSettingsPage() {
             gap-4
           ">
 
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="text-sm text-zinc-600">
+                Desconto no PIX (%)
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={config.pix_discount_percent ?? 10}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      pix_discount_percent:
+                        Number(e.target.value),
+                    })
+                  }
+                  className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
+                />
+              </label>
+
+              <label className="text-sm text-zinc-600">
+                Parcelas sem juros
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={config.card_interest_free_installments ?? 3}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      card_interest_free_installments:
+                        Number(e.target.value),
+                    })
+                  }
+                  className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
+                />
+              </label>
+
+              <label className="text-sm text-zinc-600">
+                Máximo de parcelas
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={config.card_max_installments ?? 12}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      card_max_installments:
+                        Number(e.target.value),
+                    })
+                  }
+                  className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
+                />
+              </label>
+            </div>
+
+            <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+              As parcelas sem juros divulgadas no site devem estar habilitadas
+              também na sua conta do Mercado Pago; é o Mercado Pago quem
+              confirma a cobrança sem juros no cartão.
+            </p>
+
             {config.payment_methods?.map(
               (method, index) => (
 
@@ -279,6 +345,62 @@ export default function StoreSettingsPage() {
           ">
 
             <div>
+
+              <label className="
+                text-sm
+                text-zinc-500
+              ">
+                Frete grátis em compras acima de (R$)
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={
+                  config.free_shipping_minimum ?? 99
+                }
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    free_shipping_minimum:
+                      Number(e.target.value),
+                  })
+                }
+                className="
+                  mb-5
+                  mt-2
+                  h-12
+                  w-full
+                  rounded-xl
+                  border
+                  px-4
+                "
+              />
+
+              <label className="mb-5 flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <input
+                  type="checkbox"
+                  checked={config.moto_uber_enabled ?? true}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      moto_uber_enabled:
+                        e.target.checked,
+                    })
+                  }
+                  className="mt-1 h-5 w-5"
+                />
+                <span>
+                  <span className="block font-medium text-zinc-900">
+                    Disponibilizar entrega por Moto Uber
+                  </span>
+                  <span className="mt-1 block text-sm leading-6 text-zinc-500">
+                    Disponível para Goiânia e região metropolitana. O cliente
+                    paga a corrida diretamente no envio, fora do checkout.
+                  </span>
+                </span>
+              </label>
 
               <label className="
                 text-sm
@@ -452,6 +574,11 @@ export default function StoreSettingsPage() {
           ">
             Regras da IA
           </h2>
+
+          <p className="mb-4 text-sm leading-6 text-zinc-500">
+            Use este campo para orientações de atendimento. Frete, PIX e
+            parcelamento são definidos nos campos acima.
+          </p>
 
           <textarea
             value={

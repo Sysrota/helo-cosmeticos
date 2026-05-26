@@ -4,10 +4,12 @@ import {
 
 import {
   findAddressByCep,
-  isFreeShippingArea,
-  localFreeShippingOption,
+  getMotoUberShippingOption,
   requestShippingOptions,
 } from "../../shipping/shipping.service.js";
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 interface Props {
   conversationId: number;
@@ -228,41 +230,61 @@ export async function calculateShippingTool({
     };
   }
 
-  if (
-    isFreeShippingArea(
-      address
-    )
-  ) {
-    return {
-      policy:
-        "local_free_shipping",
-      destination:
-        `${address.city}/${address.state}`,
-      options:
-        localFreeShippingOption(),
-    };
-  }
+  const commercialPolicy =
+    await getCommercialPolicy();
+  const hasFreeShipping =
+    total >
+    commercialPolicy.free_shipping_minimum;
+  const motoUberOption =
+    getMotoUberShippingOption(
+      address,
+      commercialPolicy.moto_uber_enabled
+    );
 
   try {
+    const carrierOptions =
+      await requestShippingOptions({
+        cleanCep,
+        totalWeight,
+        maxHeight,
+        maxWidth,
+        totalLength,
+        insuranceValue:
+          total,
+        freeShipping:
+          hasFreeShipping,
+      });
+
     return {
       policy:
-        "shipping_subsidy",
+        hasFreeShipping
+          ? "free_shipping_threshold"
+          : "calculated_shipping",
       destination:
         `${address.city}/${address.state}`,
-      subsidy:
-        25,
+      free_shipping_minimum:
+        commercialPolicy.free_shipping_minimum,
       options:
-        await requestShippingOptions({
-          cleanCep,
-          totalWeight,
-          maxHeight,
-          maxWidth,
-          totalLength,
-          insuranceValue:
-            total,
-        }),
+        motoUberOption
+          ? [
+            ...carrierOptions,
+            motoUberOption,
+          ]
+          : carrierOptions,
     };
   } catch (error) {
+    if (motoUberOption) {
+      return {
+        policy:
+          "moto_uber_available",
+        destination:
+          `${address.city}/${address.state}`,
+        options: [
+          motoUberOption,
+        ],
+      };
+    }
+
     console.error(
       "Erro ao calcular frete solicitado pela IA:",
       error instanceof Error

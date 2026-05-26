@@ -62,6 +62,55 @@ export async function listConversations() {
   });
 }
 
+export async function deleteConversation(
+  conversationId: number
+) {
+  const conversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+  if (!conversation) {
+    return false;
+  }
+
+  const existingJobs =
+    await aiQueue.getDelayed();
+
+  for (const job of existingJobs) {
+    if (
+      job.id ===
+      `conversation-${conversationId}`
+    ) {
+      await job.remove();
+    }
+  }
+
+  await redis.del(
+    `conversation:last-message:${conversationId}`
+  );
+
+  await prisma.conversation.delete({
+    where: {
+      id: conversationId,
+    },
+  });
+
+  io.emit(
+    "conversation_deleted",
+    {
+      id: conversationId,
+    }
+  );
+
+  return true;
+}
+
 interface CreateMessageDTO {
   conversation_id: number;
 

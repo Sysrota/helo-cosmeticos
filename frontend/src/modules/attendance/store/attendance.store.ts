@@ -49,6 +49,11 @@ interface AttendanceStore {
       Conversation
   ) => void;
 
+  removeConversation: (
+    conversationId:
+      number
+  ) => void;
+
   setSelectedConversation: (
     conversation:
       Conversation | null
@@ -141,6 +146,35 @@ export const useAttendanceStore =
                       ).getTime()
                     );
                   }),
+            };
+          }),
+
+      removeConversation:
+        (conversationId) =>
+          set((state) => {
+            const removedSelected =
+              state.selectedConversation
+                ?.id === conversationId;
+
+            return {
+              conversations:
+                state.conversations.filter(
+                  (conversation) =>
+                    conversation.id !==
+                    conversationId
+                ),
+              selectedConversation:
+                removedSelected
+                  ? null
+                  : state.selectedConversation,
+              messages:
+                removedSelected
+                  ? []
+                  : state.messages,
+              mobileView:
+                removedSelected
+                  ? "conversations"
+                  : state.mobileView,
             };
           }),
 

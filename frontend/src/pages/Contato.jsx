@@ -11,6 +11,7 @@ import { createElement } from "react";
 import { Link } from "react-router-dom";
 import logo from "/helo-logo.png";
 import { buildWhatsAppUrl } from "../constants/store";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const whatsappHref = buildWhatsAppUrl(
   "Olá! Vim pela página de contato da Helô Cosméticos e preciso de atendimento."
@@ -40,22 +41,22 @@ const supportItems = [
   },
 ];
 
-const benefits = [
-  {
-    icon: ShieldCheck,
-    text: "Compra segura pelo Mercado Pago",
-  },
-  {
-    icon: Truck,
-    text: "Frete grátis local ou R$ 25,00 OFF",
-  },
-  {
-    icon: CreditCard,
-    text: "10% OFF no PIX e 3x sem juros",
-  },
-];
-
 export default function Contato() {
+  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
+  const benefits = [
+    {
+      icon: ShieldCheck,
+      text: "Compra segura pelo Mercado Pago",
+    },
+    {
+      icon: Truck,
+      text: freeShippingLabel,
+    },
+    {
+      icon: CreditCard,
+      text: `${pixLabel} e ${cardLabel}`,
+    },
+  ];
   return (
     <div className="min-h-screen bg-[#fff8fa]">
       <section className="relative overflow-hidden border-b border-[#f0e2e7] bg-white">

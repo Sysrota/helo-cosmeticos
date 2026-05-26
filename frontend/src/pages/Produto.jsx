@@ -17,6 +17,7 @@ import {
 import { useCart } from "../context/CartContext";
 import Formatter from "../utils/Formatter";
 import UpsellProducts from "../components/UpsellProducts";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -33,10 +34,21 @@ function formatShippingPrice(value) {
     : formatBRL(value);
 }
 
+function formatShippingOptionPrice(option) {
+  return option.external_payment
+    ? "Pago no envio"
+    : formatShippingPrice(option.price);
+}
+
 export default function Produto() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    cardLabel,
+    freeShippingLabel,
+  } = useCommercialPolicy();
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState(null);
   const [selected, setSelected] = useState("");
@@ -150,7 +162,7 @@ export default function Produto() {
     Number(
       (
         productTotal *
-        0.90
+        (1 - pixDiscountPercent / 100)
       ).toFixed(2)
     );
 
@@ -423,10 +435,10 @@ export default function Produto() {
                 </p>
                 <div className="product-sale-payment-info mt-3">
                   <p>
-                    <strong>PIX:</strong> {formatBRL(pixTotal)} com 10% de desconto
+                    <strong>PIX:</strong> {formatBRL(pixTotal)} com {pixDiscountPercent}% de desconto
                   </p>
                   <p>
-                    <strong>Cartão:</strong> 3x sem juros ou até 12x com juros
+                    <strong>Cartão:</strong> {cardLabel}
                   </p>
                 </div>
               </div>
@@ -464,7 +476,7 @@ export default function Produto() {
                       Calcule o frete
                     </div>
                     <p className="mt-1 text-xs text-[#a85a6d]">
-                      Frete grátis na região metropolitana de Goiânia. R$ 25,00 OFF nas demais localizações.
+                      {freeShippingLabel} para qualquer localidade atendida.
                     </p>
                     <div className="mt-3 flex gap-2">
                       <input
@@ -493,7 +505,13 @@ export default function Produto() {
 
                     {shippingOptions.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {shippingOptions.slice(0, 3).map((option) => (
+                        {shippingOptions
+                          .filter(
+                            (option, index) =>
+                              index < 3 ||
+                              option.external_payment
+                          )
+                          .map((option) => (
                           <div
                             key={`${option.name}-${option.price}`}
                             className="flex items-center justify-between gap-4 rounded-xl bg-white px-3.5 py-3 text-sm"
@@ -501,6 +519,11 @@ export default function Produto() {
                             <span>
                               <span className="block font-medium text-zinc-800">{option.name}</span>
                               <span className="block text-xs text-zinc-500">{option.deadline}</span>
+                              {option.external_payment && (
+                                <span className="mt-1 block text-xs font-medium text-[#b74662]">
+                                  Valor pago pelo cliente diretamente na entrega
+                                </span>
+                              )}
                               {Number(option.discount || 0) > 0 && (
                                 <span className="mt-1 block text-xs font-medium text-emerald-700">
                                   Desconto de {formatBRL(option.discount)} aplicado
@@ -514,7 +537,7 @@ export default function Produto() {
                                 </span>
                               )}
                               <span className="block font-semibold text-[#b74662]">
-                                {formatShippingPrice(option.price)}
+                                {formatShippingOptionPrice(option)}
                               </span>
                             </span>
                           </div>
@@ -550,7 +573,7 @@ export default function Produto() {
             <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
             <div>
               <p className="text-base font-semibold text-[#43232d]">PIX ou cartão</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">3x sem juros ou até 12x com juros.</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">{cardLabel}.</p>
             </div>
           </div>
         </section>

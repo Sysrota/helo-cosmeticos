@@ -28,6 +28,9 @@ import {
 import {
   generateCheckoutLinkTool,
 } from "../tools/generate-checkout-link.tool.js";
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 const openai =
   new OpenAI({
@@ -89,6 +92,17 @@ export async function executeAiAgent({
 
       : "Carrinho vazio";
 
+  const commercialPolicy =
+    await getCommercialPolicy();
+  const freeShippingMinimum =
+    commercialPolicy.free_shipping_minimum
+      .toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+  const cardConditions =
+    `até ${commercialPolicy.card_interest_free_installments}x sem juros ou até ${commercialPolicy.card_max_installments}x com juros no cartão`;
+
   // =====================
   // PROMPT
   // =====================
@@ -122,15 +136,17 @@ IMPORTANTE:
 - Nunca gere resposta vazia
 - Sempre responda o cliente
 - Sempre finalize naturalmente
-- Condições vigentes: pagamento via PIX tem 10% de desconto no checkout
-- Condições vigentes: cartão pode ser parcelado em até 3x sem juros ou em até 12x com juros, sujeito às opções apresentadas no checkout
-- Condições vigentes: a entrega é grátis para Goiânia e região metropolitana
-- Condições vigentes: para demais localidades, há abatimento de até R$ 25,00 no frete calculado; se o valor do frete for menor ou igual ao abatimento, a entrega fica grátis
-- Ao falar de cartão, informe exatamente: "até 3x sem juros ou até 12x com juros no cartão"
+- Condições vigentes: pagamento via PIX tem ${commercialPolicy.pix_discount_percent}% de desconto no checkout
+- Condições vigentes: cartão possui ${cardConditions}, sujeito às opções apresentadas no checkout
+- Condições vigentes: o frete é grátis em compras acima de ${freeShippingMinimum}, para qualquer localidade atendida
+- Condições vigentes: ${commercialPolicy.moto_uber_enabled ? "Moto Uber pode aparecer para Goiânia e região metropolitana; nessa opção, o cliente paga a corrida diretamente no envio e o valor não é cobrado no checkout" : "Moto Uber não está disponível"}
+- Ao falar de cartão, informe exatamente: "${cardConditions}"
 - Para prazo e valor final de entrega, calcule o frete pelo CEP usando a tool e informe somente os valores finais retornados em options.price
 - Quando houver mais de uma opção de frete, apresente primeiro a opção mais barata e informe que ela é a opção mais econômica; depois apresente as demais opções, sempre na ordem do menor para o maior valor final
-- Se calculate_shipping retornar policy "local_free_shipping", diga que o CEP está em Goiânia ou região metropolitana e informe frete grátis local com entrega em até 2 dias; não diga que é fora de Goiânia e não liste transportadoras
-- Se calculate_shipping retornar policy "shipping_subsidy", os valores em options.price já possuem o abatimento aplicado; não some, não desconte novamente e não apresente original_price como preço do cliente
+- Se calculate_shipping retornar policy "free_shipping_threshold", diga que a compra atingiu o frete grátis acima de ${freeShippingMinimum}; informe os serviços e prazos retornados, todos sem custo
+- Se calculate_shipping retornar policy "calculated_shipping", informe os serviços, prazos e valores finais retornados pela consulta
+- Se uma opção "Moto Uber - pagamento pelo cliente" estiver em options, explique que é entrega local rápida e que o custo da corrida é pago pelo cliente diretamente no envio; nunca diga que essa opção é grátis
+- Se calculate_shipping retornar policy "moto_uber_available", informe apenas a opção de Moto Uber disponível e a cobrança direta ao cliente, pois a cotação das transportadoras não ficou disponível
 - Se calculate_shipping retornar policy "shipping_unavailable", diga apenas que a consulta não ficou disponível naquele momento e que o frete poderá ser calculado no checkout; não invente preço nem prazo
 - Se calculate_shipping retornar policy "invalid_zipcode", avise que não localizou o CEP informado e peça para o cliente conferir e enviar um CEP válido com 8 números
 - Se calculate_shipping retornar policy "address_unavailable", avise que a consulta de CEP está temporariamente indisponível e ofereça tentar novamente ou calcular no checkout; não invente endereço, preço ou prazo
@@ -575,9 +591,9 @@ Você pode finalizar sua compra com segurança pelo link abaixo:
 ${toolResult.url}
 
 Lá você poderá:
-• pagar com 10% de desconto no PIX
-• parcelar no cartão em até 3x sem juros ou até 12x com juros
-• calcular a entrega com frete grátis local ou abatimento de até R$ 25,00
+• pagar com ${commercialPolicy.pix_discount_percent}% de desconto no PIX
+• parcelar no cartão em ${cardConditions}
+• calcular a entrega com frete grátis acima de ${freeShippingMinimum}
 • finalizar seu pedido
 
 Se precisar de ajuda, estou aqui 😊

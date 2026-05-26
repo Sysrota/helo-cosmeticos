@@ -191,6 +191,16 @@ model StoreConfig {
 
   shipping_info String @default("")
 
+  free_shipping_minimum Float @default(99)
+
+  moto_uber_enabled Boolean @default(true)
+
+  pix_discount_percent Float @default(10)
+
+  card_interest_free_installments Int @default(3)
+
+  card_max_installments Int @default(12)
+
   business_hours String @default("")
 
   exchange_policy String @default("")

@@ -31,6 +31,7 @@ import { useCart } from "../context/CartContext";
 import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
 import { socket } from "../websocket/socket";
+import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -67,6 +68,19 @@ function formatShippingPrice(value) {
   return Number(value) === 0
     ? "Grátis"
     : formatMoney(value);
+}
+
+function isExternalShipping(option, methodName = "") {
+  return Boolean(
+    option?.external_payment ||
+    String(methodName).startsWith("Moto Uber")
+  );
+}
+
+function formatShippingOptionPrice(option, methodName = "") {
+  return isExternalShipping(option, methodName)
+    ? "Pago no envio"
+    : formatShippingPrice(option?.price ?? 0);
 }
 
 function getCheckoutImageUrl(item) {
@@ -159,6 +173,12 @@ function InputField({
 }
 
 export default function PublicCheckoutPage() {
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    cardLabel,
+    freeShippingLabel,
+    card_max_installments: maxInstallments,
+  } = useCommercialPolicy();
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -325,7 +345,7 @@ export default function PublicCheckoutPage() {
   const pixDiscount =
     step === 3 &&
     selectedPaymentMethod === "pix"
-      ? Number((total * 0.10).toFixed(2))
+      ? Number((total * (pixDiscountPercent / 100)).toFixed(2))
       : 0;
   const paymentTotal =
     Number(
@@ -587,8 +607,17 @@ export default function PublicCheckoutPage() {
       });
 
       setShippingOptions(data);
+      const automaticOptions =
+        data.filter(
+          (option) =>
+            !isExternalShipping(option)
+        );
+      const selectableOptions =
+        automaticOptions.length
+          ? automaticOptions
+          : data;
       setSelectedShipping(
-        data.reduce(
+        selectableOptions.reduce(
           (bestOption, option) =>
             !bestOption ||
             Number(option.price) <
@@ -810,7 +839,7 @@ export default function PublicCheckoutPage() {
                       Informe o CEP e escolha a melhor forma de receber.
                     </p>
                     <p className="mt-2 text-xs font-medium text-[#b74662]">
-                      Frete grátis na região metropolitana de Goiânia. R$ 25,00 OFF nas demais localizações.
+                      {freeShippingLabel} para qualquer localidade atendida.
                     </p>
                   </div>
                   <button
@@ -912,9 +941,14 @@ export default function PublicCheckoutPage() {
                                 <span className="block text-xs text-zinc-500">
                                   {option.deadline}
                                 </span>
+                                {isExternalShipping(option) && (
+                                  <span className="mt-1 block text-xs font-medium text-[#b74662]">
+                                    Valor pago diretamente pelo cliente na entrega
+                                  </span>
+                                )}
                                 {Number(option.discount || 0) > 0 && (
                                   <span className="mt-1 block text-xs font-medium text-emerald-700">
-                                    Abatimento de {formatMoney(option.discount)} aplicado
+                                    Frete grátis aplicado pela condição da compra
                                   </span>
                                 )}
                               </span>
@@ -926,7 +960,7 @@ export default function PublicCheckoutPage() {
                                 </span>
                               )}
                               <span className="block text-sm font-semibold text-[#b74662]">
-                                {formatShippingPrice(option.price)}
+                                {formatShippingOptionPrice(option)}
                               </span>
                             </span>
                           </button>
@@ -971,18 +1005,13 @@ export default function PublicCheckoutPage() {
                         </span>
                       )}
                       <span className="block text-sm font-semibold text-[#b74662]">
-                        {formatShippingPrice(selectedShipping?.price)}
+                        {formatShippingOptionPrice(selectedShipping)}
                       </span>
                     </span>
                   </div>
                   {Number(selectedShipping?.discount || 0) > 0 && (
                     <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-                      Você ganhou {formatMoney(selectedShipping.discount)} de abatimento no frete.
-                    </p>
-                  )}
-                  {selectedShipping?.name === "Frete grátis local" && (
-                    <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-                      Frete grátis na região metropolitana de Goiânia.
+                      Frete grátis aplicado: sua compra atende à condição de {freeShippingLabel.toLowerCase()}.
                     </p>
                   )}
                 </div>
@@ -999,7 +1028,7 @@ export default function PublicCheckoutPage() {
                   >
                     <Sparkles size={17} className="mb-3 text-[#d85c7a]" />
                     <p className="text-sm font-semibold">PIX</p>
-                    <p className="mt-1 text-xs text-zinc-500">10% de desconto</p>
+                    <p className="mt-1 text-xs text-zinc-500">{pixDiscountPercent}% de desconto</p>
                   </button>
                   <button
                     type="button"
@@ -1012,7 +1041,7 @@ export default function PublicCheckoutPage() {
                   >
                     <CreditCard size={17} className="mb-3 text-[#d85c7a]" />
                     <p className="text-sm font-semibold">Cartão</p>
-                    <p className="mt-1 text-xs text-zinc-500">3x sem juros ou até 12x com juros</p>
+                    <p className="mt-1 text-xs text-zinc-500">{cardLabel}</p>
                   </button>
                 </div>
 
@@ -1025,11 +1054,13 @@ export default function PublicCheckoutPage() {
                       order={order}
                       pixDiscount={pixDiscount}
                       pixTotal={paymentTotal}
+                      pixDiscountPercent={pixDiscountPercent}
                     />
                   )}
                   {selectedPaymentMethod === "credit_card" && (
                     <OrderCreditCardCard
                       order={order}
+                      maxInstallments={maxInstallments}
                       initialCustomer={customer}
                     />
                   )}
@@ -1157,9 +1188,11 @@ export default function PublicCheckoutPage() {
                   <span>Entrega</span>
                   <span>
                     {selectedShipping || order?.shipping_method
-                      ? Number(selectedShipping?.discount || 0) > 0
-                        ? formatMoney(selectedShipping.original_price)
-                        : formatShippingPrice(shippingPrice)
+                      ? isExternalShipping(selectedShipping, order?.shipping_method)
+                        ? "Pago no envio"
+                        : Number(selectedShipping?.discount || 0) > 0
+                          ? formatMoney(selectedShipping.original_price)
+                          : formatShippingPrice(shippingPrice)
                       : "A calcular"}
                   </span>
                 </div>
@@ -1171,7 +1204,7 @@ export default function PublicCheckoutPage() {
                 )}
                 {pixDiscount > 0 && (
                   <div className="flex justify-between font-medium text-emerald-700">
-                    <span>Desconto PIX (10%)</span>
+                    <span>Desconto PIX ({pixDiscountPercent}%)</span>
                     <span>- {formatMoney(pixDiscount)}</span>
                   </div>
                 )}
