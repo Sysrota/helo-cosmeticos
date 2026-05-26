@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 
+import { useSearchParams }
+  from "react-router-dom";
+
 import { ConversationsSidebar }
   from "../components/ConversationsSidebar";
 
@@ -16,14 +19,95 @@ import {
 import { socket }
   from "../../../websocket/socket";
 
+import {
+  markAsRead,
+  openConversation,
+} from "../services/attendance.service";
+
 export function AttendancePage() {
 
   const {
     selectedConversation,
     mobileView,
     removeConversation,
+    setSelectedConversation,
+    setMobileView,
+    updateConversation,
   } =
     useAttendanceStore();
+
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+
+  useEffect(() => {
+    const phone =
+      searchParams.get("phone")
+        ?.replace(/\D/g, "");
+
+    if (!phone) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function prepareConversation() {
+      try {
+        const conversation =
+          await openConversation({
+            phone,
+            name:
+              searchParams.get("name") ||
+              undefined,
+          });
+
+        if (cancelled) {
+          return;
+        }
+
+        updateConversation(
+          conversation
+        );
+
+        setSelectedConversation(
+          conversation
+        );
+
+        setMobileView(
+          "chat"
+        );
+
+        await markAsRead(
+          conversation.id
+        );
+
+        setSearchParams(
+          {},
+          {
+            replace: true,
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Erro ao preparar atendimento:",
+          error
+        );
+      }
+    }
+
+    prepareConversation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    searchParams,
+    setMobileView,
+    setSearchParams,
+    setSelectedConversation,
+    updateConversation,
+  ]);
 
   useEffect(() => {
     function handleConversationDeleted(

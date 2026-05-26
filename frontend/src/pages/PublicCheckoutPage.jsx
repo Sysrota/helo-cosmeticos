@@ -244,6 +244,9 @@ export default function PublicCheckoutPage() {
           return;
         }
 
+        const savedAddress =
+          data.contact?.addresses?.[0];
+
         setOrder(data);
         setCustomer((previous) => ({
           ...previous,
@@ -251,6 +254,12 @@ export default function PublicCheckoutPage() {
           email: data.contact?.email || previous.email,
           phone: data.contact?.phone || previous.phone,
           cpf: data.contact?.cpf || previous.cpf,
+          zipcode: savedAddress?.cep || previous.zipcode,
+          street: savedAddress?.street || previous.street,
+          number: savedAddress?.number || previous.number,
+          district: savedAddress?.district || previous.district,
+          city: savedAddress?.city || previous.city,
+          state: savedAddress?.state || previous.state,
         }));
       } catch {
         if (active) {

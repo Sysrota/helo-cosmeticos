@@ -36,6 +36,25 @@ export async function createConversation(
       });
   }
 
+  const existingConversation =
+    await prisma.conversation.findFirst({
+      where: {
+        contact_id: contact.id,
+      },
+
+      include: {
+        contact: true,
+      },
+
+      orderBy: {
+        updated_at: "desc",
+      },
+    });
+
+  if (existingConversation) {
+    return existingConversation;
+  }
+
   const conversation =
     await prisma.conversation.create({
       data: {

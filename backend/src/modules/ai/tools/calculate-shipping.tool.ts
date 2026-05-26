@@ -230,6 +230,67 @@ export async function calculateShippingTool({
     };
   }
 
+  const existingAddress =
+    await prisma.contactAddress.findFirst({
+      where: {
+        contact_id:
+          conversation.contact_id,
+      },
+    });
+
+  const keepsExistingNumber =
+    existingAddress?.cep
+      ?.replace(/\D/g, "") ===
+    cleanCep;
+
+  const addressData = {
+    cep:
+      address.zipcode,
+    street:
+      address.street,
+    district:
+      address.district,
+    city:
+      address.city,
+    state:
+      address.state,
+    number:
+      keepsExistingNumber
+        ? existingAddress?.number
+        : "",
+  };
+
+  await prisma.$transaction([
+    prisma.contact.update({
+      where: {
+        id:
+          conversation.contact_id,
+      },
+      data: {
+        city:
+          address.city,
+        state:
+          address.state,
+      },
+    }),
+    existingAddress
+      ? prisma.contactAddress.update({
+        where: {
+          id:
+            existingAddress.id,
+        },
+        data:
+          addressData,
+      })
+      : prisma.contactAddress.create({
+        data: {
+          contact_id:
+            conversation.contact_id,
+          ...addressData,
+        },
+      }),
+  ]);
+
   const commercialPolicy =
     await getCommercialPolicy();
   const hasFreeShipping =

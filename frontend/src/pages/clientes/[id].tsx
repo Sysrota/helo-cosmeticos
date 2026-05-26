@@ -217,6 +217,32 @@ export default function ClienteDetalhesPage() {
     });
   }
 
+  function openAttendance() {
+    const phone =
+      Formatter.onlyNumbers(
+        cliente.phone || ""
+      );
+
+    if (!phone) {
+      alert(
+        "Informe o telefone do cliente antes de iniciar o atendimento."
+      );
+
+      return;
+    }
+
+    const params =
+      new URLSearchParams({
+        phone,
+        name:
+          cliente.name || "",
+      });
+
+    navigate(
+      `/admin/attendance?${params.toString()}`
+    );
+  }
+
   return (
     <div className="
       bg-zinc-100
@@ -269,10 +295,8 @@ export default function ClienteDetalhesPage() {
           ">
 
             <button
-              onClick={() =>
-                navigate(
-                  "/admin/attendance"
-                )
+              onClick={
+                openAttendance
               }
 
               className="

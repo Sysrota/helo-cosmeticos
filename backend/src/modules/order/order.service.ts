@@ -90,7 +90,16 @@ export async function createOrderService({
         },
       },
 
-      contact: true,
+      contact: {
+        include: {
+          addresses: {
+            orderBy: {
+              updated_at: "desc",
+            },
+            take: 1,
+          },
+        },
+      },
     },
   });
 }
@@ -152,7 +161,16 @@ export async function showOrderService(
     },
 
     include: {
-      contact: true,
+      contact: {
+        include: {
+          addresses: {
+            orderBy: {
+              updated_at: "desc",
+            },
+            take: 1,
+          },
+        },
+      },
 
       items: {
         include: {

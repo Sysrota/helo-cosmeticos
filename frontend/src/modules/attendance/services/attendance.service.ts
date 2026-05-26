@@ -15,6 +15,21 @@ export async function getConversations() {
   return response.data;
 }
 
+export async function openConversation(
+  data: {
+    phone: string;
+    name?: string;
+  }
+) {
+  const response =
+    await api.post(
+      "/attendance",
+      data
+    );
+
+  return response.data;
+}
+
 export async function getMessages(
   conversationId: number
 ) {
