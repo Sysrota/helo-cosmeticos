@@ -12,6 +12,25 @@ export async function addCartItemTool({
   productId,
   quantity = 1,
 }: Props) {
+  const normalizedProductId =
+    Number(productId);
+
+  if (
+    !Number.isInteger(
+      normalizedProductId
+    ) ||
+    normalizedProductId <= 0
+  ) {
+    return {
+      error:
+        "product_not_found",
+      message:
+        "O produto solicitado não foi identificado. Pesquise novamente no catálogo e utilize somente o ID retornado por search_products.",
+      requested_product_id:
+        productId,
+    };
+  }
+
   if (
     !Number.isFinite(
       Number(quantity)
@@ -32,16 +51,24 @@ export async function addCartItemTool({
 
   const product =
     await prisma.product
-      .findUnique({
+      .findFirst({
         where: {
-          id: productId,
+          id:
+            normalizedProductId,
+          is_active:
+            true,
         },
       });
 
   if (!product) {
-    throw new Error(
-      "Produto não encontrado"
-    );
+    return {
+      error:
+        "product_not_found",
+      message:
+        "O produto solicitado não foi encontrado ou não está ativo. Pesquise novamente no catálogo e utilize somente o ID retornado por search_products.",
+      requested_product_id:
+        productId,
+    };
   }
 
   const conversation =

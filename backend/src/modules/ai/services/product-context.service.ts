@@ -235,6 +235,8 @@ PRODUTOS INDIVIDUAIS:
     for (const product of individualProducts) {
 
       context += `
+ID do produto: ${product.id}
+
 Produto: ${product.title}
 
 Preço: R$ ${product.price}
@@ -268,6 +270,8 @@ KITS RELACIONADOS:
     for (const product of kits) {
 
       context += `
+ID do produto: ${product.id}
+
 Produto: ${product.title}
 
 Preço: R$ ${product.price}

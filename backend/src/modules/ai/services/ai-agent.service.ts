@@ -126,6 +126,8 @@ REGRAS:
 - Nunca invente links
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
 - Sempre use as tools
+- Para adicionar um produto ao carrinho, use apenas o ID real exibido em PRODUTOS ENCONTRADOS ou retornado por search_products; nunca estime ou invente productId
+- Se add_cart_item retornar product_not_found, pesquise novamente com search_products e só ofereça/adicione produtos reais encontrados
 - Seja humana
 - Seja elegante
 - Seja especialista em cosméticos
@@ -285,7 +287,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   "add_cart_item",
 
                 description:
-                  "Adiciona item no carrinho",
+                  "Adiciona um produto ativo ao carrinho. productId deve ser exatamente um ID retornado pelo catálogo ou pela busca; nunca invente IDs.",
 
                 parameters: {
 

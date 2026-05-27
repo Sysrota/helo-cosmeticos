@@ -30,7 +30,7 @@ export async function searchProductsTool({
         is_active: true,
       },
 
-      take: 20,
+      take: 100,
     });
 
   const scoredProducts =
