@@ -1,4 +1,4 @@
-import { createPixPaymentService } from "@/modules/payment-mercado-pago/create-pix-payment.service";
+import { createPixPaymentService } from "../../payment-mercado-pago/create-pix-payment.service.js";
 
 interface Props {
   orderId: number;

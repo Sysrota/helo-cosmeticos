@@ -13,6 +13,43 @@ import {
 import { executeAiAgent } from "../services/ai-agent.service.js";
 import { updateConversationMemory } from "../services/conversation-memory.service.js";
 
+async function isLatestClientMessageJob(
+  job: {
+    data: {
+      messageId?: number;
+    };
+    timestamp: number;
+  },
+  conversationId: number
+) {
+  const latestMessage =
+    await redis.get(
+      `conversation:last-message:${conversationId}`
+    );
+
+  if (!latestMessage) {
+    return true;
+  }
+
+  if (
+    latestMessage.startsWith(
+      "id:"
+    )
+  ) {
+    return (
+      Number(
+        latestMessage.slice(3)
+      ) ===
+      Number(job.data.messageId)
+    );
+  }
+
+  return (
+    Number(latestMessage) <=
+    job.timestamp
+  );
+}
+
 export const aiWorker =
   new Worker(
     "ai-attendance",
@@ -26,17 +63,11 @@ export const aiWorker =
             job.data.conversationId
           );
 
-        // PEGA TIMESTAMP MAIS RECENTE
-        const latestMessage =
-          await redis.get(
-            `conversation:last-message:${conversationId}`
-          );
-
-        // JOB ANTIGA
         if (
-          latestMessage &&
-          Number(latestMessage) >
-          job.timestamp
+          !await isLatestClientMessageJob(
+            job,
+            conversationId
+          )
         ) {
 
           console.log(
@@ -60,6 +91,19 @@ export const aiWorker =
           });
 
         if (!response) {
+          return;
+        }
+
+        if (
+          !await isLatestClientMessageJob(
+            job,
+            conversationId
+          )
+        ) {
+          console.log(
+            "RESPOSTA IA ANTIGA IGNORADA"
+          );
+
           return;
         }
 

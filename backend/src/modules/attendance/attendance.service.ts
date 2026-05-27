@@ -103,10 +103,20 @@ export async function deleteConversation(
 
   for (const job of existingJobs) {
     if (
-      job.id ===
-      `conversation-${conversationId}`
+      Number(
+        job.data.conversationId
+      ) === conversationId
     ) {
-      await job.remove();
+      try {
+        await job.remove();
+      } catch (error) {
+        console.warn(
+          `Não foi possível cancelar job pendente da conversa ${conversationId}:`,
+          error instanceof Error
+            ? error.message
+            : error
+        );
+      }
     }
   }
 
@@ -226,17 +236,26 @@ export async function createMessage(
 
   for (const job of existingJobs) {
     if (
-      job.id ===
-      `conversation-${data.conversation_id}`
+      Number(
+        job.data.conversationId
+      ) === data.conversation_id
     ) {
-
-      await job.remove();
+      try {
+        await job.remove();
+      } catch (error) {
+        console.warn(
+          `Não foi possível cancelar resposta anterior da conversa ${data.conversation_id}:`,
+          error instanceof Error
+            ? error.message
+            : error
+        );
+      }
     }
   }
 
   await redis.set(
     `conversation:last-message:${data.conversation_id}`,
-    Date.now()
+    `id:${message.id}`
   );
 
   await aiQueue.add(
@@ -245,11 +264,13 @@ export async function createMessage(
       {
         conversationId:
           data.conversation_id,
+        messageId:
+          message.id,
       },
 
       {
         jobId:
-          `conversation-${data.conversation_id}`,
+          `conversation-${data.conversation_id}-${message.id}`,
 
         delay: 2000,
 
