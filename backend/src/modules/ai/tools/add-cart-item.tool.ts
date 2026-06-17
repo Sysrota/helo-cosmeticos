@@ -1,6 +1,10 @@
 import { prisma }
   from "../../../config/prisma.js";
 
+import {
+  getPrimaryProductImage,
+} from "../services/product-image.service.js";
+
 interface Props {
   conversationId: number;
   productId: number;
@@ -57,6 +61,14 @@ export async function addCartItemTool({
             normalizedProductId,
           is_active:
             true,
+        },
+
+        include: {
+          images: {
+            orderBy: {
+              sort_order: "asc",
+            },
+          },
         },
       });
 
@@ -134,7 +146,9 @@ export async function addCartItemTool({
 
 
     image:
-      product.image_url,
+      getPrimaryProductImage(
+        product
+      ),
 
     price:
       Number(product.price),

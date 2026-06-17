@@ -15,6 +15,9 @@ import {
   useAttendanceStore,
 } from "../store/attendance.store";
 
+import { api }
+  from "../../../services/api";
+
 import { socket }
   from "../../../websocket/socket";
 
@@ -26,6 +29,29 @@ import { Trash2 }
 
 const MESSAGE_SYNC_INTERVAL_MS =
   4000;
+
+function getMediaSrc(
+  mediaUrl: string
+) {
+  if (
+    /^https?:\/\//i.test(
+      mediaUrl
+    )
+  ) {
+    return mediaUrl;
+  }
+
+  const baseUrl =
+    api.defaults.baseURL ||
+    window.location.origin;
+
+  const normalizedPath =
+    mediaUrl.startsWith("/")
+      ? mediaUrl
+      : `/${mediaUrl}`;
+
+  return `${baseUrl}${normalizedPath}`;
+}
 
 function getMessageVersion(
   messages: any[]
@@ -659,7 +685,9 @@ export function ChatMessages() {
                     message.media_url && (
 
                     <img
-                      src={`${window.location.origin}${message.media_url}`}
+                      src={getMediaSrc(
+                        message.media_url
+                      )}
 
                       alt=""
 
@@ -685,7 +713,9 @@ export function ChatMessages() {
                         w-full
                       "
 
-                      src={`${window.location.origin}${message.media_url}`}
+                      src={getMediaSrc(
+                        message.media_url
+                      )}
                     />
                   )}
 
@@ -695,7 +725,9 @@ export function ChatMessages() {
                     message.media_url && (
 
                     <a
-                      href={`${window.location.origin}${message.media_url}`}
+                      href={getMediaSrc(
+                        message.media_url
+                      )}
 
                       target="_blank"
 

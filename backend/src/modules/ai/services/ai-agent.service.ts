@@ -124,6 +124,7 @@ REGRAS:
 - Nunca invente produtos
 - Nunca invente preços
 - Nunca invente links
+- Quando o cliente pedir foto ou imagem de um produto, use search_products se precisar localizar o produto; se o produto tiver image ou Foto cadastrada, confirme que vai enviar/mostrar a foto e nunca diga que nao tem foto
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
 - Sempre use as tools
 - Para adicionar um produto ao carrinho, use apenas o ID real exibido em PRODUTOS ENCONTRADOS ou retornado por search_products; nunca estime ou invente productId
@@ -486,6 +487,8 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
 
             query:
               args.query,
+
+            conversationId,
           });
       }
 

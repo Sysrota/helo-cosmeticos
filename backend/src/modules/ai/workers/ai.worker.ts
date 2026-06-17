@@ -4,6 +4,9 @@ import { Worker }
 import { redis }
   from "../../../config/redis.js";
 
+import { prisma }
+  from "../../../config/prisma.js";
+
 import { buildContext }
   from "../services/context.service.js";
 
@@ -12,6 +15,10 @@ import {
 } from "../../attendance/attendance.service.js";
 import { executeAiAgent } from "../services/ai-agent.service.js";
 import { updateConversationMemory } from "../services/conversation-memory.service.js";
+import {
+  buildProductImageCaption,
+  findRequestedProductImage,
+} from "../services/product-image.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -107,6 +114,25 @@ export const aiWorker =
           return;
         }
 
+        const lastClientMessage =
+          await prisma.message.findUnique({
+            where: {
+              id:
+                Number(
+                  job.data.messageId
+                ),
+            },
+          });
+
+        const requestedProductImage =
+          lastClientMessage?.content
+            ? await findRequestedProductImage({
+                conversationId,
+                message:
+                  lastClientMessage.content,
+              })
+            : null;
+
         await createMessage({
           conversation_id:
             conversationId,
@@ -115,7 +141,22 @@ export const aiWorker =
             "agent",
 
           content:
-            response,
+            requestedProductImage
+              ? buildProductImageCaption(
+                  response,
+                  requestedProductImage
+                    .productTitle
+                )
+              : response,
+
+          type:
+            requestedProductImage
+              ? "image"
+              : "text",
+
+          media_url:
+            requestedProductImage
+              ?.imageUrl,
         });
 
         await updateConversationMemory({

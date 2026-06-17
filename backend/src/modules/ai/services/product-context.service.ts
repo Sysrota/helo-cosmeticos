@@ -1,6 +1,10 @@
 import { prisma }
   from "../../../config/prisma.js";
 
+import {
+  getPrimaryProductImage,
+} from "./product-image.service.js";
+
 const ignoredWords = [
   "oi",
   "oie",
@@ -59,6 +63,14 @@ export async function getProductsContext(
     await prisma.product.findMany({
       where: {
         is_active: true,
+      },
+
+      include: {
+        images: {
+          orderBy: {
+            sort_order: "asc",
+          },
+        },
       },
 
       take: 50,
@@ -243,6 +255,9 @@ Preço: R$ ${product.price}
 
 Categoria: ${product.category}
 
+Foto cadastrada:
+${getPrimaryProductImage(product) || "Nao informada"}
+
 Descrição:
 ${product.description}
 
@@ -277,6 +292,9 @@ Produto: ${product.title}
 Preço: R$ ${product.price}
 
 Categoria: ${product.category}
+
+Foto cadastrada:
+${getPrimaryProductImage(product) || "Nao informada"}
 
 Descrição:
 ${product.description}

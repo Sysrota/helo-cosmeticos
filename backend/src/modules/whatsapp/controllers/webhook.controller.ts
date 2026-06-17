@@ -7,6 +7,9 @@ import {
   downloadWhatsAppMedia,
 } from "../services/meta.service.js";
 import { createMessage } from "../../attendance/attendance.service.js";
+import {
+  transcribeAudioFile,
+} from "../../ai/services/audio-transcription.service.js";
 
 export async function verifyWebhookController(
   req: Request,
@@ -119,7 +122,15 @@ export async function receiveWebhookController(
       mediaUrl =
         `/uploads/${media.fileName}`;
 
-      text = "🎤 Áudio";
+      const transcription =
+        await transcribeAudioFile(
+          media.filePath
+        );
+
+      text =
+        transcription
+          ? `Audio transcrito: "${transcription}"`
+          : "Audio recebido. Nao consegui transcrever automaticamente.";
     }
 
     // DOCUMENTO

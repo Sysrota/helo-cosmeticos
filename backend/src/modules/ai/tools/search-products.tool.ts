@@ -1,12 +1,18 @@
 import { prisma }
   from "../../../config/prisma.js";
 
+import {
+  getPrimaryProductImage,
+} from "../services/product-image.service.js";
+
 interface Props {
   query: string;
+  conversationId?: number;
 }
 
 export async function searchProductsTool({
   query,
+  conversationId,
 }: Props) {
 
   const search =
@@ -28,6 +34,14 @@ export async function searchProductsTool({
     await prisma.product.findMany({
       where: {
         is_active: true,
+      },
+
+      include: {
+        images: {
+          orderBy: {
+            sort_order: "asc",
+          },
+        },
       },
 
       take: 100,
@@ -91,7 +105,8 @@ ${product.o_que_vai_sentir}
       };
     });
 
-  return scoredProducts
+  const results =
+    scoredProducts
     .filter(
       (item) =>
         item.score > 0
@@ -128,10 +143,30 @@ ${product.o_que_vai_sentir}
           item.product.o_que_vai_sentir,
 
         image:
-          item.product.image_url,
+          getPrimaryProductImage(
+            item.product
+          ),
 
         score:
           item.score,
       })
     );
+
+  if (
+    conversationId &&
+    results.length
+  ) {
+    await prisma.conversation.update({
+      where: {
+        id: conversationId,
+      },
+
+      data: {
+        last_product_id:
+          results[0].id,
+      },
+    });
+  }
+
+  return results;
 }

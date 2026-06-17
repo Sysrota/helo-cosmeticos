@@ -50,13 +50,18 @@ export function AttendancePage() {
       return;
     }
 
+    const normalizedPhone =
+      phone;
+
     let cancelled = false;
 
     async function prepareConversation() {
       try {
         const conversation =
           await openConversation({
-            phone,
+            phone:
+              normalizedPhone,
+
             name:
               searchParams.get("name") ||
               undefined,

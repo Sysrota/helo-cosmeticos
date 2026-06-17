@@ -152,6 +152,27 @@ interface CreateMessageDTO {
   media_url?: string;
 }
 
+function getPublicMediaUrl(
+  mediaUrl: string
+) {
+  if (
+    /^https?:\/\//i.test(
+      mediaUrl
+    )
+  ) {
+    return mediaUrl;
+  }
+
+  const normalizedPath =
+    mediaUrl.startsWith("/")
+      ? mediaUrl
+      : `/${mediaUrl}`;
+
+  return `${
+    process.env.APP_URL || ""
+  }${normalizedPath}`;
+}
+
 export async function createMessage(
   data: CreateMessageDTO
 ) {
@@ -313,7 +334,9 @@ export async function createMessage(
     else {
 
       const mediaUrl =
-        `${process.env.APP_URL}${data.media_url}`;
+        getPublicMediaUrl(
+          data.media_url
+        );
 
       let mediaType =
         "document";
