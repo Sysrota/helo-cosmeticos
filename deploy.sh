@@ -59,6 +59,12 @@ echo "🏗️ Build frontend..."
 
 yarn build
 
+echo "🔎 Gerando páginas SEO de produtos..."
+
+cd "$PROJECT_DIR"
+
+node tools/generate-product-seo-pages.mjs
+
 # -----------------------------
 # Reinicia backend PM2
 # -----------------------------
