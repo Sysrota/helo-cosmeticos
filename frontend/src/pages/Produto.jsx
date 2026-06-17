@@ -355,23 +355,28 @@ export default function Produto() {
       <main className="product-sale-container pb-12 pt-6 lg:pt-8">
         <div className="product-sale-hero grid items-start gap-8">
           <section className="product-sale-gallery space-y-4">
-            <div className="product-sale-media relative overflow-hidden bg-white">
-              <span className="absolute left-6 top-6 z-10 rounded-full border border-[#f4e1e7] bg-white px-5 py-2.5 text-sm font-medium text-[#ae415d] shadow-sm">
-                Favorito para seu ritual de cuidado
-              </span>
+            <div className="product-sale-media bg-white p-3 sm:p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+                <span className="rounded-full border border-[#f4e1e7] bg-[#fff7f9] px-4 py-2 text-xs font-semibold text-[#ae415d]">
+                  Favorito para seu ritual de cuidado
+                </span>
+                <span className="text-xs font-medium text-zinc-400">
+                  Clique para ampliar
+                </span>
+              </div>
               <div className="product-sale-image relative w-full">
                 <ProductImagePreview
                   src={mainImage}
                   alt={product.title}
-                  className="h-full w-full"
-                  imageClassName="h-full w-full object-contain object-center p-8 sm:p-12"
+                  className="h-full w-full rounded-[1.5rem] bg-[#fff7f9] p-2 sm:p-3"
+                  imageClassName="h-full w-full rounded-[1.25rem] object-cover object-center"
                   zoomLabel="Ampliar imagem do produto"
                 />
               </div>
             </div>
 
             {images.length > 1 && (
-              <div className="grid grid-cols-5 gap-3 pt-1">
+              <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5 sm:gap-3">
                 {images.map((image) => {
                   const active = image.full === mainImage;
 
@@ -380,7 +385,7 @@ export default function Produto() {
                       key={image.id}
                       type="button"
                       onClick={() => setSelected(image.full)}
-                      className={`aspect-square overflow-hidden rounded-2xl border bg-white p-2 transition ${
+                      className={`aspect-square overflow-hidden rounded-[1.25rem] border bg-white p-1.5 transition ${
                         active
                           ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
                           : "border-[#f0e4e8] hover:border-[#e7bdc8]"
