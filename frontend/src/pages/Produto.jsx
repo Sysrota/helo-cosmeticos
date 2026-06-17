@@ -1,4 +1,5 @@
 import {
+  ChevronLeft,
   ChevronRight,
   CreditCard,
   Minus,
@@ -8,7 +9,12 @@ import {
   Sparkles,
   Truck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Link,
   useNavigate,
@@ -63,6 +69,7 @@ export default function Produto() {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingOptions, setShippingOptions] = useState([]);
   const [shippingError, setShippingError] = useState("");
+  const dragStartRef = useRef(null);
 
   const cover = useMemo(() => {
     if (!product?.image_url) {
@@ -186,6 +193,15 @@ export default function Produto() {
   ]);
 
   const mainImage = selected || cover;
+  const selectedImageIndex =
+    images.findIndex(
+      (image) =>
+        image.full === mainImage
+    );
+  const currentImageIndex =
+    selectedImageIndex >= 0
+      ? selectedImageIndex
+      : 0;
   const unavailable = product?.is_active === false;
   const category =
     String(product?.category || "beleza")
@@ -200,6 +216,49 @@ export default function Produto() {
         (1 - pixDiscountPercent / 100)
       ).toFixed(2)
     );
+
+  useEffect(() => {
+    if (images.length <= 1) {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      const activeTag =
+        document.activeElement?.tagName
+          ?.toLowerCase();
+
+      if (
+        activeTag === "input" ||
+        activeTag === "textarea" ||
+        activeTag === "select"
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        goToImage(1);
+      }
+
+      if (event.key === "ArrowLeft") {
+        goToImage(-1);
+      }
+    }
+
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [
+    currentImageIndex,
+    images,
+  ]);
 
   function selectedItem() {
     return {
@@ -224,6 +283,62 @@ export default function Produto() {
         directPurchaseItem: selectedItem(),
       },
     });
+  }
+
+  function goToImage(direction) {
+    if (images.length <= 1) {
+      return;
+    }
+
+    const nextIndex =
+      (
+        currentImageIndex +
+        direction +
+        images.length
+      ) % images.length;
+
+    setSelected(
+      images[nextIndex].full
+    );
+  }
+
+  function handleGalleryPointerDown(event) {
+    dragStartRef.current = {
+      x:
+        event.clientX,
+      y:
+        event.clientY,
+    };
+  }
+
+  function handleGalleryPointerUp(event) {
+    if (
+      !dragStartRef.current ||
+      images.length <= 1
+    ) {
+      dragStartRef.current = null;
+      return;
+    }
+
+    const deltaX =
+      event.clientX -
+      dragStartRef.current.x;
+    const deltaY =
+      event.clientY -
+      dragStartRef.current.y;
+
+    dragStartRef.current = null;
+
+    if (
+      Math.abs(deltaX) < 45 ||
+      Math.abs(deltaX) < Math.abs(deltaY)
+    ) {
+      return;
+    }
+
+    goToImage(
+      deltaX < 0 ? 1 : -1
+    );
   }
 
   function updateQuantity(value) {
@@ -364,7 +479,14 @@ export default function Produto() {
                   Clique para ampliar
                 </span>
               </div>
-              <div className="product-sale-image relative w-full">
+              <div
+                className="product-sale-image relative w-full touch-pan-y select-none"
+                onPointerDown={handleGalleryPointerDown}
+                onPointerUp={handleGalleryPointerUp}
+                onPointerCancel={() => {
+                  dragStartRef.current = null;
+                }}
+              >
                 <ProductImagePreview
                   src={mainImage}
                   alt={product.title}
@@ -372,6 +494,35 @@ export default function Produto() {
                   imageClassName="h-full w-full rounded-[1.5rem] object-cover object-center"
                   zoomLabel="Ampliar imagem do produto"
                 />
+                {images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToImage(-1);
+                      }}
+                      className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white"
+                      aria-label="Imagem anterior"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToImage(1);
+                      }}
+                      className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white"
+                      aria-label="Próxima imagem"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#873c50] shadow-sm">
+                      {currentImageIndex + 1}/{images.length}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
