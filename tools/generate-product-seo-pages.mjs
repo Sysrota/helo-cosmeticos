@@ -159,6 +159,18 @@ function applyProductSeo(html, seo) {
     },
     {
       pattern:
+        /<meta\s+property="og:image:width"\s+content="[^"]*"\s*\/?>/i,
+      html:
+        `<meta property="og:image:width" content="1200" />`,
+    },
+    {
+      pattern:
+        /<meta\s+property="og:image:height"\s+content="[^"]*"\s*\/?>/i,
+      html:
+        `<meta property="og:image:height" content="1200" />`,
+    },
+    {
+      pattern:
         /<meta\s+property="og:image:alt"\s+content="[^"]*"\s*\/?>/i,
       html:
         `<meta property="og:image:alt" content="${escapeAttribute(seo.title)}" />`,
@@ -272,8 +284,8 @@ try {
     const productUrl =
       `${siteUrl}/produto/${product.id}`;
     const imagePath =
-      product.images?.[0]?.image_url ||
       product.image_url ||
+      product.images?.[0]?.image_url ||
       "/helo-logo.png";
     const description =
       compactDescription(
