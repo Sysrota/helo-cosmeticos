@@ -27,6 +27,7 @@ import {
 import { OrderCreditCardCard } from "../components/orders/OrderCreditCardCard";
 import { OrderPixCard } from "../components/orders/OrderPixCard";
 import UpsellProducts from "../components/UpsellProducts";
+import ProductImagePreview from "../components/ProductImagePreview";
 import { useCart } from "../context/CartContext";
 import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
@@ -1109,13 +1110,12 @@ export default function PublicCheckoutPage() {
                   return (
                     <div key={`${item.product?.title}-${index}`} className="flex gap-4">
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee2e6] bg-[#fcf9fa]">
-                        {imageUrl && (
-                          <img
-                            src={imageUrl}
-                            alt={item.product?.title}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
+                        <ProductImagePreview
+                          src={imageUrl}
+                          alt={item.product?.title}
+                          className="h-full w-full"
+                          imageClassName="h-full w-full object-cover"
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold leading-snug text-zinc-900">

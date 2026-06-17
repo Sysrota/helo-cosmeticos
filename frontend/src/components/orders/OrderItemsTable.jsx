@@ -1,5 +1,7 @@
 import Formatter
   from "@/utils/Formatter";
+import ProductImagePreview
+  from "@/components/ProductImagePreview";
   
 const API_URL =
   import.meta.env.VITE_API_URL; 
@@ -121,25 +123,24 @@ export function OrderItemsTable({
                       shrink-0
                     ">
 
-                      {item.product
-                        ?.images?.[0] && (
-
-                        <img
-                          src={`${API_URL}${item.product.image_url}`}
-
-                          alt={
-                            item.product
-                              ?.title
-                          }
-
-                          className="
-                            w-full
-                            h-full
-                            object-cover
-                            rounded-2xl
-                          "
-                        />
-                      )}
+                      <ProductImagePreview
+                        src={
+                          item.product?.image_url
+                            ? `${API_URL}${item.product.image_url}`
+                            : ""
+                        }
+                        alt={
+                          item.product
+                            ?.title
+                        }
+                        className="h-full w-full"
+                        imageClassName="
+                          w-full
+                          h-full
+                          object-cover
+                          rounded-2xl
+                        "
+                      />
                     </div>
 
                     <div>
@@ -304,28 +305,23 @@ export function OrderItemsTable({
                 shrink-0
               ">
 
-{
-  item.product?.image_url && (
-
-    <img
-      src={`
-        ${API_URL}
-        ${item.product.image_url}
-      `}
-
-      alt={
-        item.product.title
-      }
-
-      className="
-        w-20
-        h-20
-        rounded-2xl
-        object-cover
-      "
-    />
-  )
-}
+                <ProductImagePreview
+                  src={
+                    item.product?.image_url
+                      ? `${API_URL}${item.product.image_url}`
+                      : ""
+                  }
+                  alt={
+                    item.product?.title
+                  }
+                  className="h-full w-full"
+                  imageClassName="
+                    w-full
+                    h-full
+                    rounded-2xl
+                    object-cover
+                  "
+                />
               </div>
 
               <div className="

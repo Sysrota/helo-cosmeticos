@@ -17,6 +17,7 @@ import {
 import { useCart } from "../context/CartContext";
 import Formatter from "../utils/Formatter";
 import UpsellProducts from "../components/UpsellProducts";
+import ProductImagePreview from "../components/ProductImagePreview";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
 import {
   resetSeoMeta,
@@ -359,17 +360,13 @@ export default function Produto() {
                 Favorito para seu ritual de cuidado
               </span>
               <div className="product-sale-image relative w-full">
-                {mainImage ? (
-                  <img
-                    src={mainImage}
-                    alt={product.title}
-                    className="h-full w-full object-contain object-center p-8 sm:p-12"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-zinc-400">
-                    Sem imagem
-                  </div>
-                )}
+                <ProductImagePreview
+                  src={mainImage}
+                  alt={product.title}
+                  className="h-full w-full"
+                  imageClassName="h-full w-full object-contain object-center p-8 sm:p-12"
+                  zoomLabel="Ampliar imagem do produto"
+                />
               </div>
             </div>
 

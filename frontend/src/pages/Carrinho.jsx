@@ -7,6 +7,7 @@ import {
   useCart,
 } from "../context/CartContext";
 import UpsellProducts from "../components/UpsellProducts";
+import ProductImagePreview from "../components/ProductImagePreview";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
 
 export default function Carrinho() {
@@ -131,20 +132,12 @@ export default function Carrinho() {
 
                 <div className="w-full md:w-40 h-40 rounded-2xl overflow-hidden bg-helo-background flex items-center justify-center">
 
-                  {item.image ? (
-
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-
-                  ) : (
-
-                    <div className="text-sm text-helo-text">
-                      Sem imagem
-                    </div>
-                  )}
+                  <ProductImagePreview
+                    src={item.image}
+                    alt={item.title}
+                    className="h-full w-full"
+                    imageClassName="h-full w-full object-cover"
+                  />
 
                 </div>
 

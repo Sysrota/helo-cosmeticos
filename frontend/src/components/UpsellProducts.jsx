@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { Link } from "react-router-dom";
+import ProductImagePreview from "./ProductImagePreview";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -199,18 +200,16 @@ export default function UpsellProducts({
                 key={product.id}
                 className="flex items-center gap-3 rounded-2xl border border-[#f1e5e9] bg-[#fffafb] p-3"
               >
-                <Link
-                  to={`/produto/${product.id}`}
+                <div
                   className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white"
                 >
-                  {image && (
-                    <img
-                      src={image}
-                      alt={product.title}
-                      className="h-full w-full object-contain p-1.5"
-                    />
-                  )}
-                </Link>
+                  <ProductImagePreview
+                    src={image}
+                    alt={product.title}
+                    className="h-full w-full"
+                    imageClassName="h-full w-full object-contain p-1.5"
+                  />
+                </div>
                 <div className="min-w-0 flex-1">
                   <Link
                     to={`/produto/${product.id}`}

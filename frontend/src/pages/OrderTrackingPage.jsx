@@ -24,6 +24,7 @@ import {
 import {
   OrderPixCard,
 } from "../components/orders/OrderPixCard";
+import ProductImagePreview from "../components/ProductImagePreview";
 import {
   socket,
 } from "../websocket/socket";
@@ -570,13 +571,14 @@ export default function OrderTrackingPage() {
                         key={item.id}
                         className="flex items-center gap-3 rounded-2xl border border-[#f3e7eb] p-3"
                       >
-                        {image && (
-                          <img
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#fff8fa]">
+                          <ProductImagePreview
                             src={image}
-                            alt=""
-                            className="h-14 w-14 rounded-xl object-cover"
+                            alt={item.product.title}
+                            className="h-full w-full"
+                            imageClassName="h-full w-full object-cover"
                           />
-                        )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">
                             {item.product.title}

@@ -13,6 +13,7 @@ import { api }
 import {
   useCart,
 } from "../context/CartContext";
+import ProductImagePreview from "../components/ProductImagePreview";
 
 export default function Checkout() {
 
@@ -399,10 +400,11 @@ export default function Checkout() {
 
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-helo-background">
 
-                      <img
+                      <ProductImagePreview
                         src={item.image}
                         alt={item.title}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full"
+                        imageClassName="h-full w-full object-cover"
                       />
 
                     </div>
