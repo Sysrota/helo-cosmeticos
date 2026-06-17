@@ -1,6 +1,9 @@
 import {
   prisma,
 } from "../../../config/prisma.js";
+import {
+  invalidateCartShippingQuote,
+} from "./cart-shipping-state.js";
 
 interface Props {
   conversationId: number;
@@ -71,6 +74,10 @@ export async function updateCartItemTool({
     );
   cart.total =
     cart.subtotal;
+
+  invalidateCartShippingQuote(
+    cart
+  );
 
   await prisma.conversation.update({
     where: {

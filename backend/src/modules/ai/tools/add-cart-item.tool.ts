@@ -4,6 +4,9 @@ import { prisma }
 import {
   getPrimaryProductImage,
 } from "../services/product-image.service.js";
+import {
+  invalidateCartShippingQuote,
+} from "./cart-shipping-state.js";
 
 interface Props {
   conversationId: number;
@@ -177,6 +180,10 @@ export async function addCartItemTool({
 
   cart.total =
     cart.subtotal;
+
+  invalidateCartShippingQuote(
+    cart
+  );
 
   await prisma.conversation
     .update({

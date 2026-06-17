@@ -10,35 +10,20 @@ import {
 import {
   getCommercialPolicy,
 } from "../../store-config/store-config.service.js";
+import {
+  rememberCartShippingAddress,
+  rememberCartShippingQuote,
+} from "./cart-shipping-state.js";
 
 interface Props {
   conversationId: number;
-  cep: string;
+  cep?: string;
 }
 
 export async function calculateShippingTool({
   conversationId,
   cep,
 }: Props) {
-
-  // =========================
-  // VALIDATE CEP
-  // =========================
-
-  const cleanCep =
-    cep.replace(/\D/g, "");
-
-  if (
-    cleanCep.length !== 8
-  ) {
-
-    return {
-      policy:
-        "invalid_zipcode",
-      message:
-        "O CEP informado é inválido. Solicite ao cliente um CEP válido com 8 números.",
-    };
-  }
 
   // =========================
   // CONVERSATION
@@ -58,6 +43,61 @@ export async function calculateShippingTool({
     throw new Error(
       "Conversa não encontrada"
     );
+  }
+
+  // =========================
+  // VALIDATE CEP
+  // =========================
+
+  const providedCep =
+    typeof cep === "string" &&
+    cep.trim().length > 0;
+  let cleanCep =
+    providedCep
+      ? cep.replace(/\D/g, "")
+      : "";
+
+  if (
+    providedCep &&
+    cleanCep.length !== 8
+  ) {
+
+    return {
+      policy:
+        "invalid_zipcode",
+      message:
+        "O CEP informado é inválido. Solicite ao cliente um CEP válido com 8 números.",
+    };
+  }
+
+  if (!providedCep) {
+    const savedAddress =
+      await prisma.contactAddress.findFirst({
+        where: {
+          contact_id:
+            conversation.contact_id,
+        },
+        orderBy: {
+          updated_at:
+            "desc",
+        },
+      });
+
+    cleanCep =
+      savedAddress?.cep
+        ?.replace(/\D/g, "") ||
+      "";
+  }
+
+  if (
+    cleanCep.length !== 8
+  ) {
+    return {
+      policy:
+        "zipcode_required",
+      message:
+        "Ainda não há CEP salvo para este cliente. Solicite um CEP válido com 8 números para calcular o frete.",
+    };
   }
 
   // =========================
@@ -316,35 +356,117 @@ export async function calculateShippingTool({
           hasFreeShipping,
       });
 
+    const options =
+      motoUberOption
+        ? [
+          motoUberOption,
+          ...carrierOptions,
+        ]
+        : carrierOptions;
+    const policy =
+      hasFreeShipping
+        ? "free_shipping_threshold"
+        : "calculated_shipping";
+    const destination =
+      `${address.city}/${address.state}`;
+
+    rememberCartShippingQuote(
+      cart,
+      {
+        cleanCep,
+        address,
+        destination,
+        policy,
+        options,
+        subtotal:
+          total,
+        freeShippingMinimum:
+          commercialPolicy.free_shipping_minimum,
+      }
+    );
+
+    await prisma.conversation.update({
+      where: {
+        id:
+          conversationId,
+      },
+      data: {
+        cart_json:
+          cart,
+      },
+    });
+
     return {
       policy:
-        hasFreeShipping
-          ? "free_shipping_threshold"
-          : "calculated_shipping",
-      destination:
-        `${address.city}/${address.state}`,
+        policy,
+      destination,
       free_shipping_minimum:
         commercialPolicy.free_shipping_minimum,
       options:
-        motoUberOption
-          ? [
-            ...carrierOptions,
-            motoUberOption,
-          ]
-          : carrierOptions,
+        options,
     };
   } catch (error) {
     if (motoUberOption) {
+      const policy =
+        "moto_uber_available";
+      const destination =
+        `${address.city}/${address.state}`;
+      const options = [
+        motoUberOption,
+      ];
+
+      rememberCartShippingQuote(
+        cart,
+        {
+          cleanCep,
+          address,
+          destination,
+          policy,
+          options,
+          subtotal:
+            total,
+        }
+      );
+
+      await prisma.conversation.update({
+        where: {
+          id:
+            conversationId,
+        },
+        data: {
+          cart_json:
+            cart,
+        },
+      });
+
       return {
         policy:
-          "moto_uber_available",
-        destination:
-          `${address.city}/${address.state}`,
-        options: [
-          motoUberOption,
-        ],
+          policy,
+        destination,
+        options,
       };
     }
+
+    rememberCartShippingAddress(
+      cart,
+      cleanCep,
+      address
+    );
+    cart.shipping_needs_recalculation =
+      true;
+    cart.shipping_recalculation_reason =
+      "shipping_unavailable";
+
+    await prisma.conversation.update({
+      where: {
+        id:
+          conversationId,
+      },
+      data: {
+        cart_json:
+          cart,
+      },
+    });
 
     console.error(
       "Erro ao calcular frete solicitado pela IA:",

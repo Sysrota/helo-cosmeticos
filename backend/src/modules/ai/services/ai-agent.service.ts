@@ -92,6 +92,36 @@ export async function executeAiAgent({
 
       : "Carrinho vazio";
 
+  const savedAddress =
+    await prisma.contactAddress.findFirst({
+      where: {
+        contact_id:
+          conversation.contact_id,
+      },
+      orderBy: {
+        updated_at:
+          "desc",
+      },
+    });
+
+  const savedShippingAddress =
+    savedAddress
+      ? JSON.stringify(
+        {
+          cep:
+            savedAddress.cep,
+          city:
+            savedAddress.city,
+          state:
+            savedAddress.state,
+          district:
+            savedAddress.district,
+        },
+        null,
+        2
+      )
+      : "Nenhum endereço salvo ainda.";
+
   const commercialPolicy =
     await getCommercialPolicy();
   const freeShippingMinimum =
@@ -146,14 +176,20 @@ IMPORTANTE:
 - Condições vigentes: ${commercialPolicy.moto_uber_enabled ? "Moto Uber pode aparecer apenas para Goiânia e região metropolitana; nessa opção, o frete tem valor fixo de R$ 10,00 e é cobrado no checkout" : "Moto Uber não está disponível"}
 - Ao falar de cartão, informe exatamente: "${cardConditions}"
 - Para prazo e valor final de entrega, calcule o frete pelo CEP usando a tool e informe somente os valores finais retornados em options.price
-- Quando houver mais de uma opção de frete, apresente primeiro a opção mais barata e informe que ela é a opção mais econômica; depois apresente as demais opções, sempre na ordem do menor para o maior valor final
+- Se CARRINHO.shipping_quote.status for "current" e shipping_needs_recalculation não for true, use essa cotação para lembrar o frete já informado; recalcule apenas se o cliente pedir atualização ou se o carrinho tiver mudado
+- Se o cliente já informou CEP/endereço antes, use calculate_shipping sem pedir o CEP novamente; a tool consulta o último endereço salvo do contato
+- Se o carrinho tiver shipping_needs_recalculation true e o cliente perguntar frete, entrega, prazo ou total com frete, recalcule com calculate_shipping antes de responder
+- Quando add_cart_item ou update_cart_item alterar o carrinho e já existir endereço salvo, recalcule o frete com calculate_shipping antes de informar valores finais de entrega; não reutilize cotação antiga removida ou desatualizada
+- Quando houver mais de uma opção de frete e "Moto Uber" estiver em options, apresente a Moto Uber primeiro como opção preferencial de entrega local rápida; depois apresente as demais opções em ordem do menor para o maior valor final
+- Quando não houver "Moto Uber" em options, apresente primeiro a opção mais barata e informe que ela é a opção mais econômica; depois apresente as demais opções, sempre na ordem do menor para o maior valor final
 - Se calculate_shipping retornar policy "free_shipping_threshold", diga que a compra atingiu o frete grátis acima de ${freeShippingMinimum}; informe cada serviço, prazo e valor final retornado em options.price, pois a Moto Uber pode aparecer com valor fixo de R$ 10,00
 - Se calculate_shipping retornar policy "calculated_shipping", informe os serviços, prazos e valores finais retornados pela consulta
-- Se uma opção "Moto Uber" estiver em options, explique que é entrega local rápida para Goiânia e região metropolitana com valor fixo de R$ 10,00 no checkout; nunca diga que o cliente paga corrida por fora
+- Se uma opção "Moto Uber" estiver em options, dê preferência a ela na resposta, explique que é entrega local rápida para Goiânia e região metropolitana com valor fixo de R$ 10,00 no checkout; nunca diga que o cliente paga corrida por fora
 - Se calculate_shipping retornar policy "moto_uber_available", informe apenas a opção de Moto Uber disponível, prazo e valor fixo retornado em options.price, pois a cotação das transportadoras não ficou disponível
 - Se calculate_shipping retornar policy "shipping_unavailable", diga apenas que a consulta não ficou disponível naquele momento e que o frete poderá ser calculado no checkout; não invente preço nem prazo
 - Se calculate_shipping retornar policy "invalid_zipcode", avise que não localizou o CEP informado e peça para o cliente conferir e enviar um CEP válido com 8 números
 - Se calculate_shipping retornar policy "address_unavailable", avise que a consulta de CEP está temporariamente indisponível e ofereça tentar novamente ou calcular no checkout; não invente endereço, preço ou prazo
+- Se calculate_shipping retornar policy "zipcode_required", peça o CEP do cliente com 8 números para calcular o frete
 - Se o cliente pedir "finalizar compra", "enviar link", "gerar checkout" ou equivalente e o carrinho já tiver produtos, use generate_checkout_link diretamente; não execute calculate_shipping sem um pedido explícito de cotação de frete
 - Use add_cart_item somente quando o cliente pedir para acrescentar unidades ou incluir um novo produto
 - Se o cliente pedir para trocar, corrigir, definir ou reduzir a quantidade de um produto que já está no carrinho, use update_cart_item; a quantidade informada é o total desejado, não um acréscimo
@@ -165,6 +201,9 @@ ${memory}
 
 CARRINHO:
 ${cart}
+
+ENDEREÇO DE ENTREGA SALVO:
+${savedShippingAddress}
 
 LINK DE CHECKOUT ATUAL:
 ${conversation.checkout_url || "Nenhum link enviado ainda."}
@@ -375,7 +414,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   "calculate_shipping",
 
                 description:
-                  "Calcula frete",
+                  "Calcula frete. Se o CEP não for enviado, usa o último endereço salvo do contato.",
 
                 parameters: {
 
@@ -387,12 +426,10 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                     cep: {
                       type:
                         "string",
+                      description:
+                        "CEP do cliente. Opcional quando já houver endereço salvo no contato.",
                     },
                   },
-
-                  required: [
-                    "cep",
-                  ],
                 },
               },
             },
