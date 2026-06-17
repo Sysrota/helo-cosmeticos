@@ -184,7 +184,7 @@ export default function UpsellProducts({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {products.map(
           (product) => {
             const image =
@@ -198,19 +198,19 @@ export default function UpsellProducts({
             return (
               <article
                 key={product.id}
-                className="flex items-center gap-3 rounded-2xl border border-[#f1e5e9] bg-[#fffafb] p-3"
+                className="overflow-hidden rounded-2xl border border-[#f1e5e9] bg-[#fffafb]"
               >
                 <div
-                  className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white"
+                  className="aspect-square w-full overflow-hidden bg-white"
                 >
                   <ProductImagePreview
                     src={image}
                     alt={product.title}
                     className="h-full w-full"
-                    imageClassName="h-full w-full object-contain p-1.5"
+                    imageClassName="h-full w-full object-cover object-center"
                   />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="p-4">
                   <Link
                     to={`/produto/${product.id}`}
                     className="line-clamp-2 text-sm font-semibold leading-5 text-[#43232d]"

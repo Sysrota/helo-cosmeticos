@@ -128,7 +128,8 @@
   }
 
   .product-sale-image {
-    height: 560px;
+    aspect-ratio: 1 / 1;
+    height: auto;
     background: linear-gradient(135deg, #fffafb 0%, #fff1f5 100%);
   }
 
@@ -248,10 +249,6 @@
   @media (max-width: 639px) {
     .home-featured-image {
       height: 320px;
-    }
-
-    .product-sale-image {
-      height: 420px;
     }
 
     .product-sale-title {
