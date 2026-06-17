@@ -26,19 +26,19 @@ echo "📦 Instalando dependências backend..."
 
 cd "$BACKEND_DIR"
 
-yarn install --frozen-lockfile
+npm ci --no-audit --no-fund
 
 echo "🧬 Prisma generate..."
 
-yarn prisma generate
+npx prisma generate
 
 echo "🗄️ Prisma migrate deploy..."
 
-yarn prisma migrate deploy
+npx prisma migrate deploy
 
 echo "🏗️ Build backend..."
 
-yarn build
+npm run build
 
 # O Node executa o dist diretamente e não resolve alias "@/".
 if grep -R 'require("@/' "$BACKEND_DIR/dist" >/dev/null 2>&1; then
