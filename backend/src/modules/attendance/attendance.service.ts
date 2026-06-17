@@ -70,7 +70,8 @@ export async function createConversation(
 }
 
 export async function listConversations() {
-  return prisma.conversation.findMany({
+  const conversations =
+    await prisma.conversation.findMany({
     include: {
       contact: true,
     },
@@ -79,6 +80,25 @@ export async function listConversations() {
       updated_at: "desc",
     },
   });
+
+  return conversations.sort(
+    (a, b) => {
+      const dateA =
+        a.last_message_at ||
+        a.updated_at ||
+        a.created_at;
+
+      const dateB =
+        b.last_message_at ||
+        b.updated_at ||
+        b.created_at;
+
+      return (
+        dateB.getTime() -
+        dateA.getTime()
+      );
+    }
+  );
 }
 
 export async function deleteConversation(

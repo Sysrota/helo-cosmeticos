@@ -15,6 +15,10 @@ export interface Conversation {
 
   last_message_at?: string;
 
+  created_at?: string;
+
+  updated_at?: string;
+
   contact: Contact;
   unread_count: number;
 }

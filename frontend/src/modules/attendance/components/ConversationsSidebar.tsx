@@ -15,6 +15,91 @@ import { socket }
 const CONVERSATION_SYNC_INTERVAL_MS =
   5000;
 
+function getConversationDate(
+  conversation: {
+    last_message_at?: string;
+    updated_at?: string;
+    created_at?: string;
+  }
+) {
+  return (
+    conversation.last_message_at ||
+    conversation.updated_at ||
+    conversation.created_at ||
+    ""
+  );
+}
+
+function getConversationTime(
+  conversation: {
+    last_message_at?: string;
+    updated_at?: string;
+    created_at?: string;
+  }
+) {
+  const rawDate =
+    getConversationDate(
+      conversation
+    );
+
+  if (!rawDate) {
+    return "-";
+  }
+
+  const date =
+    new Date(rawDate);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "-";
+  }
+
+  return date.toLocaleString(
+    "pt-BR",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "2-digit",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    }
+  );
+}
+
+function getConversationTimestamp(
+  conversation: {
+    last_message_at?: string;
+    updated_at?: string;
+    created_at?: string;
+  }
+) {
+  const rawDate =
+    getConversationDate(
+      conversation
+    );
+
+  const timestamp =
+    rawDate
+      ? new Date(rawDate)
+          .getTime()
+      : 0;
+
+  return Number.isNaN(
+    timestamp
+  )
+    ? 0
+    : timestamp;
+}
+
 export function ConversationsSidebar() {
 
   const {
@@ -145,7 +230,17 @@ export function ConversationsSidebar() {
         md:p-3
       ">
 
-        {conversations.map(
+        {[...conversations]
+          .sort(
+            (a, b) =>
+              getConversationTimestamp(
+                b
+              ) -
+              getConversationTimestamp(
+                a
+              )
+          )
+          .map(
           (conversation) => {
 
             const isSelected =
@@ -292,8 +387,11 @@ export function ConversationsSidebar() {
                       <div className="
                         text-[11px]
                         text-zinc-500
+                        whitespace-nowrap
                       ">
-                        agora
+                        {getConversationTime(
+                          conversation
+                        )}
                       </div>
 
                       {conversation.unread_count >
