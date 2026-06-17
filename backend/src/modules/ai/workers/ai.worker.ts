@@ -16,7 +16,6 @@ import {
 import { executeAiAgent } from "../services/ai-agent.service.js";
 import { updateConversationMemory } from "../services/conversation-memory.service.js";
 import {
-  buildProductImageCaption,
   findRequestedProductImage,
 } from "../services/product-image.service.js";
 
@@ -142,11 +141,7 @@ export const aiWorker =
 
           content:
             requestedProductImage
-              ? buildProductImageCaption(
-                  response,
-                  requestedProductImage
-                    .productTitle
-                )
+              ? `Foto do produto: ${requestedProductImage.productTitle}`
               : response,
 
           type:
@@ -157,6 +152,11 @@ export const aiWorker =
           media_url:
             requestedProductImage
               ?.imageUrl,
+
+          send_caption:
+            requestedProductImage
+              ? false
+              : undefined,
         });
 
         await updateConversationMemory({

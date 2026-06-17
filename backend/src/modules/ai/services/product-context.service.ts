@@ -255,7 +255,7 @@ Preço: R$ ${product.price}
 
 Categoria: ${product.category}
 
-Foto cadastrada:
+Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
 ${getPrimaryProductImage(product) || "Nao informada"}
 
 Descrição:
@@ -293,7 +293,7 @@ Preço: R$ ${product.price}
 
 Categoria: ${product.category}
 
-Foto cadastrada:
+Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
 ${getPrimaryProductImage(product) || "Nao informada"}
 
 Descrição:

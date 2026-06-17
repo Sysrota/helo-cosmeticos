@@ -150,6 +150,8 @@ interface CreateMessageDTO {
   type?: string;
 
   media_url?: string;
+
+  send_caption?: boolean;
 }
 
 function getPublicMediaUrl(
@@ -359,7 +361,9 @@ export async function createMessage(
         conversation.contact.phone,
         mediaUrl,
         mediaType,
-        data.content
+        data.send_caption === false
+          ? undefined
+          : data.content
       );
     }
   }
