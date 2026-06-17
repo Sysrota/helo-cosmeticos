@@ -368,8 +368,8 @@ export default function Produto() {
                 <ProductImagePreview
                   src={mainImage}
                   alt={product.title}
-                  className="h-full w-full rounded-[1.5rem] bg-[#fff7f9] p-2 sm:p-3"
-                  imageClassName="h-full w-full rounded-[1.25rem] object-cover object-center"
+                  className="h-full w-full rounded-[1.5rem] bg-[#fff7f9]"
+                  imageClassName="h-full w-full rounded-[1.5rem] object-cover object-center"
                   zoomLabel="Ampliar imagem do produto"
                 />
               </div>
