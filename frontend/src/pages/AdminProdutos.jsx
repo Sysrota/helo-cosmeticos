@@ -51,6 +51,9 @@ export default function AdminProdutos() {
   // galeria
   const [gallery, setGallery] = useState([]); // [{id,image_url,sort_order}]
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [draggedImageId, setDraggedImageId] = useState(null);
+  const [dragOverImageId, setDragOverImageId] = useState(null);
+  const [savingGalleryOrder, setSavingGalleryOrder] = useState(false);
 
     // dimensões para frete
 
@@ -326,41 +329,137 @@ export default function AdminProdutos() {
   async function setAsCover(img) {
     if (!editingId) return;
 
-    const sorted = [...gallery].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const updates = [];
+    const sorted = getSortedGallery();
+    const nextGallery = [
+      img,
+      ...sorted.filter((g) => g.id !== img.id),
+    ];
 
-    // set cover sort_order = 0
-    updates.push(
-      fetch(`${API_URL}/products/${editingId}/images/${img.id}`, {
-        method: "PUT",
-        headers: authHeadersJson(),
-        body: JSON.stringify({ sort_order: 0 }),
-      })
+    await saveGalleryOrder(nextGallery);
+  }
+
+  function getSortedGallery(items = gallery) {
+    return [...items].sort(
+      (a, b) =>
+        (a.sort_order ?? 0) -
+        (b.sort_order ?? 0)
+    );
+  }
+
+  async function saveGalleryOrder(nextGallery) {
+    if (!editingId) return;
+
+    const orderedGallery =
+      nextGallery.map((image, index) => ({
+        ...image,
+        sort_order: index,
+      }));
+
+    setGallery(orderedGallery);
+    setSavingGalleryOrder(true);
+
+    try {
+      const results =
+        await Promise.allSettled(
+          orderedGallery.map((image) =>
+            fetch(
+              `${API_URL}/products/${editingId}/images/${image.id}`,
+              {
+                method: "PUT",
+                headers: authHeadersJson(),
+                body: JSON.stringify({
+                  sort_order:
+                    image.sort_order,
+                }),
+              }
+            )
+          )
+        );
+
+      for (const result of results) {
+        if (result.status === "rejected") {
+          throw result.reason;
+        }
+
+        if (await handle401(result.value)) {
+          return;
+        }
+
+        if (!result.value.ok) {
+          throw new Error(
+            "Falha ao salvar ordem da galeria"
+          );
+        }
+      }
+
+      await fetchProductDetails(editingId);
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar a ordem das imagens.");
+      await fetchProductDetails(editingId);
+    } finally {
+      setSavingGalleryOrder(false);
+    }
+  }
+
+  async function handleGalleryDrop(event, targetImage) {
+    event.preventDefault();
+
+    const draggedId =
+      Number(
+        event.dataTransfer.getData(
+          "text/plain"
+        )
+      ) || draggedImageId;
+
+    setDraggedImageId(null);
+    setDragOverImageId(null);
+
+    if (
+      !draggedId ||
+      draggedId === targetImage.id
+    ) {
+      return;
+    }
+
+    const sorted =
+      getSortedGallery();
+    const fromIndex =
+      sorted.findIndex(
+        (image) =>
+          image.id === draggedId
+      );
+    const toIndex =
+      sorted.findIndex(
+        (image) =>
+          image.id === targetImage.id
+      );
+
+    if (
+      fromIndex < 0 ||
+      toIndex < 0
+    ) {
+      return;
+    }
+
+    const nextGallery =
+      [...sorted];
+    const [movedImage] =
+      nextGallery.splice(
+        fromIndex,
+        1
+      );
+
+    nextGallery.splice(
+      toIndex,
+      0,
+      movedImage
     );
 
-    // push others
-    let order = 1;
-    for (const g of sorted) {
-      if (g.id === img.id) continue;
-      updates.push(
-        fetch(`${API_URL}/products/${editingId}/images/${g.id}`, {
-          method: "PUT",
-          headers: authHeadersJson(),
-          body: JSON.stringify({ sort_order: order++ }),
-        })
-      );
-    }
-
-    const results = await Promise.allSettled(updates);
-    // se algum retornou 401, desloga
-    for (const r of results) {
-      if (r.status === "fulfilled") {
-        if (await handle401(r.value)) return;
-      }
-    }
-
-    await fetchProductDetails(editingId);
-    await fetchProducts();
+    await saveGalleryOrder(
+      nextGallery
+    );
   }
 
   async function removeImage(img) {
@@ -1094,7 +1193,7 @@ export default function AdminProdutos() {
           text-sm
           text-zinc-500
         ">
-          Imagens do produto
+          Arraste as imagens para organizar a ordem de exibição. A primeira imagem será a capa.
         </p>
       </div>
 
@@ -1123,6 +1222,11 @@ export default function AdminProdutos() {
           Enviando imagem...
         </span>
       )}
+      {savingGalleryOrder && (
+        <span className="text-sm font-medium text-helo-dark">
+          Salvando ordem...
+        </span>
+      )}
     </div>
 
     {!editingId && (
@@ -1135,6 +1239,21 @@ export default function AdminProdutos() {
       </div>
     )}
 
+    {editingId && gallery.length === 0 && (
+      <div className="
+        text-sm
+        text-zinc-500
+        rounded-xl
+        border
+        border-dashed
+        border-zinc-300
+        bg-white
+        p-4
+      ">
+        Nenhuma imagem na galeria ainda. Faça upload acima.
+      </div>
+    )}
+
     {gallery.length > 0 && (
       <div className="
         grid
@@ -1143,29 +1262,86 @@ export default function AdminProdutos() {
         gap-4
       ">
 
-        {[...gallery]
-          .sort(
-            (a, b) =>
-              (a.sort_order ?? 0) -
-              (b.sort_order ?? 0)
-          )
+        {getSortedGallery()
           .map((g) => (
 
             <div
               key={g.id}
+              draggable={!savingGalleryOrder}
+              onDragStart={(event) => {
+                setDraggedImageId(g.id);
+                event.dataTransfer.effectAllowed =
+                  "move";
+                event.dataTransfer.setData(
+                  "text/plain",
+                  String(g.id)
+                );
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect =
+                  "move";
+                setDragOverImageId(g.id);
+              }}
+              onDragLeave={() => {
+                setDragOverImageId((current) =>
+                  current === g.id
+                    ? null
+                    : current
+                );
+              }}
+              onDrop={(event) =>
+                handleGalleryDrop(
+                  event,
+                  g
+                )
+              }
+              onDragEnd={() => {
+                setDraggedImageId(null);
+                setDragOverImageId(null);
+              }}
 
-              className="
+              className={`
                 bg-white
                 border
                 rounded-2xl
                 overflow-hidden
-              "
+                transition
+                cursor-grab
+                active:cursor-grabbing
+                ${draggedImageId === g.id
+                  ? "opacity-50"
+                  : ""}
+                ${dragOverImageId === g.id
+                  ? "border-helo-dark ring-2 ring-helo-dark/15"
+                  : ""}
+              `}
             >
 
               <div className="
                 h-40
                 overflow-hidden
+                relative
               ">
+                <div className="
+                  absolute
+                  left-2
+                  top-2
+                  z-10
+                  rounded-full
+                  bg-white/90
+                  px-2.5
+                  py-1
+                  text-xs
+                  font-semibold
+                  text-helo-dark
+                  shadow-sm
+                ">
+                  Ordem {g.sort_order ?? 0}
+                  {(g.sort_order ?? 0) === 0
+                    ? " • Capa"
+                    : ""}
+                </div>
                 <img
                   src={`${API_URL}${g.image_url}`}
 
@@ -1175,6 +1351,7 @@ export default function AdminProdutos() {
                     w-full
                     h-full
                     object-cover
+                    pointer-events-none
                   "
                 />
               </div>
@@ -1185,6 +1362,21 @@ export default function AdminProdutos() {
                 flex-col
                 gap-2
               ">
+                <div className="
+                  rounded-xl
+                  border
+                  border-dashed
+                  border-zinc-200
+                  bg-zinc-50
+                  px-3
+                  py-2
+                  text-center
+                  text-xs
+                  font-medium
+                  text-zinc-500
+                ">
+                  Arraste para mudar posição
+                </div>
 
                 <button
                   type="button"
@@ -1251,64 +1443,6 @@ export default function AdminProdutos() {
     </button>
   </div>
 </form>
-
-          {/* Galeria */}
-          {mode === "edit" && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xl font-display text-helo-dark">Galeria do produto</h3>
-                <div className="text-sm text-helo-text/70">Capa = Ordem 0</div>
-              </div>
-
-              {gallery.length === 0 ? (
-                <div className="text-helo-text/70 bg-white/50 border border-white/40 rounded-2xl p-4">
-                  Nenhuma imagem na galeria ainda. Faça upload acima.
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[...gallery]
-                    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-                    .map((g) => (
-                      <div
-                        key={g.id}
-                        className="bg-white/70 border border-white/40 rounded-2xl shadow overflow-hidden"
-                      >
-                        <div className="w-full h-36 bg-helo-background overflow-hidden">
-                          <img
-                            src={`${API_URL}${g.image_url}`}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        <div className="p-3 flex flex-col gap-2">
-                          <div className="text-xs text-helo-text/70">
-                            Ordem: <span className="font-semibold">{g.sort_order}</span>
-                            {g.sort_order === 0 ? " • Capa" : ""}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setAsCover(g)}
-                            className="px-3 py-2 rounded-xl bg-white border border-helo-dark/10 text-helo-dark hover:shadow"
-                          >
-                            Definir capa
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => removeImage(g)}
-                            className="px-3 py-2 rounded-xl bg-red-600 text-white hover:opacity-90"
-                          >
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Filtros do admin */}
