@@ -380,7 +380,7 @@ export default function Produto() {
                       key={image.id}
                       type="button"
                       onClick={() => setSelected(image.full)}
-                      className={`h-[92px] overflow-hidden rounded-2xl border bg-white p-2 transition ${
+                      className={`aspect-square overflow-hidden rounded-2xl border bg-white p-2 transition ${
                         active
                           ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
                           : "border-[#f0e4e8] hover:border-[#e7bdc8]"

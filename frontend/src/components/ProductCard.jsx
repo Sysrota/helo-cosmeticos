@@ -1,7 +1,6 @@
 import { ShoppingBag } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
-import ProductImagePreview from "./ProductImagePreview";
 
 function formatBRL(value) {
   return Number(value || 0).toLocaleString("pt-BR", {
@@ -48,7 +47,8 @@ export default function ProductCard({
 
   return (
     <article className="home-product-card flex h-full flex-col overflow-hidden bg-white">
-      <div
+      <Link
+        to={`/produto/${id}`}
         className="group relative block aspect-square overflow-hidden bg-[#fffafb]"
       >
         <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
@@ -61,14 +61,21 @@ export default function ProductCard({
             {pixLabel}
           </span>
         </div>
-        <ProductImagePreview
-          src={image}
-          alt={title}
-          className="h-full w-full"
-          imageClassName="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-        />
-      </div>
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
+            loading="lazy"
+            decoding="async"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-400">
+            Sem imagem
+          </div>
+        )}
+      </Link>
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         {category && (

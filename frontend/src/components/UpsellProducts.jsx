@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import { Link } from "react-router-dom";
-import ProductImagePreview from "./ProductImagePreview";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -184,7 +183,7 @@ export default function UpsellProducts({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {products.map(
           (product) => {
             const image =
@@ -198,19 +197,23 @@ export default function UpsellProducts({
             return (
               <article
                 key={product.id}
-                className="overflow-hidden rounded-2xl border border-[#f1e5e9] bg-[#fffafb]"
+                className="flex items-center gap-3 rounded-2xl border border-[#f1e5e9] bg-[#fffafb] p-3"
               >
-                <div
-                  className="aspect-square w-full overflow-hidden bg-white"
+                <Link
+                  to={`/produto/${product.id}`}
+                  className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white"
                 >
-                  <ProductImagePreview
-                    src={image}
-                    alt={product.title}
-                    className="h-full w-full"
-                    imageClassName="h-full w-full object-cover object-center"
-                  />
-                </div>
-                <div className="p-4">
+                  {image && (
+                    <img
+                      src={image}
+                      alt={product.title}
+                      className="h-full w-full object-contain p-1.5"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                </Link>
+                <div className="min-w-0 flex-1">
                   <Link
                     to={`/produto/${product.id}`}
                     className="line-clamp-2 text-sm font-semibold leading-5 text-[#43232d]"
