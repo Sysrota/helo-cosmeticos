@@ -49,7 +49,7 @@ export default function ProductCard({
     <article className="home-product-card flex h-full flex-col overflow-hidden bg-white">
       <Link
         to={`/produto/${id}`}
-        className="group relative block aspect-[4/3] overflow-hidden bg-[#fffafb]"
+        className="group relative block aspect-[5/4] overflow-hidden bg-[#fffafb]"
       >
         <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
           {isFeatured && (
@@ -65,7 +65,7 @@ export default function ProductCard({
           <img
             src={image}
             alt={title}
-            className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.04]"
+            className="h-full w-full object-cover object-[center_62%] transition duration-500 group-hover:scale-[1.025]"
             loading="lazy"
             decoding="async"
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
