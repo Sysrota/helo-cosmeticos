@@ -154,6 +154,18 @@ export function OrderItemsTable({
                         }
                       </div>
 
+                      {item.product?.subtitle && (
+                        <div className="
+                          mt-1
+                          line-clamp-2
+                          text-xs
+                          leading-4
+                          text-zinc-500
+                        ">
+                          {item.product.subtitle}
+                        </div>
+                      )}
+
                       <div className="
                         text-sm
                         text-zinc-500
@@ -328,6 +340,18 @@ export function OrderItemsTable({
                       ?.title
                   }
                 </div>
+
+                {item.product?.subtitle && (
+                  <div className="
+                    mt-1
+                    line-clamp-2
+                    text-xs
+                    leading-4
+                    text-zinc-500
+                  ">
+                    {item.product.subtitle}
+                  </div>
+                )}
 
                 <div className="
                   text-sm

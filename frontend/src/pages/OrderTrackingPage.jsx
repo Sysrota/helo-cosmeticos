@@ -581,6 +581,11 @@ export default function OrderTrackingPage() {
                           <p className="truncate text-sm font-medium">
                             {item.product.title}
                           </p>
+                          {item.product.subtitle && (
+                            <p className="mt-1 line-clamp-2 text-xs leading-4 text-[#78636b]">
+                              {item.product.subtitle}
+                            </p>
+                          )}
                           <p className="mt-1 text-xs text-[#78636b]">
                             Quantidade: {item.quantity}
                           </p>

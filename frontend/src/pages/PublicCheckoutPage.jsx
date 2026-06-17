@@ -323,6 +323,7 @@ export default function PublicCheckoutPage() {
       unit_price: item.price,
       product: {
         title: item.title,
+        subtitle: item.subtitle || "",
         images: item.image ? [{ image_url: item.image }] : [],
       },
     }));
@@ -1120,6 +1121,11 @@ export default function PublicCheckoutPage() {
                         <p className="text-sm font-semibold leading-snug text-zinc-900">
                           {item.product?.title}
                         </p>
+                        {item.product?.subtitle && (
+                          <p className="mt-1 line-clamp-2 text-xs leading-4 text-zinc-500">
+                            {item.product.subtitle}
+                          </p>
+                        )}
                         {!order ? (
                           <div className="mt-2 inline-flex items-center rounded-full border border-[#eee2e6] bg-white">
                             <button

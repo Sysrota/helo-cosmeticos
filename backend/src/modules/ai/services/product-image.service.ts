@@ -7,6 +7,7 @@ type ProductImageRef = {
 type ProductWithImages = {
   id: number;
   title: string;
+  subtitle?: string | null;
   description?: string | null;
   category?: string | null;
   keywords?: string | null;
@@ -204,6 +205,7 @@ export async function findRequestedProductImage({
           const text =
             normalizeText(`
 ${item.title}
+${item.subtitle}
 ${item.category}
 ${item.description}
 ${item.keywords}

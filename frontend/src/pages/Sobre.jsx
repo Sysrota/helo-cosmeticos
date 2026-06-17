@@ -158,9 +158,16 @@ export default function Sobre() {
                 />
               </div>
               {featuredProduct && (
-                <p className="mt-4 text-center font-display text-xl text-[#43232d]">
-                  {featuredProduct.title}
-                </p>
+                <div className="mt-4 text-center">
+                  <p className="font-display text-xl text-[#43232d]">
+                    {featuredProduct.title}
+                  </p>
+                  {featuredProduct.subtitle && (
+                    <p className="mx-auto mt-1 line-clamp-2 max-w-xs text-sm leading-5 text-zinc-500">
+                      {featuredProduct.subtitle}
+                    </p>
+                  )}
+                </div>
               )}
             </Link>
           </div>

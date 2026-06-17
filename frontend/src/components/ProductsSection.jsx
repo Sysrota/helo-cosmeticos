@@ -42,6 +42,7 @@ export default function ProductsSection({ items, loading }) {
                 key={product.id}
                 id={product.id}
                 title={product.title}
+                subtitle={product.subtitle}
                 price={Number(product.price || 0)}
                 image={
                   product.image_url

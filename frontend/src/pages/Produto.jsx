@@ -18,6 +18,10 @@ import { useCart } from "../context/CartContext";
 import Formatter from "../utils/Formatter";
 import UpsellProducts from "../components/UpsellProducts";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
+import {
+  resetSeoMeta,
+  setSeoMeta,
+} from "../utils/seo";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -150,6 +154,36 @@ export default function Produto() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!product) {
+      return undefined;
+    }
+
+    const seoDescription =
+      product.meta_description ||
+      product.subtitle ||
+      product.description ||
+      "Compre cosméticos Helô para pele e cabelos com pagamento seguro e condições especiais.";
+
+    setSeoMeta({
+      title:
+        `${product.title} | Helô Cosméticos`,
+      description:
+        seoDescription,
+      image:
+        cover || undefined,
+      url:
+        window.location.href,
+    });
+
+    return () => {
+      resetSeoMeta();
+    };
+  }, [
+    cover,
+    product,
+  ]);
+
   const mainImage = selected || cover;
   const unavailable = product?.is_active === false;
   const category =
@@ -170,6 +204,7 @@ export default function Produto() {
     return {
       product_id: product.id,
       title: product.title,
+      subtitle: product.subtitle || "",
       price: Number(product.price || 0),
       image: mainImage || cover || "",
       quantity,

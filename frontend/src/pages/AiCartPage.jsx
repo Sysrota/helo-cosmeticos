@@ -96,6 +96,9 @@ export default function AiCartPage() {
               title:
                 item.title,
 
+              subtitle:
+                item.subtitle || "",
+
               image:
                 item.image,
 

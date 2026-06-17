@@ -52,6 +52,7 @@ export async function searchProductsTool({
 
       const text = `
 ${product.title}
+${product.subtitle}
 ${product.description}
 ${product.category}
 ${product.keywords}
@@ -123,6 +124,9 @@ ${product.o_que_vai_sentir}
 
         title:
           item.product.title,
+
+        subtitle:
+          item.product.subtitle,
 
         price:
           item.product.price,

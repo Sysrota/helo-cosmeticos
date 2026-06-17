@@ -413,6 +413,12 @@ export default function Checkout() {
                         {item.title}
                       </div>
 
+                      {item.subtitle && (
+                        <div className="mt-1 line-clamp-2 text-xs leading-4 text-helo-text">
+                          {item.subtitle}
+                        </div>
+                      )}
+
                       <div className="text-sm text-helo-text mt-1">
                         {item.quantity}x
                       </div>

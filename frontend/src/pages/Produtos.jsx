@@ -98,6 +98,7 @@ export default function Produtos() {
       const matchesSearch =
         !search ||
         normalizeSearch(product.title).includes(search) ||
+        normalizeSearch(product.subtitle).includes(search) ||
         normalizeSearch(product.category).includes(search);
       const matchesCategory =
         filters.category === "all" || product.category === filters.category;
@@ -203,6 +204,7 @@ export default function Produtos() {
                 key={product.id}
                 id={product.id}
                 title={product.title}
+                subtitle={product.subtitle}
                 price={Number(product.price || 0)}
                 category={CATEGORY_LABELS[product.category] || product.category}
                 isFeatured={product.is_featured}

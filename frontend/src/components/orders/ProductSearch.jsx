@@ -30,7 +30,12 @@ export function ProductSearch({
               ?.toLowerCase()
               ?.includes(
                 search.toLowerCase()
-              );
+              ) ||
+              product.subtitle
+                ?.toLowerCase()
+                ?.includes(
+                  search.toLowerCase()
+                );
           }
         )
         .sort(
@@ -197,6 +202,18 @@ export function ProductSearch({
                 ">
                   {product.title}
                 </div>
+
+                {product.subtitle && (
+                  <div className="
+                    mt-1
+                    line-clamp-2
+                    text-xs
+                    leading-4
+                    text-zinc-500
+                  ">
+                    {product.subtitle}
+                  </div>
+                )}
 
                 {product.is_featured && (
                   <span className="

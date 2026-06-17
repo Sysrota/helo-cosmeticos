@@ -13,6 +13,7 @@ export default function ProductCard({
   id,
   image,
   title,
+  subtitle,
   price,
   category,
   isFeatured = false,
@@ -35,6 +36,7 @@ export default function ProductCard({
         directPurchaseItem: {
           product_id: id,
           title,
+          subtitle,
           price: numericPrice,
           image: image || "",
           quantity: 1,
@@ -45,7 +47,10 @@ export default function ProductCard({
 
   return (
     <article className="home-product-card flex h-full flex-col overflow-hidden bg-white">
-      <Link to={`/produto/${id}`} className="relative block h-72 bg-[#fffafb]">
+      <Link
+        to={`/produto/${id}`}
+        className="group relative block aspect-[4/3] overflow-hidden bg-[#fffafb]"
+      >
         <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
           {isFeatured && (
             <span className="rounded-full bg-[#d9536f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
@@ -60,8 +65,10 @@ export default function ProductCard({
           <img
             src={image}
             alt={title}
-            className="h-full w-full object-contain p-7 transition duration-300 hover:scale-[1.03]"
+            className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.04]"
             loading="lazy"
+            decoding="async"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-400">
@@ -79,6 +86,11 @@ export default function ProductCard({
         <Link to={`/produto/${id}`} className="font-display text-xl text-[#43232d]">
           {title}
         </Link>
+        {subtitle && (
+          <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-5 text-zinc-500">
+            {subtitle}
+          </p>
+        )}
         <div className="mt-4">
           <p className="text-xl font-semibold tracking-tight text-[#43232d]">
             {formatBRL(numericPrice)}

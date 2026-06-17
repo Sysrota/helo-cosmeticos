@@ -11,6 +11,8 @@ model Product {
   id                Int      @id @default(autoincrement())
 
   title             String
+  subtitle          String   @default("")
+  meta_description  String   @default("")
   description       String   @default("")
 
   keywords          String @default("")

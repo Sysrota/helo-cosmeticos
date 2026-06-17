@@ -37,6 +37,8 @@ export default function AdminProdutos() {
   const [editingId, setEditingId] = useState(null);
 
   const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [formCategory, setFormCategory] = useState("Selecione");
@@ -183,6 +185,8 @@ export default function AdminProdutos() {
     setMode("create");
     setEditingId(null);
     setTitle("");
+    setSubtitle("");
+    setMetaDescription("");
     setDescription("");
     setPrice("0,00");
     setFormCategory("");
@@ -202,6 +206,8 @@ export default function AdminProdutos() {
     setMode("edit");
     setEditingId(p.id);
     setTitle(p.title || "");
+    setSubtitle(p.subtitle || "");
+    setMetaDescription(p.meta_description || "");
     setDescription(p.description || "");
     setPrice(String(p.price ?? 0).replace(".", ","));
     setFormCategory(p.category || "");
@@ -224,6 +230,8 @@ export default function AdminProdutos() {
     // carrega detalhes (inclui galeria e pode incluir campos completos)
     try {
       const full = await fetchProductDetails(p.id);
+      setSubtitle(full.subtitle || p.subtitle || "");
+      setMetaDescription(full.meta_description || p.meta_description || "");
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
     } catch (err) {
@@ -236,6 +244,8 @@ export default function AdminProdutos() {
 
   const payload = {
     title,
+    subtitle,
+    meta_description: metaDescription,
     description,
     price: reaisToNumber(price),
     category: formCategory,
@@ -494,6 +504,83 @@ export default function AdminProdutos() {
           placeholder="Ex: Kit PrimeSkin"
           required
         />
+      </div>
+
+      {/* SUBTÍTULO */}
+      <div className="md:col-span-2">
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Subtítulo para venda
+        </label>
+
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={subtitle}
+
+          onChange={(e) =>
+            setSubtitle(
+              e.target.value
+            )
+          }
+
+          placeholder="Ex: Rotina completa para pele mais hidratada e iluminada."
+          maxLength={160}
+        />
+      </div>
+
+      {/* META DESCRIÇÃO SEO */}
+      <div className="md:col-span-2">
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Meta descrição SEO
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[90px]
+          "
+
+          value={metaDescription}
+
+          onChange={(e) =>
+            setMetaDescription(
+              e.target.value
+            )
+          }
+
+          placeholder="Texto curto para Google e compartilhamento. Ex: Hidratante facial PrimeSkin para pele macia, iluminada e confortável."
+          maxLength={180}
+        />
+
+        <p className="mt-1 text-xs text-zinc-500">
+          {metaDescription.length}/180 caracteres
+        </p>
       </div>
 
       {/* CATEGORIA */}
@@ -1306,6 +1393,16 @@ export default function AdminProdutos() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-display text-lg text-helo-dark">{p.title}</div>
+                      {p.subtitle && (
+                        <div className="mt-1 line-clamp-2 text-sm leading-5 text-helo-text/70">
+                          {p.subtitle}
+                        </div>
+                      )}
+                      {p.meta_description && (
+                        <div className="mt-1 line-clamp-2 text-xs leading-4 text-zinc-500">
+                          SEO: {p.meta_description}
+                        </div>
+                      )}
                       <div className="text-sm text-helo-text/80">
                         Categoria: <span className="font-semibold">{p.category}</span>
                       </div>

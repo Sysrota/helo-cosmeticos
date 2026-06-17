@@ -138,6 +138,11 @@ export default function Hero({ featuredProduct }) {
                       <p className="font-display text-xl text-[#43232d]">
                         {featuredProduct.title}
                       </p>
+                      {featuredProduct.subtitle && (
+                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-zinc-500">
+                          {featuredProduct.subtitle}
+                        </p>
+                      )}
                       <p className="mt-1 text-sm text-zinc-500">
                         No PIX por{" "}
                         <strong className="text-[#b74662]">

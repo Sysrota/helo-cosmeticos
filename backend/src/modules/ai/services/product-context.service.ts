@@ -82,6 +82,7 @@ export async function getProductsContext(
 
       const text = `
 ${product.title}
+${product.subtitle}
 ${product.category}
 ${product.description}
 ${product.keywords}
@@ -251,6 +252,9 @@ ID do produto: ${product.id}
 
 Produto: ${product.title}
 
+Subtítulo:
+${product.subtitle || "Não informado"}
+
 Preço: R$ ${product.price}
 
 Categoria: ${product.category}
@@ -288,6 +292,9 @@ KITS RELACIONADOS:
 ID do produto: ${product.id}
 
 Produto: ${product.title}
+
+Subtítulo:
+${product.subtitle || "Não informado"}
 
 Preço: R$ ${product.price}
 

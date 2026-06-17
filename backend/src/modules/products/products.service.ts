@@ -33,10 +33,20 @@ export async function findAllProducts(
           : {}),
         ...(options.search
           ? {
-              title: {
-                contains: options.search,
-                mode: "insensitive",
-              } as const,
+              OR: [
+                {
+                  title: {
+                    contains: options.search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  subtitle: {
+                    contains: options.search,
+                    mode: "insensitive",
+                  },
+                },
+              ] as const,
             }
           : {}),
       },
@@ -86,6 +96,8 @@ export async function findProductById(
 
 interface CreateProductDTO {
   title: string;
+  subtitle?: string;
+  meta_description?: string;
   description?: string;
   price: number;
   category: string;
@@ -115,6 +127,8 @@ export async function createProduct(
     return transaction.product.create({
       data: {
         title: data.title,
+        subtitle: data.subtitle ?? "",
+        meta_description: data.meta_description ?? "",
         description: data.description ?? "",
         price: data.price,
         category: data.category,
@@ -135,6 +149,8 @@ export async function createProduct(
 
 interface UpdateProductDTO {
   title?: string;
+  subtitle?: string;
+  meta_description?: string;
   description?: string;
   price?: number;
   category?: string;

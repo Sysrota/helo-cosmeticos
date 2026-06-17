@@ -129,6 +129,8 @@ export default function UpsellProducts({
         product.id,
       title:
         product.title,
+      subtitle:
+        product.subtitle || "",
       price:
         Number(
           product.price ||
@@ -216,6 +218,11 @@ export default function UpsellProducts({
                   >
                     {product.title}
                   </Link>
+                  {product.subtitle && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-4 text-zinc-500">
+                      {product.subtitle}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm font-semibold text-[#b74662]">
                     {formatBRL(
                       product.price

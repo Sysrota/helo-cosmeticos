@@ -159,7 +159,8 @@ export default function Carrinho() {
                     </h2>
 
                     <p className="text-helo-text mt-2">
-                      Produto selecionado pela sua consultora Helo ✨
+                      {item.subtitle ||
+                        "Produto selecionado pela sua consultora Helo ✨"}
                     </p>
 
                   </div>

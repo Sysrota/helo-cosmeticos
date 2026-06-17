@@ -147,6 +147,8 @@ export async function addCartItemTool({
     title:
       product.title,
 
+    subtitle:
+      product.subtitle || "",
 
     image:
       getPrimaryProductImage(
