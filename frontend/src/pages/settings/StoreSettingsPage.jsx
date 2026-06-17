@@ -396,8 +396,8 @@ export default function StoreSettingsPage() {
                     Disponibilizar entrega por Moto Uber
                   </span>
                   <span className="mt-1 block text-sm leading-6 text-zinc-500">
-                    Disponível para Goiânia e região metropolitana. O cliente
-                    paga a corrida diretamente no envio, fora do checkout.
+                    Disponível para Goiânia e região metropolitana com valor
+                    fixo de R$ 10,00 cobrado no checkout.
                   </span>
                 </span>
               </label>

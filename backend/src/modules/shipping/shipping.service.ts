@@ -30,10 +30,6 @@ export interface ShippingOption {
   original_price?: number;
 
   discount?: number;
-
-  payment_on_delivery?: boolean;
-
-  external_payment?: boolean;
 }
 
 interface ShippingPackage {
@@ -76,6 +72,8 @@ const MOTO_UBER_CITIES = new Set([
   "trindade",
 ]);
 
+const MOTO_UBER_FIXED_PRICE = 10;
+
 function normalizeLocation(
   value: string
 ) {
@@ -111,15 +109,11 @@ export function getMotoUberShippingOption(
 
   return {
     name:
-      "Moto Uber - pagamento pelo cliente",
+      "Moto Uber",
     price:
-      0,
+      MOTO_UBER_FIXED_PRICE,
     deadline:
       "Entrega rápida local",
-    payment_on_delivery:
-      true,
-    external_payment:
-      true,
   };
 }
 

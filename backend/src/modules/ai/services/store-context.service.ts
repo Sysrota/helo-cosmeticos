@@ -40,8 +40,8 @@ Valor e prazo finais devem ser informados somente após o cálculo pelo CEP.
 CONDIÇÕES COMERCIAIS VIGENTES:
 - PIX: ${policy.pix_discount_percent}% de desconto no checkout.
 - Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.
-- Entrega: frete grátis em compras acima de ${shippingMinimum}, para qualquer localidade atendida.
-- Moto Uber: ${policy.moto_uber_enabled ? "disponível para Goiânia e região metropolitana; o cliente paga o valor da corrida diretamente no envio, fora do checkout." : "indisponível no momento."}
+- Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis; Moto Uber mantém valor fixo quando aparecer.
+- Moto Uber: ${policy.moto_uber_enabled ? "disponível para Goiânia e região metropolitana com valor fixo de R$ 10,00 cobrado no checkout." : "indisponível no momento."}
 - O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.
 
 HORÁRIO DE ATENDIMENTO:

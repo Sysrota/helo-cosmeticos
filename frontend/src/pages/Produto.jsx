@@ -35,9 +35,9 @@ function formatShippingPrice(value) {
 }
 
 function formatShippingOptionPrice(option) {
-  return option.external_payment
-    ? "Pago no envio"
-    : formatShippingPrice(option.price);
+  return formatShippingPrice(
+    option.price
+  );
 }
 
 export default function Produto() {
@@ -476,7 +476,7 @@ export default function Produto() {
                       Calcule o frete
                     </div>
                     <p className="mt-1 text-xs text-[#a85a6d]">
-                      {freeShippingLabel} para qualquer localidade atendida.
+                      {freeShippingLabel} nas opções elegíveis.
                     </p>
                     <div className="mt-3 flex gap-2">
                       <input
@@ -509,7 +509,8 @@ export default function Produto() {
                           .filter(
                             (option, index) =>
                               index < 3 ||
-                              option.external_payment
+                              String(option.name)
+                                .startsWith("Moto Uber")
                           )
                           .map((option) => (
                           <div
@@ -519,11 +520,6 @@ export default function Produto() {
                             <span>
                               <span className="block font-medium text-zinc-800">{option.name}</span>
                               <span className="block text-xs text-zinc-500">{option.deadline}</span>
-                              {option.external_payment && (
-                                <span className="mt-1 block text-xs font-medium text-[#b74662]">
-                                  Valor pago pelo cliente diretamente na entrega
-                                </span>
-                              )}
                               {Number(option.discount || 0) > 0 && (
                                 <span className="mt-1 block text-xs font-medium text-emerald-700">
                                   Desconto de {formatBRL(option.discount)} aplicado

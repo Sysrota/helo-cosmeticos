@@ -46,7 +46,7 @@ export default function Sobre() {
     {
       icon: Truck,
       title: "Frete promocional",
-      text: `${freeShippingLabel} para qualquer localidade atendida.`,
+      text: `${freeShippingLabel} nas opções elegíveis.`,
     },
     {
       icon: CreditCard,

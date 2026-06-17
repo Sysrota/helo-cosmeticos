@@ -70,17 +70,10 @@ function formatShippingPrice(value) {
     : formatMoney(value);
 }
 
-function isExternalShipping(option, methodName = "") {
-  return Boolean(
-    option?.external_payment ||
-    String(methodName).startsWith("Moto Uber")
+function formatShippingOptionPrice(option) {
+  return formatShippingPrice(
+    option?.price ?? 0
   );
-}
-
-function formatShippingOptionPrice(option, methodName = "") {
-  return isExternalShipping(option, methodName)
-    ? "Pago no envio"
-    : formatShippingPrice(option?.price ?? 0);
 }
 
 function getCheckoutImageUrl(item) {
@@ -616,17 +609,8 @@ export default function PublicCheckoutPage() {
       });
 
       setShippingOptions(data);
-      const automaticOptions =
-        data.filter(
-          (option) =>
-            !isExternalShipping(option)
-        );
-      const selectableOptions =
-        automaticOptions.length
-          ? automaticOptions
-          : data;
       setSelectedShipping(
-        selectableOptions.reduce(
+        data.reduce(
           (bestOption, option) =>
             !bestOption ||
             Number(option.price) <
@@ -848,7 +832,7 @@ export default function PublicCheckoutPage() {
                       Informe o CEP e escolha a melhor forma de receber.
                     </p>
                     <p className="mt-2 text-xs font-medium text-[#b74662]">
-                      {freeShippingLabel} para qualquer localidade atendida.
+                      {freeShippingLabel} nas opções elegíveis.
                     </p>
                   </div>
                   <button
@@ -950,11 +934,6 @@ export default function PublicCheckoutPage() {
                                 <span className="block text-xs text-zinc-500">
                                   {option.deadline}
                                 </span>
-                                {isExternalShipping(option) && (
-                                  <span className="mt-1 block text-xs font-medium text-[#b74662]">
-                                    Valor pago diretamente pelo cliente na entrega
-                                  </span>
-                                )}
                                 {Number(option.discount || 0) > 0 && (
                                   <span className="mt-1 block text-xs font-medium text-emerald-700">
                                     Frete grátis aplicado pela condição da compra
@@ -1197,9 +1176,7 @@ export default function PublicCheckoutPage() {
                   <span>Entrega</span>
                   <span>
                     {selectedShipping || order?.shipping_method
-                      ? isExternalShipping(selectedShipping, order?.shipping_method)
-                        ? "Pago no envio"
-                        : Number(selectedShipping?.discount || 0) > 0
+                      ? Number(selectedShipping?.discount || 0) > 0
                           ? formatMoney(selectedShipping.original_price)
                           : formatShippingPrice(shippingPrice)
                       : "A calcular"}

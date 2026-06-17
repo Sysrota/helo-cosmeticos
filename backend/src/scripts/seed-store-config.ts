@@ -59,7 +59,7 @@ async function main() {
       ],
 
       shipping_info:
-        "Frete grátis em compras acima de R$ 99,00 para todo o Brasil. Valor e prazo finais são calculados pelo CEP.",
+        "Frete grátis em compras acima de R$ 99,00 nas opções elegíveis. Valor e prazo finais são calculados pelo CEP.",
 
       free_shipping_minimum:
         99,

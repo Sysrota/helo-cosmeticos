@@ -530,11 +530,6 @@ export default function OrderTrackingPage() {
                     {order.shipping_deadline}
                   </p>
                 )}
-                {String(order.shipping_method || "").startsWith("Moto Uber") && (
-                  <p className="mt-2 text-xs font-medium text-[#b74662]">
-                    Valor do envio pago diretamente pelo cliente.
-                  </p>
-                )}
               </div>
 
               <div className="rounded-2xl bg-[#fff7f9] p-4">

@@ -23,7 +23,7 @@ export default function HomeBenefits() {
     {
       icon: Truck,
       title: freeShippingLabel,
-      text: "Condição válida para localidades atendidas.",
+      text: "Condição válida nas opções de entrega elegíveis.",
     },
     {
       icon: ShieldCheck,
