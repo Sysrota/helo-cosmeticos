@@ -24,3 +24,40 @@ api.interceptors.request.use(
     return config;
   }
 );
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status =
+      error?.response?.status;
+
+    const hasToken =
+      Boolean(
+        localStorage.getItem(
+          "auth_token"
+        )
+      );
+
+    if (
+      status === 401 &&
+      hasToken
+    ) {
+      localStorage.removeItem(
+        "auth_token"
+      );
+
+      if (
+        window.location.pathname
+          .startsWith("/admin") &&
+        window.location.pathname !==
+          "/admin/login"
+      ) {
+        window.location.replace(
+          "/admin/login"
+        );
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
