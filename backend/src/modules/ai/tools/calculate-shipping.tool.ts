@@ -337,10 +337,12 @@ export async function calculateShippingTool({
     total >
     commercialPolicy.free_shipping_minimum;
   const motoUberOption =
-    getMotoUberShippingOption(
-      address,
-      commercialPolicy.moto_uber_enabled
-    );
+    hasFreeShipping
+      ? getMotoUberShippingOption(
+        address,
+        commercialPolicy.moto_uber_enabled
+      )
+      : null;
 
   try {
     const carrierOptions =

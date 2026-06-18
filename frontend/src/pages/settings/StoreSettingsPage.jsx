@@ -341,8 +341,9 @@ export default function StoreSettingsPage() {
                     Disponibilizar entrega por Moto Uber
                   </span>
                   <span className="mt-1 block text-sm leading-6 text-zinc-500">
-                    Disponível para Goiânia e região metropolitana com valor
-                    fixo de R$ 10,00 cobrado no checkout.
+                    Disponível para Goiânia e região metropolitana somente em
+                    compras que atingirem o frete grátis, com valor fixo de
+                    R$ 10,00 cobrado no checkout.
                   </span>
                 </span>
               </label>
@@ -350,7 +351,8 @@ export default function StoreSettingsPage() {
               <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800">
                 Transportadoras e valores são consultados automaticamente no
                 cálculo de frete. A Moto Uber aparece apenas quando estiver
-                ativa e disponível para a região.
+                ativa, disponível para a região e a compra atingir o valor de
+                frete grátis configurado.
               </p>
             </div>
           </div>

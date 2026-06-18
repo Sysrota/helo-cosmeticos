@@ -387,12 +387,17 @@ export async function calculateProductShipping({
   const subtotal =
     Number(product.price || 0) *
     safeQuantity;
+  const hasFreeShipping =
+    subtotal >
+    policy.free_shipping_minimum;
 
   const motoUberOption =
-    getMotoUberShippingOption(
-      address,
-      policy.moto_uber_enabled
-    );
+    hasFreeShipping
+      ? getMotoUberShippingOption(
+        address,
+        policy.moto_uber_enabled
+      )
+      : null;
 
   try {
     const carrierOptions =
@@ -417,8 +422,7 @@ export async function calculateProductShipping({
         insuranceValue:
           subtotal,
         freeShipping:
-          subtotal >
-          policy.free_shipping_minimum,
+          hasFreeShipping,
       });
 
     return motoUberOption
@@ -489,11 +493,18 @@ export async function calculateShipping({
 
   const policy =
     await getCommercialPolicy();
+  const subtotal =
+    Number(order.subtotal || 0);
+  const hasFreeShipping =
+    subtotal >
+    policy.free_shipping_minimum;
   const motoUberOption =
-    getMotoUberShippingOption(
-      address,
-      policy.moto_uber_enabled
-    );
+    hasFreeShipping
+      ? getMotoUberShippingOption(
+        address,
+        policy.moto_uber_enabled
+      )
+      : null;
 
 
   // PESO TOTAL
@@ -578,12 +589,9 @@ export async function calculateShipping({
         maxWidth,
         totalLength,
         insuranceValue:
-          Number(
-            order.subtotal || 0
-          ),
+          subtotal,
         freeShipping:
-          Number(order.subtotal || 0) >
-          policy.free_shipping_minimum,
+          hasFreeShipping,
       });
 
     return motoUberOption
