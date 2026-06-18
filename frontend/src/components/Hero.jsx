@@ -39,24 +39,24 @@ export default function Hero({ featuredProduct }) {
       <div className="home-hero-glow home-hero-glow-left" />
       <div className="home-hero-glow home-hero-glow-right" />
 
-      <div className="home-container relative z-10 grid items-center gap-10 py-10 lg:grid-cols-[1.02fr_0.98fr] lg:py-16">
+      <div className="home-container relative z-10 grid items-center gap-8 py-8 lg:grid-cols-[1.08fr_0.82fr] lg:py-11">
         <div className="animate-fade-in text-center lg:text-left">
-          <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-[#f0dfe5] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662] lg:mx-0">
+          <p className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-[#f0dfe5] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662] lg:mx-0">
             <Sparkles size={14} />
             Cuidado premium para sua rotina
           </p>
 
-          <h1 className="font-display text-4xl leading-[1.08] tracking-tight text-[#43232d] sm:text-5xl lg:text-[3.65rem]">
+          <h1 className="font-display text-4xl leading-[1.08] tracking-tight text-[#43232d] sm:text-5xl lg:text-[3.25rem]">
             Sua pele merece um cuidado
             <span className="block text-[#d9536f]">delicado e irresistível.</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-zinc-600 sm:text-lg lg:mx-0">
+          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-zinc-600 sm:text-lg lg:mx-0">
             Descubra cosméticos Helô para um ritual leve, elegante e
             confortável. Compre online com {freeShippingLabel.toLowerCase()}.
           </p>
 
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
             {featuredProduct ? (
               <Link
                 to={`/produto/${featuredProduct.id}`}
@@ -87,7 +87,7 @@ export default function Hero({ featuredProduct }) {
             </a>
           </div>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-zinc-600 lg:justify-start">
+          <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-zinc-600 lg:justify-start">
             <span className="inline-flex items-center gap-2">
               <ShieldCheck size={17} className="text-[#d9536f]" />
               Compra segura
@@ -105,7 +105,7 @@ export default function Hero({ featuredProduct }) {
 
         <div className="animate-fade-in-delay">
           <Motion.div
-            className="mx-auto max-w-[500px]"
+            className="mx-auto max-w-[390px] sm:max-w-[420px]"
             initial={{ y: 12 }}
             animate={{ y: 0 }}
             transition={{
@@ -119,7 +119,7 @@ export default function Hero({ featuredProduct }) {
               to={featuredProduct ? `/produto/${featuredProduct.id}` : "/produtos"}
               className="home-featured-product group relative block bg-white transition hover:-translate-y-1 hover:shadow-[0_30px_72px_rgba(91,39,56,0.14)]"
             >
-              <span className="absolute left-5 top-5 z-10 rounded-full bg-[#fff1f5] px-4 py-2 text-xs font-semibold text-[#b74662]">
+              <span className="absolute left-4 top-4 z-10 rounded-full bg-[#fff1f5] px-3.5 py-1.5 text-xs font-semibold text-[#b74662]">
                 Destaque Helô
               </span>
 
@@ -136,10 +136,10 @@ export default function Hero({ featuredProduct }) {
               </div>
 
               {featuredProduct && (
-                <div className="border-t border-[#f2e6ea] px-6 py-5">
+                <div className="border-t border-[#f2e6ea] px-5 py-4">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="font-display text-xl text-[#43232d]">
+                      <p className="font-display text-lg text-[#43232d]">
                         {featuredProduct.title}
                       </p>
                       {featuredProduct.subtitle && (
@@ -154,7 +154,7 @@ export default function Hero({ featuredProduct }) {
                         </strong>
                       </p>
                     </div>
-                    <p className="text-lg font-semibold text-[#43232d]">
+                    <p className="text-base font-semibold text-[#43232d]">
                       {formatBRL(featuredProduct.price)}
                     </p>
                   </div>
