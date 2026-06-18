@@ -73,6 +73,15 @@ const MOTO_UBER_CITIES = new Set([
 ]);
 
 const MOTO_UBER_FIXED_PRICE = 10;
+const MOTO_UBER_CUSTOMER_PAID_PRICE = 0;
+const LOCAL_PICKUP_OPTION: ShippingOption = {
+  name:
+    "Retirar em mãos",
+  price:
+    0,
+  deadline:
+      "Combinar retirada",
+};
 
 function normalizeLocation(
   value: string
@@ -87,24 +96,44 @@ function normalizeLocation(
     .trim();
 }
 
+function isLocalDeliveryCovered(
+  address: {
+    city: string;
+    state: string;
+  }
+) {
+  return (
+    normalizeLocation(address.state) === "go" &&
+    MOTO_UBER_CITIES.has(
+      normalizeLocation(address.city)
+    )
+  );
+}
+
 export function getMotoUberShippingOption(
   address: {
     city: string;
     state: string;
   },
-  enabled: boolean
+  enabled: boolean,
+  fixedPrice: boolean
 ): ShippingOption | null {
-  const isCovered =
-    normalizeLocation(address.state) === "go" &&
-    MOTO_UBER_CITIES.has(
-      normalizeLocation(address.city)
-    );
-
   if (
     !enabled ||
-    !isCovered
+    !isLocalDeliveryCovered(address)
   ) {
     return null;
+  }
+
+  if (!fixedPrice) {
+    return {
+      name:
+        "Moto Uber",
+      price:
+        MOTO_UBER_CUSTOMER_PAID_PRICE,
+      deadline:
+        "Valor pago ao entregador",
+    };
   }
 
   return {
@@ -115,6 +144,36 @@ export function getMotoUberShippingOption(
     deadline:
       "Entrega rápida local",
   };
+}
+
+export function getLocalShippingOptions(
+  address: {
+    city: string;
+    state: string;
+  },
+  enabled: boolean,
+  fixedMotoUberPrice: boolean
+): ShippingOption[] {
+  if (
+    !enabled ||
+    !isLocalDeliveryCovered(address)
+  ) {
+    return [];
+  }
+
+  const motoUberOption =
+    getMotoUberShippingOption(
+      address,
+      enabled,
+      fixedMotoUberPrice
+    );
+
+  return [
+    LOCAL_PICKUP_OPTION,
+    ...(motoUberOption
+      ? [motoUberOption]
+      : []),
+  ];
 }
 
 function applyFreeShipping(
@@ -391,13 +450,12 @@ export async function calculateProductShipping({
     subtotal >
     policy.free_shipping_minimum;
 
-  const motoUberOption =
-    hasFreeShipping
-      ? getMotoUberShippingOption(
-        address,
-        policy.moto_uber_enabled
-      )
-      : null;
+  const localOptions =
+    getLocalShippingOptions(
+      address,
+      policy.moto_uber_enabled,
+      hasFreeShipping
+    );
 
   try {
     const carrierOptions =
@@ -425,17 +483,13 @@ export async function calculateProductShipping({
           hasFreeShipping,
       });
 
-    return motoUberOption
-      ? [
-        ...carrierOptions,
-        motoUberOption,
-      ]
-      : carrierOptions;
+    return [
+      ...localOptions,
+      ...carrierOptions,
+    ];
   } catch (error) {
-    if (motoUberOption) {
-      return [
-        motoUberOption,
-      ];
+    if (localOptions.length) {
+      return localOptions;
     }
 
     throw error;
@@ -498,13 +552,12 @@ export async function calculateShipping({
   const hasFreeShipping =
     subtotal >
     policy.free_shipping_minimum;
-  const motoUberOption =
-    hasFreeShipping
-      ? getMotoUberShippingOption(
-        address,
-        policy.moto_uber_enabled
-      )
-      : null;
+  const localOptions =
+    getLocalShippingOptions(
+      address,
+      policy.moto_uber_enabled,
+      hasFreeShipping
+    );
 
 
   // PESO TOTAL
@@ -594,17 +647,13 @@ export async function calculateShipping({
           hasFreeShipping,
       });
 
-    return motoUberOption
-      ? [
-        ...carrierOptions,
-        motoUberOption,
-      ]
-      : carrierOptions;
+    return [
+      ...localOptions,
+      ...carrierOptions,
+    ];
   } catch (error) {
-    if (motoUberOption) {
-      return [
-        motoUberOption,
-      ];
+    if (localOptions.length) {
+      return localOptions;
     }
 
     throw error;

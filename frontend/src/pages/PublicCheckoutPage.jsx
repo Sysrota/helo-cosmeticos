@@ -72,6 +72,13 @@ function formatShippingPrice(value) {
 }
 
 function formatShippingOptionPrice(option) {
+  if (
+    String(option?.name || "").startsWith("Moto Uber") &&
+    Number(option?.price || 0) === 0
+  ) {
+    return "Pago ao entregador";
+  }
+
   return formatShippingPrice(
     option?.price ?? 0
   );

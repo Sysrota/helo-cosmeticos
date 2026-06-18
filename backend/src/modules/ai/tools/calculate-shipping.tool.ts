@@ -4,7 +4,7 @@ import {
 
 import {
   findAddressByCep,
-  getMotoUberShippingOption,
+  getLocalShippingOptions,
   requestShippingOptions,
 } from "../../shipping/shipping.service.js";
 import {
@@ -336,13 +336,12 @@ export async function calculateShippingTool({
   const hasFreeShipping =
     total >
     commercialPolicy.free_shipping_minimum;
-  const motoUberOption =
-    hasFreeShipping
-      ? getMotoUberShippingOption(
-        address,
-        commercialPolicy.moto_uber_enabled
-      )
-      : null;
+  const localOptions =
+    getLocalShippingOptions(
+      address,
+      commercialPolicy.moto_uber_enabled,
+      hasFreeShipping
+    );
 
   try {
     const carrierOptions =
@@ -358,13 +357,10 @@ export async function calculateShippingTool({
           hasFreeShipping,
       });
 
-    const options =
-      motoUberOption
-        ? [
-          motoUberOption,
-          ...carrierOptions,
-        ]
-        : carrierOptions;
+    const options = [
+      ...localOptions,
+      ...carrierOptions,
+    ];
     const policy =
       hasFreeShipping
         ? "free_shipping_threshold"
@@ -408,14 +404,13 @@ export async function calculateShippingTool({
         options,
     };
   } catch (error) {
-    if (motoUberOption) {
+    if (localOptions.length) {
       const policy =
-        "moto_uber_available";
+        "local_shipping_available";
       const destination =
         `${address.city}/${address.state}`;
-      const options = [
-        motoUberOption,
-      ];
+      const options =
+        localOptions;
 
       rememberCartShippingQuote(
         cart,

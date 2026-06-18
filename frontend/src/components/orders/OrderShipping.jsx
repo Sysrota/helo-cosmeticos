@@ -1,6 +1,19 @@
 import Formatter
   from "@/utils/Formatter";
 
+function formatShippingOptionPrice(option) {
+  if (
+    String(option?.name || "").startsWith("Moto Uber") &&
+    Number(option?.price || 0) === 0
+  ) {
+    return "Pago ao entregador";
+  }
+
+  return Formatter.formataMoeda(
+    option.price
+  );
+}
+
 export function OrderShipping({
   cep,
   setCep,
@@ -211,8 +224,8 @@ export function OrderShipping({
                       text-xl
                       font-bold
                     ">
-                      {Formatter.formataMoeda(
-                        option.price
+                      {formatShippingOptionPrice(
+                        option
                       )}
                     </div>
 
