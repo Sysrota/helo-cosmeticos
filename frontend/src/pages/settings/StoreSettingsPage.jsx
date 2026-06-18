@@ -175,10 +175,14 @@ export default function StoreSettingsPage() {
           <h2 className="
             text-xl
             font-semibold
-            mb-5
+            mb-2
           ">
-            Pagamentos
+            Comercial
           </h2>
+
+          <p className="mb-5 text-sm leading-6 text-zinc-500">
+            Regras que aparecem no site, na IA e afetam checkout/pagamento.
+          </p>
 
           <div className="
             flex
@@ -249,75 +253,11 @@ export default function StoreSettingsPage() {
               confirma a cobrança sem juros no cartão.
             </p>
 
-            {config.payment_methods?.map(
-              (method, index) => (
-
-                <div
-                  key={method.id}
-
-                  className="
-                    flex
-                    items-center
-                    justify-between
-
-                    border
-                    rounded-2xl
-                    p-4
-                  "
-                >
-
-                  <div>
-
-                    <div className="
-                      font-medium
-                    ">
-                      {method.label}
-                    </div>
-
-                    <div className="
-                      text-sm
-                      text-zinc-500
-                    ">
-                      Método de pagamento
-                    </div>
-                  </div>
-
-                  <input
-                    type="checkbox"
-
-                    checked={
-                      method.enabled
-                    }
-
-                    onChange={(e) => {
-
-                      const updated =
-                        [
-                          ...config.payment_methods,
-                        ];
-
-                      updated[index] = {
-                        ...updated[index],
-
-                        enabled:
-                          e.target.checked,
-                      };
-
-                      setConfig({
-                        ...config,
-
-                        payment_methods:
-                          updated,
-                      });
-                    }}
-
-                    className="
-                      w-5
-                      h-5
-                    "
-                  />
-                </div>
-              )
+            {config.payment_methods?.length > 0 && (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-600">
+                Os métodos de pagamento cadastrados continuam salvos, mas o
+                checkout usa as opções reais configuradas no Mercado Pago.
+              </div>
             )}
           </div>
         </div>
@@ -333,10 +273,15 @@ export default function StoreSettingsPage() {
           <h2 className="
             text-xl
             font-semibold
-            mb-5
+            mb-2
           ">
-            Frete
+            Entrega
           </h2>
+
+          <p className="mb-5 text-sm leading-6 text-zinc-500">
+            O frete é calculado automaticamente pelo CEP no checkout. Aqui ficam
+            apenas as regras que realmente mudam o cálculo.
+          </p>
 
           <div className="
             flex
@@ -402,80 +347,16 @@ export default function StoreSettingsPage() {
                 </span>
               </label>
 
-              <label className="
-                text-sm
-                text-zinc-500
-              ">
-                Informações de frete
-              </label>
-
-              <textarea
-                value={
-                  config.shipping_info
-                }
-
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-
-                    shipping_info:
-                      e.target.value,
-                  })
-                }
-
-                rows={4}
-
-                className="
-                  w-full
-                  border
-                  rounded-2xl
-                  px-4
-                  py-3
-                  mt-2
-                "
-              />
-            </div>
-
-            <div className="
-              flex
-              flex-col
-              gap-4
-            ">
-
-              {config.shipping_methods?.map(
-                (method) => (
-
-                  <div
-                    key={method.id}
-
-                    className="
-                      border
-                      rounded-2xl
-                      p-4
-                    "
-                  >
-
-                    <div className="
-                      font-medium
-                    ">
-                      {method.label}
-                    </div>
-
-                    <div className="
-                      text-sm
-                      text-zinc-500
-                      mt-1
-                    ">
-                      Transportadora
-                    </div>
-                  </div>
-                )
-              )}
+              <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800">
+                Transportadoras e valores são consultados automaticamente no
+                cálculo de frete. A Moto Uber aparece apenas quando estiver
+                ativa e disponível para a região.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* HORÁRIO */}
+        {/* ATENDIMENTO */}
         <div className="
           bg-white
           border
@@ -486,10 +367,18 @@ export default function StoreSettingsPage() {
           <h2 className="
             text-xl
             font-semibold
-            mb-5
+            mb-2
           ">
-            Horário Comercial
+            Atendimento e IA
           </h2>
+
+          <p className="mb-5 text-sm leading-6 text-zinc-500">
+            Textos usados para orientar a IA nas conversas com clientes.
+          </p>
+
+          <label className="mb-2 block text-sm font-medium text-zinc-700">
+            Horário comercial
+          </label>
 
           <textarea
             value={
@@ -515,23 +404,10 @@ export default function StoreSettingsPage() {
               py-3
             "
           />
-        </div>
 
-        {/* TROCAS */}
-        <div className="
-          bg-white
-          border
-          rounded-2xl
-          p-5
-        ">
-
-          <h2 className="
-            text-xl
-            font-semibold
-            mb-5
-          ">
-            Política de Troca
-          </h2>
+          <label className="mb-2 mt-5 block text-sm font-medium text-zinc-700">
+            Política de troca
+          </label>
 
           <textarea
             value={
@@ -557,28 +433,10 @@ export default function StoreSettingsPage() {
               py-3
             "
           />
-        </div>
 
-        {/* IA */}
-        <div className="
-          bg-white
-          border
-          rounded-2xl
-          p-5
-        ">
-
-          <h2 className="
-            text-xl
-            font-semibold
-            mb-5
-          ">
+          <label className="mb-2 mt-5 block text-sm font-medium text-zinc-700">
             Regras da IA
-          </h2>
-
-          <p className="mb-4 text-sm leading-6 text-zinc-500">
-            Use este campo para orientações de atendimento. Frete, PIX e
-            parcelamento são definidos nos campos acima.
-          </p>
+          </label>
 
           <textarea
             value={
