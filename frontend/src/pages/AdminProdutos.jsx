@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -17,6 +17,38 @@ function reaisToNumber(v) {
   const s = String(v ?? "").trim().replace(".", "").replace(",", ".");
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
+}
+
+function numberToReais(value) {
+  return Number(value || 0).toFixed(2).replace(".", ",");
+}
+
+function roundCommercialPrice(value) {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  let rounded = Math.ceil(value) - 0.1;
+  if (rounded < value) rounded += 1;
+  return Number(rounded.toFixed(2));
+}
+
+const DEFAULT_PRICING = {
+  lot_quantity: 0,
+  production_cost_total: 0,
+  packaging_cost_total: 0,
+  labels_cost_total: 0,
+  shipping_materials_cost_total: 0,
+  factory_freight_cost_total: 0,
+  payment_fee_percent: 0,
+  sales_tax_percent: 0,
+  company_shipping_cost_avg: 0,
+  customer_acquisition_cost_avg: 0,
+  desired_profit_margin_percent: 0,
+};
+
+function extractPricing(product = {}) {
+  return Object.keys(DEFAULT_PRICING).reduce((acc, key) => {
+    acc[key] = Number(product[key] ?? DEFAULT_PRICING[key]) || 0;
+    return acc;
+  }, {});
 }
 
 export default function AdminProdutos() {
@@ -38,6 +70,7 @@ export default function AdminProdutos() {
   // form
   const [mode, setMode] = useState("create"); // create | edit
   const [editingId, setEditingId] = useState(null);
+  const [productTab, setProductTab] = useState("details");
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -69,8 +102,70 @@ export default function AdminProdutos() {
     const [width, setWidth] =
       useState(0);
 
-    const [length, setLength] =
+  const [length, setLength] =
       useState(0);
+
+  const [pricing, setPricing] = useState({ ...DEFAULT_PRICING });
+
+  const pricingResult = useMemo(() => {
+    const productionTotal =
+      pricing.production_cost_total +
+      pricing.packaging_cost_total +
+      pricing.labels_cost_total +
+      pricing.shipping_materials_cost_total +
+      pricing.factory_freight_cost_total;
+
+    const unitProductionCost =
+      pricing.lot_quantity > 0
+        ? productionTotal / pricing.lot_quantity
+        : 0;
+
+    const fixedCostPerSale =
+      unitProductionCost +
+      pricing.company_shipping_cost_avg +
+      pricing.customer_acquisition_cost_avg;
+
+    const variablePercent =
+      (pricing.payment_fee_percent +
+        pricing.sales_tax_percent +
+        pricing.desired_profit_margin_percent) /
+      100;
+
+    const minimumSuggestedPrice =
+      variablePercent < 1
+        ? fixedCostPerSale / (1 - variablePercent)
+        : 0;
+
+    const commercialSuggestedPrice = roundCommercialPrice(
+      minimumSuggestedPrice
+    );
+
+    const currentPrice = reaisToNumber(price);
+    const currentPaymentFee =
+      currentPrice * (pricing.payment_fee_percent / 100);
+    const currentSalesTax =
+      currentPrice * (pricing.sales_tax_percent / 100);
+    const estimatedCost =
+      fixedCostPerSale + currentPaymentFee + currentSalesTax;
+    const estimatedProfit = currentPrice - estimatedCost;
+    const realMargin =
+      currentPrice > 0
+        ? (estimatedProfit / currentPrice) * 100
+        : 0;
+
+    return {
+      productionTotal,
+      unitProductionCost,
+      fixedCostPerSale,
+      variablePercent,
+      minimumSuggestedPrice,
+      commercialSuggestedPrice,
+      currentPrice,
+      estimatedCost,
+      estimatedProfit,
+      realMargin,
+    };
+  }, [price, pricing]);
 
   function authHeadersJson() {
     return {
@@ -83,6 +178,13 @@ export default function AdminProdutos() {
     return {
       Authorization: `Bearer ${token}`,
     };
+  }
+
+  function setPricingField(field, value) {
+    setPricing((current) => ({
+      ...current,
+      [field]: Number(value) || 0,
+    }));
   }
 
   async function handle401(res) {
@@ -224,11 +326,14 @@ export default function AdminProdutos() {
     setHeight(0);
     setWidth(0);
     setLength(0);
+    setPricing({ ...DEFAULT_PRICING });
+    setProductTab("details");
   }
 
   async function fillForm(p) {
     setMode("edit");
     setEditingId(p.id);
+    setProductTab("details");
     setTitle(p.title || "");
     setSubtitle(p.subtitle || "");
     setMetaDescription(p.meta_description || "");
@@ -246,6 +351,7 @@ export default function AdminProdutos() {
     setHeight(p.height || 0);
     setWidth(p.width || 0);
     setLength(p.length || 0);
+    setPricing(extractPricing(p));
 
 
     setGallery([]);
@@ -258,6 +364,7 @@ export default function AdminProdutos() {
       setMetaDescription(full.meta_description || p.meta_description || "");
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
+      setPricing(extractPricing(full));
     } catch (err) {
       console.error(err);
     }
@@ -282,6 +389,8 @@ export default function AdminProdutos() {
     height,
     width,
     length,
+    ...pricing,
+    lot_quantity: Math.floor(Number(pricing.lot_quantity) || 0),
   };
 
   console.log("Payload para salvar:", payload);
@@ -654,6 +763,35 @@ export default function AdminProdutos() {
     gap-6
   "
 >
+
+  <div className="inline-flex w-full max-w-md rounded-2xl bg-zinc-100 p-1">
+    <button
+      type="button"
+      onClick={() => setProductTab("details")}
+      className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        productTab === "details"
+          ? "bg-white text-helo-dark shadow-sm"
+          : "text-zinc-500"
+      }`}
+    >
+      Dados do produto
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setProductTab("pricing")}
+      className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        productTab === "pricing"
+          ? "bg-white text-helo-dark shadow-sm"
+          : "text-zinc-500"
+      }`}
+    >
+      Preço e custos
+    </button>
+  </div>
+
+  {productTab === "details" && (
+    <>
 
   {/* ========================= */}
   {/* DADOS PRINCIPAIS */}
@@ -1555,6 +1693,288 @@ export default function AdminProdutos() {
       </div>
     )}
   </div>
+
+    </>
+  )}
+
+  {productTab === "pricing" && (
+    <div className="grid gap-6">
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-6">
+          <div className="rounded-2xl border bg-zinc-50 p-5">
+            <div className="mb-5">
+              <h3 className="text-lg font-semibold text-helo-dark">
+                Custos de produção do lote
+              </h3>
+              <p className="text-sm text-zinc-500">
+                Valores totais pagos para fabricar este produto.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Quantidade produzida
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.lot_quantity}
+                  onChange={(e) =>
+                    setPricingField("lot_quantity", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Fabricação do lote
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.production_cost_total}
+                  onChange={(e) =>
+                    setPricingField("production_cost_total", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Embalagens
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.packaging_cost_total}
+                  onChange={(e) =>
+                    setPricingField("packaging_cost_total", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Rótulos
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.labels_cost_total}
+                  onChange={(e) =>
+                    setPricingField("labels_cost_total", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Caixas e materiais de envio
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.shipping_materials_cost_total}
+                  onChange={(e) =>
+                    setPricingField(
+                      "shipping_materials_cost_total",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Frete da fábrica
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.factory_freight_cost_total}
+                  onChange={(e) =>
+                    setPricingField("factory_freight_cost_total", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-zinc-50 p-5">
+            <div className="mb-5">
+              <h3 className="text-lg font-semibold text-helo-dark">
+                Custos de venda e margem
+              </h3>
+              <p className="text-sm text-zinc-500">
+                Percentuais e custos médios por pedido.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Taxa média de pagamento (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.payment_fee_percent}
+                  onChange={(e) =>
+                    setPricingField("payment_fee_percent", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Impostos sobre venda (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.sales_tax_percent}
+                  onChange={(e) =>
+                    setPricingField("sales_tax_percent", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Envio pago pela empresa
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.company_shipping_cost_avg}
+                  onChange={(e) =>
+                    setPricingField("company_shipping_cost_avg", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Aquisição de cliente
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.customer_acquisition_cost_avg}
+                  onChange={(e) =>
+                    setPricingField(
+                      "customer_acquisition_cost_avg",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-semibold text-helo-dark">
+                  Margem de lucro desejada (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-3"
+                  value={pricing.desired_profit_margin_percent}
+                  onChange={(e) =>
+                    setPricingField(
+                      "desired_profit_margin_percent",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-helo-dark/10 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-helo-dark">
+            Resultado
+          </h3>
+          <p className="mt-1 text-sm text-zinc-500">
+            O preço do site só muda se você aplicar e salvar.
+          </p>
+
+          <div className="mt-5 grid gap-3 text-sm">
+            {[
+              ["Custo total do lote", pricingResult.productionTotal],
+              ["Custo unitário de produção", pricingResult.unitProductionCost],
+              ["Custo fixo por venda", pricingResult.fixedCostPerSale],
+              ["Preço mínimo sugerido", pricingResult.minimumSuggestedPrice],
+              ["Preço comercial sugerido", pricingResult.commercialSuggestedPrice],
+              ["Preço atual", pricingResult.currentPrice],
+              ["Custo estimado no preço atual", pricingResult.estimatedCost],
+              ["Lucro estimado no preço atual", pricingResult.estimatedProfit],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="flex items-center justify-between gap-4 rounded-xl bg-zinc-50 px-3 py-2"
+              >
+                <span className="text-zinc-600">{label}</span>
+                <strong className="text-helo-dark">
+                  R$ {numberToReais(value)}
+                </strong>
+              </div>
+            ))}
+
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-[#fff7f9] px-3 py-2">
+              <span className="text-zinc-600">Margem real no preço atual</span>
+              <strong className="text-helo-dark">
+                {pricingResult.realMargin.toFixed(2).replace(".", ",")}%
+              </strong>
+            </div>
+          </div>
+
+          {pricingResult.variablePercent >= 1 && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Taxas, impostos e margem somam 100% ou mais. Reduza algum
+              percentual para calcular o preço sugerido.
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={!pricingResult.commercialSuggestedPrice}
+            onClick={() =>
+              setPrice(numberToReais(pricingResult.commercialSuggestedPrice))
+            }
+            className="mt-5 w-full rounded-xl bg-helo-dark px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Aplicar preço sugerido no produto
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 
   {/* BOTÃO */}
   <div className="

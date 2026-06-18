@@ -117,6 +117,17 @@ interface CreateProductDTO {
   height?: number;
   width?: number;
   length?: number;
+  lot_quantity?: number;
+  production_cost_total?: number;
+  packaging_cost_total?: number;
+  labels_cost_total?: number;
+  shipping_materials_cost_total?: number;
+  factory_freight_cost_total?: number;
+  payment_fee_percent?: number;
+  sales_tax_percent?: number;
+  company_shipping_cost_avg?: number;
+  customer_acquisition_cost_avg?: number;
+  desired_profit_margin_percent?: number;
 }
 
 export async function createProduct(
@@ -161,6 +172,17 @@ export async function createProduct(
         height: data.height ?? 0,
         width: data.width ?? 0,
         length: data.length ?? 0,
+        lot_quantity: data.lot_quantity ?? 0,
+        production_cost_total: data.production_cost_total ?? 0,
+        packaging_cost_total: data.packaging_cost_total ?? 0,
+        labels_cost_total: data.labels_cost_total ?? 0,
+        shipping_materials_cost_total: data.shipping_materials_cost_total ?? 0,
+        factory_freight_cost_total: data.factory_freight_cost_total ?? 0,
+        payment_fee_percent: data.payment_fee_percent ?? 0,
+        sales_tax_percent: data.sales_tax_percent ?? 0,
+        company_shipping_cost_avg: data.company_shipping_cost_avg ?? 0,
+        customer_acquisition_cost_avg: data.customer_acquisition_cost_avg ?? 0,
+        desired_profit_margin_percent: data.desired_profit_margin_percent ?? 0,
       },
     });
   });
@@ -184,6 +206,17 @@ interface UpdateProductDTO {
   height?: number;
   width?: number;
   length?: number;
+  lot_quantity?: number;
+  production_cost_total?: number;
+  packaging_cost_total?: number;
+  labels_cost_total?: number;
+  shipping_materials_cost_total?: number;
+  factory_freight_cost_total?: number;
+  payment_fee_percent?: number;
+  sales_tax_percent?: number;
+  company_shipping_cost_avg?: number;
+  customer_acquisition_cost_avg?: number;
+  desired_profit_margin_percent?: number;
 }
 
 export async function updateProduct(
