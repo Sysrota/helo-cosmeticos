@@ -626,7 +626,7 @@ export default function Produto() {
                 </p>
                 <div className="product-sale-payment-info mt-3">
                   <p>
-                    <strong>PIX:</strong> {formatBRL(pixTotal)} com {pixDiscountPercent}% de desconto
+                    <strong>PIX:</strong> {formatBRL(pixTotal)} com desconto exclusivo
                   </p>
                   <p>
                     <strong>Cartão:</strong> {cardLabel}

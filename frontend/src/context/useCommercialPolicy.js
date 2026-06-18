@@ -19,7 +19,8 @@ export function useCommercialPolicy() {
   return {
     ...policy,
     formattedShippingMinimum,
-    pixLabel: `${formattedPixDiscount}% desconto no PIX`,
+    formattedPixDiscount,
+    pixLabel: "Desconto exclusivo no PIX",
     cardLabel: `${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros`,
     freeShippingLabel: `Frete grátis em compras acima de ${formattedShippingMinimum}`,
   };

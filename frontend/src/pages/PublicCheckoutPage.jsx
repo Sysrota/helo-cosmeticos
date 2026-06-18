@@ -1018,7 +1018,7 @@ export default function PublicCheckoutPage() {
                   >
                     <Sparkles size={17} className="mb-3 text-[#d85c7a]" />
                     <p className="text-sm font-semibold">PIX</p>
-                    <p className="mt-1 text-xs text-zinc-500">{pixDiscountPercent}% de desconto</p>
+                    <p className="mt-1 text-xs text-zinc-500">Desconto exclusivo no PIX</p>
                   </button>
                   <button
                     type="button"
@@ -1196,7 +1196,7 @@ export default function PublicCheckoutPage() {
                 )}
                 {pixDiscount > 0 && (
                   <div className="flex justify-between font-medium text-emerald-700">
-                    <span>Desconto PIX ({pixDiscountPercent}%)</span>
+                    <span>Desconto exclusivo no PIX</span>
                     <span>- {formatMoney(pixDiscount)}</span>
                   </div>
                 )}
