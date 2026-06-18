@@ -30,8 +30,31 @@ export default function Header() {
     pixLabel,
     cardLabel,
     freeShippingLabel,
+    pix_discount_percent: pixDiscountPercent,
     card_interest_free_installments: interestFreeInstallments,
   } = useCommercialPolicy();
+  const hasPixDiscount = Number(pixDiscountPercent) > 0;
+  const topBenefits = [
+    hasPixDiscount
+      ? {
+          icon: Sparkles,
+          text: pixLabel,
+          strong: true,
+        }
+      : null,
+    {
+      icon: Truck,
+      text: freeShippingLabel,
+    },
+    {
+      icon: CreditCard,
+      text: cardLabel,
+    },
+    {
+      icon: ShieldCheck,
+      text: "Compra segura",
+    },
+  ].filter(Boolean);
 
   useEffect(() => {
     function handleScroll() {
@@ -50,25 +73,25 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-[#f0dfe5] bg-white/95 backdrop-blur-xl">
       <div className="hidden border-b border-[#f5e5ea] bg-[#fff8fa]/95 px-4 py-2 text-center text-xs text-[#6b4b55] sm:block">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
-          <span className="inline-flex items-center gap-1.5">
-            <Sparkles size={13} className="text-[#d9536f]" />
-            <strong className="font-semibold text-[#43232d]">{pixLabel}</strong>
-          </span>
-          <span className="h-3 w-px bg-[#ead1d8]" />
-          <span className="inline-flex items-center gap-1.5">
-            <Truck size={13} className="text-[#d9536f]" />
-            <span>{freeShippingLabel}</span>
-          </span>
-          <span className="h-3 w-px bg-[#ead1d8]" />
-          <span className="inline-flex items-center gap-1.5">
-            <CreditCard size={13} className="text-[#d9536f]" />
-            <span>{cardLabel}</span>
-          </span>
-          <span className="h-3 w-px bg-[#ead1d8]" />
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-[#d9536f]" />
-            <span>Compra segura</span>
-          </span>
+          {topBenefits.map((benefit, index) => {
+            const Icon = benefit.icon;
+
+            return (
+              <span key={benefit.text} className="inline-flex items-center gap-x-5">
+                {index > 0 && <span className="h-3 w-px bg-[#ead1d8]" />}
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon size={13} className="text-[#d9536f]" />
+                  {benefit.strong ? (
+                    <strong className="font-semibold text-[#43232d]">
+                      {benefit.text}
+                    </strong>
+                  ) : (
+                    <span>{benefit.text}</span>
+                  )}
+                </span>
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -77,8 +100,12 @@ export default function Header() {
         ${compact ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
       `}>
         <p className="flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.04em]">
-          <span>{pixLabel}</span>
-          <span className="h-3 w-px bg-[#e7c6cf]" />
+          {hasPixDiscount && (
+            <>
+              <span>{pixLabel}</span>
+              <span className="h-3 w-px bg-[#e7c6cf]" />
+            </>
+          )}
           <span>{interestFreeInstallments}x sem juros</span>
         </p>
         <p className="mt-1 text-[11px] font-medium tracking-[0.01em] text-[#874052]">
