@@ -52,6 +52,9 @@ export default function UpsellProducts({
   const [addedId,
     setAddedId] =
     useState(null);
+  const [addedProductIds,
+    setAddedProductIds] =
+    useState([]);
 
   const excludedKey =
     useMemo(
@@ -75,16 +78,20 @@ export default function UpsellProducts({
       try {
         const response =
           await fetch(
-            `${API_URL}/products?active=true&limit=8&sort=new`
+            `${API_URL}/products?active=true&limit=100&sort=display`
           );
         const data =
           await response.json();
         const excluded =
           new Set(
-            excludedKey
-              .split(",")
-              .filter(Boolean)
-              .map(Number)
+            [
+              ...excludedKey
+                .split(",")
+                .filter(Boolean)
+                .map(Number),
+              ...addedProductIds
+                .map(Number),
+            ]
           );
 
         if (active) {
@@ -96,11 +103,7 @@ export default function UpsellProducts({
                     Number(
                       product.id
                     )
-                  ) ||
-                  Number(
-                    product.id
-                  ) ===
-                  addedId
+                  )
               )
               .slice(0, 3)
           );
@@ -119,7 +122,7 @@ export default function UpsellProducts({
         false;
     };
   }, [
-    addedId,
+    addedProductIds,
     excludedKey,
   ]);
 
@@ -146,6 +149,16 @@ export default function UpsellProducts({
 
     setAddedId(
       product.id
+    );
+    setAddedProductIds((current) =>
+      current.includes(
+        product.id
+      )
+        ? current
+        : [
+            ...current,
+            product.id,
+          ]
     );
     window.setTimeout(
       () =>

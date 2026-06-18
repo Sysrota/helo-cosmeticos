@@ -1,4 +1,12 @@
-import { Menu, ShoppingBag, X } from "lucide-react";
+import {
+  CreditCard,
+  Menu,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Truck,
+  X,
+} from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
@@ -40,21 +48,37 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#f0dfe5] bg-white/95 backdrop-blur-xl">
-      <div className="hidden flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#fff1f5] px-4 py-2 text-center text-xs font-medium tracking-wide text-[#43232d] sm:flex sm:text-sm">
-        <span className="font-bold">{pixLabel}</span>
-        <span className="text-[#d9a7b3]">|</span>
-        <span className="font-bold">{freeShippingLabel}</span>
-        <span className="text-[#d9a7b3]">|</span>
-        <span className="font-bold">{cardLabel}</span>
+      <div className="hidden border-b border-[#f5e5ea] bg-[#fff8fa]/95 px-4 py-2 text-center text-xs text-[#6b4b55] sm:block">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
+          <span className="inline-flex items-center gap-1.5">
+            <Sparkles size={13} className="text-[#d9536f]" />
+            <strong className="font-semibold text-[#43232d]">{pixLabel}</strong>
+          </span>
+          <span className="h-3 w-px bg-[#ead1d8]" />
+          <span className="inline-flex items-center gap-1.5">
+            <Truck size={13} className="text-[#d9536f]" />
+            <span>{freeShippingLabel}</span>
+          </span>
+          <span className="h-3 w-px bg-[#ead1d8]" />
+          <span className="inline-flex items-center gap-1.5">
+            <CreditCard size={13} className="text-[#d9536f]" />
+            <span>{cardLabel}</span>
+          </span>
+          <span className="h-3 w-px bg-[#ead1d8]" />
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck size={13} className="text-[#d9536f]" />
+            <span>Compra segura</span>
+          </span>
+        </div>
       </div>
 
       <div className={`
-        overflow-hidden bg-[#fff1f5] text-center text-[#43232d] transition-all duration-300 sm:hidden
+        overflow-hidden border-b border-[#f5e5ea] bg-[#fff8fa] text-center text-[#43232d] transition-all duration-300 sm:hidden
         ${compact ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
       `}>
-        <p className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em]">
+        <p className="flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.04em]">
           <span>{pixLabel}</span>
-          <span className="text-[#d9a7b3]">|</span>
+          <span className="h-3 w-px bg-[#e7c6cf]" />
           <span>{interestFreeInstallments}x sem juros</span>
         </p>
         <p className="mt-1 text-[11px] font-medium tracking-[0.01em] text-[#874052]">
