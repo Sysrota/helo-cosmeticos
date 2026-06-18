@@ -159,6 +159,18 @@ function applyProductSeo(html, seo) {
     },
     {
       pattern:
+        /<meta\s+property="og:image:secure_url"\s+content="[^"]*"\s*\/?>/i,
+      html:
+        `<meta property="og:image:secure_url" content="${escapeAttribute(seo.image)}" />`,
+    },
+    {
+      pattern:
+        /<meta\s+property="og:image:type"\s+content="[^"]*"\s*\/?>/i,
+      html:
+        `<meta property="og:image:type" content="${escapeAttribute(seo.imageType)}" />`,
+    },
+    {
+      pattern:
         /<meta\s+property="og:image:width"\s+content="[^"]*"\s*\/?>/i,
       html:
         `<meta property="og:image:width" content="1200" />`,
@@ -180,6 +192,12 @@ function applyProductSeo(html, seo) {
         /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i,
       html:
         `<meta name="twitter:title" content="${escapeAttribute(seo.title)}" />`,
+    },
+    {
+      pattern:
+        /<meta\s+name="twitter:card"\s+content="[^"]*"\s*\/?>/i,
+      html:
+        `<meta name="twitter:card" content="summary_large_image" />`,
     },
     {
       pattern:
@@ -236,6 +254,31 @@ function publicSiteUrl() {
   }
 
   return configuredUrl.replace(/\/$/, "");
+}
+
+function imageContentType(imageUrl) {
+  const pathname =
+    (() => {
+      try {
+        return new URL(imageUrl).pathname;
+      } catch {
+        return imageUrl;
+      }
+    })().toLowerCase();
+
+  if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+
+  if (pathname.endsWith(".webp")) {
+    return "image/webp";
+  }
+
+  if (pathname.endsWith(".gif")) {
+    return "image/gif";
+  }
+
+  return "image/png";
 }
 
 const siteUrl =
@@ -340,6 +383,8 @@ try {
               imagePath,
               siteUrl
             ),
+          imageType:
+            imageContentType(imagePath),
           url:
             productUrl,
         }
