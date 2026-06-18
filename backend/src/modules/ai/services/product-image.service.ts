@@ -122,6 +122,47 @@ export function isProductImageRequest(
   );
 }
 
+export function isAiImageDeliveryResponse(
+  response: string
+) {
+  const normalized =
+    normalizeText(response || "");
+
+  const mentionsImage =
+    imageRequestWords.some(
+      (word) =>
+        new RegExp(
+          `\\b${word}\\b`
+        ).test(normalized)
+    );
+
+  if (!mentionsImage) {
+    return false;
+  }
+
+  const deniesImage =
+    normalized.includes("nao tenho") ||
+    normalized.includes("nao possuo") ||
+    normalized.includes("sem foto") ||
+    normalized.includes("sem imagem") ||
+    normalized.includes("nao consigo enviar") ||
+    normalized.includes("nao tenho acesso");
+
+  if (deniesImage) {
+    return false;
+  }
+
+  return (
+    normalized.includes("aqui esta") ||
+    normalized.includes("segue") ||
+    normalized.includes("vou enviar") ||
+    normalized.includes("te envio") ||
+    normalized.includes("envio a") ||
+    normalized.includes("enviar a") ||
+    normalized.includes("conferir")
+  );
+}
+
 export function buildProductImageCaption(
   response: string,
   productTitle: string
@@ -312,6 +353,63 @@ ${item.keywords}
         product.id,
     },
   });
+
+  return {
+    productId:
+      product.id,
+
+    productTitle:
+      product.title,
+
+    imageUrl,
+  };
+}
+
+export async function findLastProductImage(
+  conversationId: number
+) {
+  const conversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+
+      select: {
+        last_product_id: true,
+      },
+    });
+
+  if (!conversation?.last_product_id) {
+    return null;
+  }
+
+  const product =
+    await prisma.product.findFirst({
+      where: {
+        id: conversation.last_product_id,
+        is_active: true,
+      },
+
+      include: {
+        images: {
+          orderBy: {
+            sort_order: "asc",
+          },
+        },
+      },
+    });
+
+  const imageUrl =
+    product
+      ? getPrimaryProductImage(product)
+      : "";
+
+  if (
+    !product ||
+    !imageUrl
+  ) {
+    return null;
+  }
 
   return {
     productId:

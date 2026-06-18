@@ -16,7 +16,9 @@ import {
 import { executeAiAgent } from "../services/ai-agent.service.js";
 import { updateConversationMemory } from "../services/conversation-memory.service.js";
 import {
+  findLastProductImage,
   findRequestedProductImage,
+  isAiImageDeliveryResponse,
 } from "../services/product-image.service.js";
 import {
   findRequestedProductLink,
@@ -165,6 +167,16 @@ export const aiWorker =
                   lastClientMessage.content,
               })
             : null;
+        const aiPromisedProductImage =
+          !requestedProductImage &&
+          isAiImageDeliveryResponse(response)
+            ? await findLastProductImage(
+                conversationId
+              )
+            : null;
+        const productImage =
+          requestedProductImage ||
+          aiPromisedProductImage;
 
         await createMessage({
           conversation_id:
@@ -174,21 +186,21 @@ export const aiWorker =
             "agent",
 
           content:
-            requestedProductImage
-              ? `Foto do produto: ${requestedProductImage.productTitle}`
+            productImage
+              ? `Foto do produto: ${productImage.productTitle}`
               : response,
 
           type:
-            requestedProductImage
+            productImage
               ? "image"
               : "text",
 
           media_url:
-            requestedProductImage
+            productImage
               ?.imageUrl,
 
           send_caption:
-            requestedProductImage
+            productImage
               ? false
               : undefined,
         });
