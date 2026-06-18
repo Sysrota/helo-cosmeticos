@@ -51,6 +51,13 @@ export default function ProductsSection({ items, loading }) {
                 }
               />
             ))}
+              <Link
+                to="/produtos"
+                className="inline-flex items-center gap-2 font-semibold text-[#b74662] transition hover:text-[#d9536f]"
+              >
+              Ver todos
+              <ArrowRight size={18} />
+            </Link>
           </div>
         ) : (
           <div className="rounded-3xl bg-white py-14 text-center text-zinc-500">
