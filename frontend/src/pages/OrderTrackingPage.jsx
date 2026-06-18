@@ -614,7 +614,7 @@ export default function OrderTrackingPage() {
                   Escolha como pagar
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[#78636b]">
-                  Seu pedido está reservado. Pague por PIX com {pixDiscountPercent}% de desconto ou cartão.
+                  Seu pedido está reservado. Pague por PIX com desconto exclusivo ou cartão.
                 </p>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
@@ -635,7 +635,7 @@ export default function OrderTrackingPage() {
                       PIX
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      {pixDiscountPercent}% de desconto
+                      Desconto exclusivo no PIX
                     </p>
                   </button>
                   <button

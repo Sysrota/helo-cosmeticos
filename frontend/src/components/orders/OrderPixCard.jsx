@@ -56,7 +56,7 @@ export function OrderPixCard({
           text-sm
         ">
           <span className="text-emerald-700">
-            {pixDiscountPercent}% de desconto no PIX
+            Desconto exclusivo no PIX
           </span>
           <span className="font-semibold text-emerald-800">
             {Number(pixTotal || 0).toLocaleString("pt-BR", {
