@@ -4,6 +4,9 @@ import { prisma }
 import {
   getPrimaryProductImage,
 } from "./product-image.service.js";
+import {
+  getProductUrl,
+} from "./public-url.service.js";
 
 const ignoredWords = [
   "oi",
@@ -262,6 +265,9 @@ Categoria: ${product.category}
 Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
 ${getPrimaryProductImage(product) || "Nao informada"}
 
+Link oficial do produto:
+${getProductUrl(product.id)}
+
 Descrição:
 ${product.description}
 
@@ -302,6 +308,9 @@ Categoria: ${product.category}
 
 Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
 ${getPrimaryProductImage(product) || "Nao informada"}
+
+Link oficial do produto:
+${getProductUrl(product.id)}
 
 Descrição:
 ${product.description}

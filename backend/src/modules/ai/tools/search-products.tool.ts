@@ -4,6 +4,9 @@ import { prisma }
 import {
   getPrimaryProductImage,
 } from "../services/product-image.service.js";
+import {
+  getProductUrl,
+} from "../services/public-url.service.js";
 
 interface Props {
   query: string;
@@ -149,6 +152,11 @@ ${product.o_que_vai_sentir}
         image:
           getPrimaryProductImage(
             item.product
+          ),
+
+        product_url:
+          getProductUrl(
+            item.product.id
           ),
 
         score:

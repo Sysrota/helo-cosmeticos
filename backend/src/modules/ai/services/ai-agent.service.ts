@@ -31,6 +31,9 @@ import {
 import {
   getCommercialPolicy,
 } from "../../store-config/store-config.service.js";
+import {
+  sanitizeAiResponse,
+} from "./ai-response-sanitizer.service.js";
 
 const openai =
   new OpenAI({
@@ -156,6 +159,9 @@ REGRAS:
 - Nunca invente links
 - Quando o cliente pedir foto ou imagem de um produto, use search_products se precisar localizar o produto; se o produto tiver image ou Foto cadastrada, a imagem sera enviada pelo sistema como midia
 - Nunca escreva a URL da foto, image, Foto cadastrada ou link de produto quando o cliente pedir foto; responda de forma natural e deixe o sistema enviar somente a imagem
+- Quando o cliente pedir o link de um produto, envie somente o product_url real retornado em PRODUTOS ENCONTRADOS ou search_products; o formato correto é ${process.env.FRONTEND_URL || "https://helocosmeticos.com"}/produto/ID
+- Nunca invente slug de produto, como /produto/nome-do-produto; produto sempre usa /produto/ID
+- Só gere checkout quando o cliente pedir finalizar compra, pagar, fechar pedido, carrinho, checkout ou comprar. Se ele disser apenas "me manda o link" depois de falar de um produto, envie o link do produto, não checkout.
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
 - Sempre use as tools
 - Para adicionar um produto ao carrinho, use apenas o ID real exibido em PRODUTOS ENCONTRADOS ou retornado por search_products; nunca estime ou invente productId
@@ -265,7 +271,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   "search_products",
 
                 description:
-                  "Busca produtos reais",
+                  "Busca produtos reais. Retorna product_url oficial; use esse link quando o cliente pedir link do produto.",
 
                 parameters: {
 
@@ -448,7 +454,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   "generate_checkout_link",
 
                 description:
-                  "Gera checkout oficial",
+                  "Gera checkout oficial somente quando o cliente pedir finalizar compra, pagar, comprar, checkout ou carrinho. Não use para pedido simples de link do produto.",
 
                 parameters: {
 
@@ -475,8 +481,10 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
     ) {
 
       return (
-        message.content ||
-        "Posso te ajudar com algo mais? 😊"
+        sanitizeAiResponse(
+          message.content ||
+          "Posso te ajudar com algo mais? 😊"
+        )
       );
     }
 

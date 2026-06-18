@@ -18,6 +18,9 @@ import { updateConversationMemory } from "../services/conversation-memory.servic
 import {
   findRequestedProductImage,
 } from "../services/product-image.service.js";
+import {
+  findRequestedProductLink,
+} from "../services/product-link.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -83,6 +86,47 @@ export const aiWorker =
           return;
         }
 
+        const lastClientMessage =
+          await prisma.message.findUnique({
+            where: {
+              id:
+                Number(
+                  job.data.messageId
+                ),
+            },
+          });
+
+        const requestedProductLink =
+          lastClientMessage?.content
+            ? await findRequestedProductLink({
+                conversationId,
+                message:
+                  lastClientMessage.content,
+              })
+            : null;
+
+        if (requestedProductLink) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              `Claro! Aqui está o link do ${requestedProductLink.productTitle}:\n\n${requestedProductLink.productUrl}`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
         const messages =
           await buildContext(
             conversationId
@@ -112,16 +156,6 @@ export const aiWorker =
 
           return;
         }
-
-        const lastClientMessage =
-          await prisma.message.findUnique({
-            where: {
-              id:
-                Number(
-                  job.data.messageId
-                ),
-            },
-          });
 
         const requestedProductImage =
           lastClientMessage?.content
