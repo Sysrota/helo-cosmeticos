@@ -16,7 +16,7 @@ export default function Home() {
     async function loadFeaturedProducts() {
       try {
         const [productsResponse, featuredResponse] = await Promise.all([
-          fetch(`${API_URL}/products?active=true&limit=3&sort=new`),
+          fetch(`${API_URL}/products?active=true&limit=4&sort=new`),
           fetch(`${API_URL}/products?active=true&featured=true&limit=1`),
         ]);
 
@@ -29,7 +29,7 @@ export default function Home() {
           featuredResponse.json(),
         ]);
         const highlights = Array.isArray(productsData.items)
-          ? productsData.items.slice(0, 3)
+          ? productsData.items.slice(0, 4)
           : [];
         const featured =
           Array.isArray(featuredData.items) && featuredData.items[0]

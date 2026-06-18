@@ -75,7 +75,8 @@
   }
 
   .home-featured-image {
-    height: 390px;
+    aspect-ratio: 1 / 1;
+    height: auto;
     background: linear-gradient(140deg, #ffffff 0%, #fff6f8 100%);
   }
 
@@ -248,7 +249,7 @@
 
   @media (max-width: 639px) {
     .home-featured-image {
-      height: 320px;
+      aspect-ratio: 1 / 1;
     }
 
     .product-sale-title {

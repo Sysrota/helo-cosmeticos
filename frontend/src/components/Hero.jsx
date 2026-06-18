@@ -127,7 +127,11 @@ export default function Hero({ featuredProduct }) {
                 <img
                   src={featuredImage}
                   alt={featuredProduct?.title || "Helô Cosméticos"}
-                  className="h-full w-full object-contain p-9 transition duration-300 group-hover:scale-[1.02] sm:p-12"
+                  className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
+                    featuredProduct
+                      ? "object-cover object-center"
+                      : "object-contain p-9 sm:p-12"
+                  }`}
                 />
               </div>
 

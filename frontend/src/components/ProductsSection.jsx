@@ -36,7 +36,7 @@ export default function ProductsSection({ items, loading }) {
             Carregando produtos...
           </div>
         ) : items.length > 0 ? (
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 lg:gap-7">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {items.map((product) => (
               <ProductCard
                 key={product.id}
