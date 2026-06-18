@@ -20,3 +20,7 @@ export function getPublicSiteUrl() {
 export function getProductUrl(productId: number) {
   return `${getPublicSiteUrl()}/produto/${productId}`;
 }
+
+export function getProductsUrl() {
+  return `${getPublicSiteUrl()}/produtos`;
+}

@@ -34,6 +34,9 @@ import {
 import {
   sanitizeAiResponse,
 } from "./ai-response-sanitizer.service.js";
+import {
+  getProductsUrl,
+} from "./public-url.service.js";
 
 const openai =
   new OpenAI({
@@ -135,6 +138,8 @@ export async function executeAiAgent({
       });
   const cardConditions =
     `até ${commercialPolicy.card_interest_free_installments}x sem juros ou até ${commercialPolicy.card_max_installments}x com juros no cartão`;
+  const productsUrl =
+    getProductsUrl();
 
   // =====================
   // PROMPT
@@ -157,6 +162,10 @@ REGRAS:
 - Nunca invente produtos
 - Nunca invente preços
 - Nunca invente links
+- Quando o cliente perguntar o que a loja vende, responda pelas categorias e linhas do CATÁLOGO ATIVO recebido no contexto; não liste só pele se houver cabelo, e não cite categorias inexistentes.
+- Se uma linha tiver apenas um produto/kit ativo, diga "hoje temos" em vez de "linha completa".
+- Em momentos oportunos de descoberta, comparação ou quando o cliente pedir opções/catálogo, incentive de forma natural visitar a página de produtos: ${productsUrl}
+- Não envie o link da página de produtos em toda mensagem; use quando ajudar o cliente a ver mais opções ou escolher com calma.
 - Quando o cliente pedir foto ou imagem de um produto, use search_products se precisar localizar o produto; se o produto tiver image ou Foto cadastrada, a imagem sera enviada pelo sistema como midia
 - Nunca escreva a URL da foto, image, Foto cadastrada ou link de produto quando o cliente pedir foto; responda de forma natural e deixe o sistema enviar somente a imagem
 - Quando o cliente pedir o link de um produto, envie somente o product_url real retornado em PRODUTOS ENCONTRADOS ou search_products; o formato correto é ${process.env.FRONTEND_URL || "https://helocosmeticos.com"}/produto/ID
