@@ -138,6 +138,14 @@ export async function executeAiAgent({
       });
   const cardConditions =
     `até ${commercialPolicy.card_interest_free_installments}x sem juros ou até ${commercialPolicy.card_max_installments}x com juros no cartão`;
+  const pixCondition =
+    Number(commercialPolicy.pix_discount_percent) > 0
+      ? "pagamento via PIX tem desconto exclusivo no checkout"
+      : "pagamento via PIX está disponível no checkout";
+  const pixCheckoutBullet =
+    Number(commercialPolicy.pix_discount_percent) > 0
+      ? "pagar com desconto exclusivo no PIX"
+      : "pagar via PIX";
   const productsUrl =
     getProductsUrl();
 
@@ -186,7 +194,7 @@ IMPORTANTE:
 - Nunca gere resposta vazia
 - Sempre responda o cliente
 - Sempre finalize naturalmente
-- Condições vigentes: pagamento via PIX tem ${commercialPolicy.pix_discount_percent}% de desconto no checkout
+- Condições vigentes: ${pixCondition}
 - Condições vigentes: cartão possui ${cardConditions}, sujeito às opções apresentadas no checkout
 - Condições vigentes: o frete é grátis em compras acima de ${freeShippingMinimum} nas opções elegíveis; Moto Uber mantém valor fixo de R$ 10,00 quando aparecer
 - Condições vigentes: ${commercialPolicy.moto_uber_enabled ? "Moto Uber pode aparecer apenas para Goiânia e região metropolitana; nessa opção, o frete tem valor fixo de R$ 10,00 e é cobrado no checkout" : "Moto Uber não está disponível"}
@@ -652,7 +660,7 @@ Você pode finalizar sua compra com segurança pelo link abaixo:
 ${toolResult.url}
 
 Lá você poderá:
-• pagar com ${commercialPolicy.pix_discount_percent}% de desconto no PIX
+• ${pixCheckoutBullet}
 • parcelar no cartão em ${cardConditions}
 • calcular a entrega com frete grátis nas opções elegíveis acima de ${freeShippingMinimum}
 • finalizar seu pedido

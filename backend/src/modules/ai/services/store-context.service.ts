@@ -150,6 +150,10 @@ export async function getStoreContext() {
         style: "currency",
         currency: "BRL",
       });
+  const pixCondition =
+    Number(policy.pix_discount_percent) > 0
+      ? "PIX tem desconto exclusivo no checkout."
+      : "PIX disponível no checkout.";
 
   const paymentMethods =
     Array.isArray(config.payment_methods)
@@ -205,7 +209,7 @@ INFORMAÇÕES DE ENTREGA:
 Valor e prazo finais devem ser informados somente após o cálculo pelo CEP.
 
 CONDIÇÕES COMERCIAIS VIGENTES:
-- PIX: ${policy.pix_discount_percent}% de desconto no checkout.
+- ${pixCondition}
 - Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.
 - Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis; Moto Uber mantém valor fixo quando aparecer.
 - Moto Uber: ${policy.moto_uber_enabled ? "disponível para Goiânia e região metropolitana com valor fixo de R$ 10,00 cobrado no checkout." : "indisponível no momento."}
