@@ -125,23 +125,25 @@ export default function Produtos() {
   return (
     <div className="min-h-screen bg-[#fff8fa] pb-20">
       <section className="border-b border-[#f0e2e7] bg-white">
-        <div className="home-container py-11 text-center sm:py-14">
-          <p className="inline-flex items-center gap-2 rounded-full bg-[#fff1f5] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74662]">
-            <Sparkles size={14} />
+        <div className="home-container py-6 text-center sm:py-8">
+          <p className="inline-flex items-center gap-2 rounded-full bg-[#fff1f5] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b74662]">
+            <Sparkles size={13} />
             Ritual Helô
           </p>
-          <h1 className="mt-5 font-display text-4xl text-[#43232d] sm:text-5xl">
-            Encontre seu cuidado ideal
+          <h1 className="mt-3 font-display text-3xl text-[#43232d] sm:text-4xl">
+            Produtos Helô
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-zinc-600">
-            Explore produtos para pele e cabelos com compra simples,
-            pagamento seguro, frete promocional e condições especiais no cartão.
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-zinc-600">
+            Cuidados para pele e cabelos com compra segura e condições especiais.
           </p>
-          <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-zinc-600">
+          <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-2 text-xs text-zinc-600">
             {benefits.map(({ icon, text }) => (
-              <span key={text} className="inline-flex items-center gap-2">
+              <span
+                key={text}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#f0e2e7] bg-[#fff8fa] px-3 py-1.5"
+              >
                 {createElement(icon, {
-                  size: 17,
+                  size: 14,
                   className: "text-[#d9536f]",
                 })}
                 {text}
@@ -151,7 +153,7 @@ export default function Produtos() {
         </div>
       </section>
 
-      <main className="home-container pt-9">
+      <main className="home-container pt-6">
         <ProductsFilter
           categories={categories}
           filters={filters}

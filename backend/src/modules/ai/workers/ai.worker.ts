@@ -23,6 +23,9 @@ import {
 import {
   findRequestedProductLink,
 } from "../services/product-link.service.js";
+import {
+  findRequestedProductPrice,
+} from "../services/product-price.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -117,6 +120,37 @@ export const aiWorker =
 
             content:
               `Claro! Aqui está o link do ${requestedProductLink.productTitle}:\n\n${requestedProductLink.productUrl}`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const requestedProductPrice =
+          lastClientMessage?.content
+            ? await findRequestedProductPrice({
+                conversationId,
+                message:
+                  lastClientMessage.content,
+              })
+            : null;
+
+        if (requestedProductPrice) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              `O ${requestedProductPrice.productTitle} custa ${requestedProductPrice.formattedPrice}.\n\nQuer que eu adicione ao seu carrinho?`,
 
             type:
               "text",

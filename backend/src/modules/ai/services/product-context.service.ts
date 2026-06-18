@@ -21,6 +21,12 @@ const ignoredWords = [
   "quero",
   "queria",
   "tem",
+  "qual",
+  "quanto",
+  "custa",
+  "preco",
+  "preço",
+  "valor",
   "algo",
   "para",
   "pra",
@@ -35,17 +41,24 @@ const ignoredWords = [
   "menos",
 ];
 
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 export async function getProductsContext(
   message: string
 ) {
 
   const search =
-    message.toLowerCase();
+    normalizeText(message);
 
   // REMOVE PALAVRAS INÚTEIS
   const words =
     search
-      .split(" ")
+      .split(/[^a-z0-9]+/i)
       .map(
         (word) =>
           word.trim()
@@ -92,6 +105,8 @@ ${product.keywords}
 ${product.dicas_uso}
 ${product.o_que_vai_sentir}
 `
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase();
 
       let score = 0;
@@ -101,6 +116,8 @@ ${product.o_que_vai_sentir}
         // TITLE
         if (
           product.title
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
             .includes(word)
         ) {
@@ -110,8 +127,9 @@ ${product.o_que_vai_sentir}
         // KEYWORDS
         if (
           product.keywords
-            ?.toLowerCase()
+            ? normalizeText(product.keywords)
             .includes(word)
+            : false
         ) {
           score += 8;
         }
@@ -119,6 +137,8 @@ ${product.o_que_vai_sentir}
         // CATEGORY
         if (
           product.category
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
             .includes(word)
         ) {
@@ -209,10 +229,6 @@ ${product.keywords}
             (p) =>
               p.id === product.id
           )
-      )
-      .sort(
-        (a, b) =>
-          a.price - b.price
       )
       .slice(0, 6);
 

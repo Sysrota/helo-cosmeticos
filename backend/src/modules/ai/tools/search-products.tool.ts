@@ -13,24 +13,56 @@ interface Props {
   conversationId?: number;
 }
 
+const ignoredWords = [
+  "qual",
+  "quanto",
+  "custa",
+  "preco",
+  "preço",
+  "valor",
+  "quero",
+  "queria",
+  "tem",
+  "produto",
+  "produtos",
+  "do",
+  "da",
+  "de",
+  "o",
+  "a",
+  "e",
+  "para",
+  "pra",
+  "um",
+  "uma",
+];
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 export async function searchProductsTool({
   query,
   conversationId,
 }: Props) {
 
   const search =
-    query.toLowerCase();
+    normalizeText(query);
 
   const words =
     search
-      .split(" ")
+      .split(/[^a-z0-9]+/i)
       .map(
         (word) =>
           word.trim()
       )
       .filter(
         (word) =>
-          word.length > 2
+          word.length > 2 &&
+          !ignoredWords.includes(word)
       );
 
   const products =
@@ -62,6 +94,8 @@ ${product.keywords}
 ${product.dicas_uso}
 ${product.o_que_vai_sentir}
 `
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase();
 
       let score = 0;
@@ -69,8 +103,7 @@ ${product.o_que_vai_sentir}
       for (const word of words) {
 
         if (
-          product.title
-            .toLowerCase()
+          normalizeText(product.title)
             .includes(word)
         ) {
 
@@ -79,16 +112,16 @@ ${product.o_que_vai_sentir}
 
         if (
           product.keywords
-            ?.toLowerCase()
+            ? normalizeText(product.keywords)
             .includes(word)
+            : false
         ) {
 
           score += 9;
         }
 
         if (
-          product.category
-            .toLowerCase()
+          normalizeText(product.category)
             .includes(word)
         ) {
 
