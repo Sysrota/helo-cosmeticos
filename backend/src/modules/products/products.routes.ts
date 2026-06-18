@@ -6,6 +6,7 @@ import {
   storeProduct,
   updateProductController,
   deleteProductController,
+  reorderProductsController,
 } from "./products.controller.js";
 
 import { createProductImageController, deleteProductImageController, updateProductImageController } from "./products-images.controller.js";
@@ -32,6 +33,12 @@ router.post(
   "/",
   auth,
   asyncHandler(storeProduct)
+);
+
+router.put(
+  "/order",
+  auth,
+  asyncHandler(reorderProductsController)
 );
 
 router.put(

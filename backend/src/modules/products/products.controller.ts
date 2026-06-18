@@ -6,10 +6,15 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  reorderProducts,
 } from "./products.service.js";
 import { scheduleProductSeoGeneration } from "./product-seo.service.js";
 
-import { createProductSchema, updateProductSchema } from "./products.validators.js";
+import {
+  createProductSchema,
+  reorderProductsSchema,
+  updateProductSchema,
+} from "./products.validators.js";
 
 
 export async function listProducts(
@@ -34,9 +39,11 @@ export async function listProducts(
         ? false
         : undefined;
   const sort =
-    req.query.sort === "low" || req.query.sort === "high"
+    req.query.sort === "low" ||
+    req.query.sort === "high" ||
+    req.query.sort === "new"
       ? req.query.sort
-      : "new";
+      : "display";
   const category =
     typeof req.query.category === "string"
       ? req.query.category
@@ -164,4 +171,26 @@ export async function deleteProductController(
   );
 
   return res.status(204).send();
+}
+
+export async function reorderProductsController(
+  req: Request,
+  res: Response
+) {
+  const parsed =
+    reorderProductsSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.flatten(),
+    });
+  }
+
+  await reorderProducts(
+    parsed.data.items
+  );
+
+  return res.json({
+    ok: true,
+  });
 }

@@ -16,7 +16,7 @@ export default function Home() {
     async function loadFeaturedProducts() {
       try {
         const [productsResponse, featuredResponse] = await Promise.all([
-          fetch(`${API_URL}/products?active=true&limit=4&sort=new`),
+          fetch(`${API_URL}/products?active=true&limit=4&sort=display`),
           fetch(`${API_URL}/products?active=true&featured=true&limit=1`),
         ]);
 

@@ -23,6 +23,8 @@ export const createProductSchema = z.object({
 
   is_featured: z.boolean().optional().default(false),
 
+  sort_order: z.number().int().optional().default(0),
+
   keywords: z.string().optional().default(""),
   weight: z.number().optional().default(0),
   height: z.number().optional().default(0),
@@ -32,3 +34,13 @@ export const createProductSchema = z.object({
 
 export const updateProductSchema =
   createProductSchema.partial();
+
+export const reorderProductsSchema =
+  z.object({
+    items: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        sort_order: z.number().int().min(0),
+      })
+    ).min(1),
+  });

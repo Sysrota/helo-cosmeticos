@@ -29,8 +29,11 @@ export default function AdminProdutos() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [active, setActive] = useState("true");
-  const [sort, setSort] = useState("new");
+  const [sort, setSort] = useState("display");
   const [tagsIA, setTagsIA] = useState("");
+  const [draggedProductId, setDraggedProductId] = useState(null);
+  const [dragOverProductId, setDragOverProductId] = useState(null);
+  const [savingProductOrder, setSavingProductOrder] = useState(false);
 
   // form
   const [mode, setMode] = useState("create"); // create | edit
@@ -89,6 +92,24 @@ export default function AdminProdutos() {
       return true;
     }
     return false;
+  }
+
+  function canReorderProducts() {
+    return (
+      sort === "display" &&
+      active === "true" &&
+      category === "all" &&
+      !search.trim()
+    );
+  }
+
+  function getOrderedProducts(products = items) {
+    return [...products].sort(
+      (a, b) =>
+        (a.sort_order ?? 0) -
+          (b.sort_order ?? 0) ||
+        b.id - a.id
+    );
   }
 
   async function fetchProducts() {
@@ -324,6 +345,113 @@ export default function AdminProdutos() {
 
     await fetchProducts();
     if (editingId === p.id) await fetchProductDetails(p.id);
+  }
+
+  async function saveProductOrder(nextProducts) {
+    if (!canReorderProducts()) {
+      return;
+    }
+
+    const orderedProducts =
+      nextProducts.map((product, index) => ({
+        ...product,
+        sort_order: index,
+      }));
+
+    setItems(orderedProducts);
+    setSavingProductOrder(true);
+
+    try {
+      const res =
+        await fetch(`${API_URL}/products/order`, {
+          method: "PUT",
+          headers: authHeadersJson(),
+          body: JSON.stringify({
+            items:
+              orderedProducts.map((product) => ({
+                id: product.id,
+                sort_order: product.sort_order,
+              })),
+          }),
+        });
+
+      if (await handle401(res)) return;
+
+      if (!res.ok) {
+        throw new Error("Falha ao salvar ordem dos produtos");
+      }
+
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar a ordem dos produtos.");
+      await fetchProducts();
+    } finally {
+      setSavingProductOrder(false);
+    }
+  }
+
+  async function handleProductDrop(event, targetProduct) {
+    event.preventDefault();
+
+    if (!canReorderProducts()) {
+      return;
+    }
+
+    const draggedId =
+      Number(
+        event.dataTransfer.getData(
+          "text/plain"
+        )
+      ) || draggedProductId;
+
+    setDraggedProductId(null);
+    setDragOverProductId(null);
+
+    if (
+      !draggedId ||
+      draggedId === targetProduct.id
+    ) {
+      return;
+    }
+
+    const orderedProducts =
+      getOrderedProducts();
+    const fromIndex =
+      orderedProducts.findIndex(
+        (product) =>
+          product.id === draggedId
+      );
+    const toIndex =
+      orderedProducts.findIndex(
+        (product) =>
+          product.id === targetProduct.id
+      );
+
+    if (
+      fromIndex < 0 ||
+      toIndex < 0
+    ) {
+      return;
+    }
+
+    const nextProducts =
+      [...orderedProducts];
+    const [movedProduct] =
+      nextProducts.splice(
+        fromIndex,
+        1
+      );
+
+    nextProducts.splice(
+      toIndex,
+      0,
+      movedProduct
+    );
+
+    await saveProductOrder(
+      nextProducts
+    );
   }
 
   async function setAsCover(img) {
@@ -1483,6 +1611,7 @@ export default function AdminProdutos() {
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
               >
+                <option value="display">Ordem da vitrine</option>
                 <option value="new">Mais novos</option>
                 <option value="low">Menor preço</option>
                 <option value="high">Maior preço</option>
@@ -1501,17 +1630,86 @@ export default function AdminProdutos() {
         {/* Lista */}
         <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display text-helo-dark">Produtos cadastrados</h2>
+            <div>
+              <h2 className="text-2xl font-display text-helo-dark">Produtos cadastrados</h2>
+              {canReorderProducts() ? (
+                <p className="mt-1 text-sm text-zinc-500">
+                  Arraste os produtos para definir a ordem da home e da página de produtos.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-zinc-500">
+                  Para reorganizar, use "Ordem da vitrine", somente ativos, todas categorias e sem busca.
+                </p>
+              )}
+            </div>
             <div className="text-helo-text/80 font-body">
-              {loading ? "Carregando..." : `${items.length} item(s)`}
+              {savingProductOrder
+                ? "Salvando ordem..."
+                : loading
+                  ? "Carregando..."
+                  : `${items.length} item(s)`}
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
-            {items.map((p) => (
+            {(canReorderProducts() ? getOrderedProducts() : items).map((p) => (
               <div
                 key={p.id}
-                className="bg-white/70 border border-white/40 rounded-2xl shadow p-4 flex gap-4"
+                draggable={canReorderProducts() && !savingProductOrder}
+                onDragStart={(event) => {
+                  if (!canReorderProducts()) return;
+                  setDraggedProductId(p.id);
+                  event.dataTransfer.effectAllowed =
+                    "move";
+                  event.dataTransfer.setData(
+                    "text/plain",
+                    String(p.id)
+                  );
+                }}
+                onDragOver={(event) => {
+                  if (!canReorderProducts()) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect =
+                    "move";
+                  setDragOverProductId(p.id);
+                }}
+                onDragLeave={() => {
+                  setDragOverProductId((current) =>
+                    current === p.id
+                      ? null
+                      : current
+                  );
+                }}
+                onDrop={(event) =>
+                  handleProductDrop(
+                    event,
+                    p
+                  )
+                }
+                onDragEnd={() => {
+                  setDraggedProductId(null);
+                  setDragOverProductId(null);
+                }}
+                className={`
+                  bg-white/70
+                  border
+                  border-white/40
+                  rounded-2xl
+                  shadow
+                  p-4
+                  flex
+                  gap-4
+                  transition
+                  ${canReorderProducts()
+                    ? "cursor-grab active:cursor-grabbing"
+                    : ""}
+                  ${draggedProductId === p.id
+                    ? "opacity-50"
+                    : ""}
+                  ${dragOverProductId === p.id
+                    ? "border-helo-dark ring-2 ring-helo-dark/15"
+                    : ""}
+                `}
               >
                 <div className="w-24 h-28 rounded-xl overflow-hidden bg-helo-background flex-shrink-0">
                   {p.image_url ? (
@@ -1527,6 +1725,9 @@ export default function AdminProdutos() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-display text-lg text-helo-dark">{p.title}</div>
+                      <div className="mt-1 inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
+                        Ordem da vitrine: {p.sort_order ?? 0}
+                      </div>
                       {p.subtitle && (
                         <div className="mt-1 line-clamp-2 text-sm leading-5 text-helo-text/70">
                           {p.subtitle}

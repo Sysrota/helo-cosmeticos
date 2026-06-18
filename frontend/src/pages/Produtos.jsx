@@ -44,7 +44,7 @@ export default function Produtos() {
   useEffect(() => {
     let active = true;
 
-    fetch(`${API_URL}/products?active=true&limit=100&sort=new`)
+    fetch(`${API_URL}/products?active=true&limit=100&sort=display`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Não foi possível carregar os produtos.");

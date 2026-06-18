@@ -6,7 +6,7 @@ interface FindAllProductsOptions {
   featured?: boolean;
   limit?: number;
   search?: string;
-  sort?: "new" | "low" | "high";
+  sort?: "display" | "new" | "low" | "high";
 }
 
 export async function findAllProducts(
@@ -17,7 +17,12 @@ export async function findAllProducts(
       ? { price: "asc" as const }
       : options.sort === "high"
         ? { price: "desc" as const }
-        : { created_at: "desc" as const };
+        : options.sort === "new"
+          ? { created_at: "desc" as const }
+          : [
+              { sort_order: "asc" as const },
+              { created_at: "desc" as const },
+            ];
 
   const products =
     await prisma.product.findMany({
@@ -106,6 +111,7 @@ interface CreateProductDTO {
   o_que_vai_sentir?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  sort_order?: number;
   keywords?: string;
   weight?: number;
   height?: number;
@@ -124,6 +130,16 @@ export async function createProduct(
       });
     }
 
+    const lastProduct =
+      await transaction.product.findFirst({
+        orderBy: {
+          sort_order: "desc",
+        },
+        select: {
+          sort_order: true,
+        },
+      });
+
     return transaction.product.create({
       data: {
         title: data.title,
@@ -137,6 +153,9 @@ export async function createProduct(
         o_que_vai_sentir: data.o_que_vai_sentir ?? "",
         is_active: data.is_active ?? true,
         is_featured: data.is_featured ?? false,
+        sort_order:
+          data.sort_order ??
+          ((lastProduct?.sort_order ?? -1) + 1),
         keywords: data.keywords ?? "",
         weight: data.weight ?? 0,
         height: data.height ?? 0,
@@ -159,6 +178,7 @@ interface UpdateProductDTO {
   o_que_vai_sentir?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  sort_order?: number;
   keywords?: string;
   weight?: number;
   height?: number;
@@ -196,4 +216,24 @@ export async function deleteProduct(
       id,
     },
   });
+}
+
+export async function reorderProducts(
+  items: Array<{
+    id: number;
+    sort_order: number;
+  }>
+) {
+  return prisma.$transaction(
+    items.map((item) =>
+      prisma.product.update({
+        where: {
+          id: item.id,
+        },
+        data: {
+          sort_order: item.sort_order,
+        },
+      })
+    )
+  );
 }
