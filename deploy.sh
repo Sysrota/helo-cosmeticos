@@ -66,9 +66,15 @@ cd "$PROJECT_DIR"
 node tools/generate-product-seo-pages.mjs
 
 SEO_SAMPLE_FILE="$(find "$FRONTEND_DIR/dist/produto" -mindepth 2 -maxdepth 2 -name index.html | head -n 1 || true)"
+SEO_SAMPLE_FLAT_FILE="$(find "$FRONTEND_DIR/dist/produto" -maxdepth 1 -name '*.html' | head -n 1 || true)"
 
 if [ -z "$SEO_SAMPLE_FILE" ]; then
   echo "ERRO: nenhuma página SEO de produto foi gerada em $FRONTEND_DIR/dist/produto."
+  exit 1
+fi
+
+if [ -z "$SEO_SAMPLE_FLAT_FILE" ]; then
+  echo "ERRO: nenhuma página SEO sem barra final foi gerada em $FRONTEND_DIR/dist/produto."
   exit 1
 fi
 
@@ -77,7 +83,13 @@ if ! grep -q 'property="og:type" content="product"' "$SEO_SAMPLE_FILE"; then
   exit 1
 fi
 
+if ! grep -q 'property="og:type" content="product"' "$SEO_SAMPLE_FLAT_FILE"; then
+  echo "ERRO: página SEO sem barra final gerada sem Open Graph de produto: $SEO_SAMPLE_FLAT_FILE"
+  exit 1
+fi
+
 echo "✅ Página SEO de produto validada: $SEO_SAMPLE_FILE"
+echo "✅ Página SEO sem barra final validada: $SEO_SAMPLE_FLAT_FILE"
 
 # -----------------------------
 # Reinicia backend PM2

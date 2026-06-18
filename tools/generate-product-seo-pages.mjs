@@ -268,9 +268,6 @@ try {
     );
   const products =
     await prisma.product.findMany({
-      where: {
-        is_active: true,
-      },
       include: {
         images: {
           orderBy: {
@@ -327,6 +324,14 @@ try {
       path.join(
         outputDir,
         "index.html"
+      ),
+      html
+    );
+    fs.writeFileSync(
+      path.join(
+        frontendDistDir,
+        "produto",
+        `${product.id}.html`
       ),
       html
     );
