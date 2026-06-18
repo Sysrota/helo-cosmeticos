@@ -24,6 +24,9 @@ import { useCart } from "../context/CartContext";
 import Formatter from "../utils/Formatter";
 import UpsellProducts from "../components/UpsellProducts";
 import ProductImagePreview from "../components/ProductImagePreview";
+import MarkdownText, {
+  MarkdownInline,
+} from "../components/MarkdownText";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
 import {
   resetSeoMeta,
@@ -771,9 +774,9 @@ export default function Produto() {
         <section className="product-sale-details mt-10 grid gap-6">
           <article className="product-sale-description bg-white p-7 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">Sobre o produto</h2>
-            <p className="mt-5 whitespace-pre-line text-base leading-8 text-zinc-600">
+            <MarkdownText className="mt-5 text-base leading-8 text-zinc-600">
               {product.description || "Sem descrição cadastrada."}
-            </p>
+            </MarkdownText>
           </article>
           {feelingList.length > 0 && (
             <article className="product-sale-feelings bg-white p-7 sm:p-9">
@@ -785,7 +788,11 @@ export default function Produto() {
                     className="flex gap-3 rounded-2xl bg-[#fff7f9] px-4 py-3.5 text-sm leading-6 text-zinc-700"
                   >
                     <Sparkles size={16} className="mt-1 shrink-0 text-[#d85c7a]" />
-                    {feeling}
+                    <span>
+                      <MarkdownInline>
+                        {feeling}
+                      </MarkdownInline>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -795,9 +802,9 @@ export default function Produto() {
           {product.dicas_uso && (
             <article className="product-sale-usage p-7 sm:p-9">
               <h2 className="font-display text-3xl text-[#43232d]">Como usar</h2>
-              <p className="mt-5 max-w-4xl whitespace-pre-line text-base leading-8 text-zinc-600">
+              <MarkdownText className="mt-5 max-w-4xl text-base leading-8 text-zinc-600">
                 {product.dicas_uso}
-              </p>
+              </MarkdownText>
             </article>
           )}
         </section>

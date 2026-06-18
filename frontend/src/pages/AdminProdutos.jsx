@@ -976,8 +976,11 @@ export default function AdminProdutos() {
             )
           }
 
-          placeholder="Descrição do produto"
+          placeholder="Descrição do produto. Ex: Promove **hidratação profunda** e sensação de pele macia."
         />
+        <p className="mt-1 text-xs text-zinc-500">
+          Use **texto** para negrito, *texto* para itálico e linhas começando com - para listas.
+        </p>
       </div>
     </div>
   </div>
@@ -1048,6 +1051,9 @@ export default function AdminProdutos() {
             )
           }
         />
+        <p className="mt-1 text-xs text-zinc-500">
+          Use **texto** para destacar palavras importantes.
+        </p>
       </div>
 
       {/* O QUE VAI SENTIR */}
@@ -1082,6 +1088,9 @@ export default function AdminProdutos() {
             )
           }
         />
+        <p className="mt-1 text-xs text-zinc-500">
+          Uma sensação por linha. Use **texto** para negrito.
+        </p>
       </div>
 
       {/* TAGS IA */}
