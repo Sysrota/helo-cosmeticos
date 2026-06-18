@@ -276,6 +276,43 @@ try {
         },
       },
     });
+  const productSeoDir =
+    path.join(
+      frontendDistDir,
+      "produto"
+    );
+  const productIds =
+    new Set(
+      products.map((product) =>
+        String(product.id)
+      )
+    );
+
+  fs.mkdirSync(
+    productSeoDir,
+    {
+      recursive: true,
+    }
+  );
+
+  for (const entry of fs.readdirSync(productSeoDir, { withFileTypes: true })) {
+    const entryId =
+      entry.isFile() && entry.name.endsWith(".html")
+        ? entry.name.replace(/\.html$/, "")
+        : entry.name;
+
+    if (!/^\d+$/.test(entryId) || productIds.has(entryId)) {
+      continue;
+    }
+
+    fs.rmSync(
+      path.join(productSeoDir, entry.name),
+      {
+        force: true,
+        recursive: entry.isDirectory(),
+      }
+    );
+  }
 
   for (const product of products) {
     const productUrl =
@@ -309,8 +346,7 @@ try {
       );
     const outputDir =
       path.join(
-        frontendDistDir,
-        "produto",
+        productSeoDir,
         String(product.id)
       );
 
@@ -329,8 +365,7 @@ try {
     );
     fs.writeFileSync(
       path.join(
-        frontendDistDir,
-        "produto",
+        productSeoDir,
         `${product.id}.html`
       ),
       html

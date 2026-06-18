@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { prisma } from "../../config/prisma.js";
+import { scheduleProductSeoGeneration } from "./product-seo.service.js";
 
 export async function createProductImageController(
   req: Request,
@@ -47,6 +48,10 @@ export async function createProductImageController(
       },
     });
 
+  scheduleProductSeoGeneration(
+    `imagem criada para produto ${productId}`
+  );
+
   return res.status(201).json(image);
 }
 
@@ -73,6 +78,10 @@ export async function updateProductImageController(
       },
     });
 
+  scheduleProductSeoGeneration(
+    `imagem atualizada para produto ${image.product_id}`
+  );
+
   return res.json(image);
 }
 
@@ -83,11 +92,16 @@ export async function deleteProductImageController(
   const imageId =
     Number(req.params.imageId);
 
-  await prisma.productImage.delete({
+  const image =
+    await prisma.productImage.delete({
     where: {
       id: imageId,
     },
   });
+
+  scheduleProductSeoGeneration(
+    `imagem excluída para produto ${image.product_id}`
+  );
 
   return res.status(204).send();
 }

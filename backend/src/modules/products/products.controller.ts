@@ -7,6 +7,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "./products.service.js";
+import { scheduleProductSeoGeneration } from "./product-seo.service.js";
 
 import { createProductSchema, updateProductSchema } from "./products.validators.js";
 
@@ -98,6 +99,10 @@ export async function storeProduct(
     parsed.data
   );
 
+  scheduleProductSeoGeneration(
+    `produto criado ${product.id}`
+  );
+
   return res.status(201).json(product);
 }
 
@@ -130,6 +135,10 @@ export async function updateProductController(
     parsed.data
   );
 
+  scheduleProductSeoGeneration(
+    `produto atualizado ${id}`
+  );
+
   return res.json(product);
 }
 
@@ -149,6 +158,10 @@ export async function deleteProductController(
   }
 
   await deleteProduct(id);
+
+  scheduleProductSeoGeneration(
+    `produto excluído ${id}`
+  );
 
   return res.status(204).send();
 }
