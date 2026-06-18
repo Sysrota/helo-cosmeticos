@@ -1,7 +1,7 @@
 const DEFAULT_SEO = {
   title: "Helô Cosméticos | Skincare e cuidados premium",
   description:
-    "Compre cosméticos Helô para pele e cabelos: 10% OFF no PIX, até 3x sem juros e frete grátis em Goiânia e região metropolitana.",
+    "Compre cosméticos Helô para pele e cabelos: desconto exclusivo no PIX, até 3x sem juros e frete grátis em Goiânia e região metropolitana.",
   image: "https://helocosmeticos.com/helo-logo.png",
   url: "https://helocosmeticos.com/",
 };
