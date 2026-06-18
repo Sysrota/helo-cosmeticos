@@ -201,6 +201,55 @@ function applyFreeShipping(
   };
 }
 
+function isSedexOption(
+  option: ShippingOption
+) {
+  return option.name
+    .toLowerCase()
+    .includes("sedex");
+}
+
+function shippingPriority(
+  option: ShippingOption
+) {
+  if (
+    option.name ===
+    "Retirar em mãos"
+  ) {
+    return 0;
+  }
+
+  if (
+    option.name ===
+    "Moto Uber"
+  ) {
+    return 1;
+  }
+
+  if (
+    isSedexOption(option)
+  ) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function sortShippingOptions(
+  options: ShippingOption[]
+) {
+  return [...options].sort(
+    (
+      first,
+      second
+    ) =>
+      shippingPriority(first) -
+        shippingPriority(second) ||
+      first.price -
+        second.price
+  );
+}
+
 export async function findAddressByCep(
   cep: string
 ) {
@@ -394,7 +443,9 @@ export async function requestShippingOptions({
     );
   }
 
-  return shippingOptions;
+  return sortShippingOptions(
+    shippingOptions
+  );
 }
 
 export async function calculateProductShipping({
@@ -483,10 +534,10 @@ export async function calculateProductShipping({
           hasFreeShipping,
       });
 
-    return [
+    return sortShippingOptions([
       ...localOptions,
       ...carrierOptions,
-    ];
+    ]);
   } catch (error) {
     if (localOptions.length) {
       return localOptions;
@@ -647,10 +698,10 @@ export async function calculateShipping({
           hasFreeShipping,
       });
 
-    return [
+    return sortShippingOptions([
       ...localOptions,
       ...carrierOptions,
-    ];
+    ]);
   } catch (error) {
     if (localOptions.length) {
       return localOptions;

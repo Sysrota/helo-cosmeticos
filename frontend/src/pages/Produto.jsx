@@ -61,6 +61,23 @@ function formatShippingOptionPrice(option) {
   );
 }
 
+function isSedexOption(option) {
+  return String(option?.name || "")
+    .toLowerCase()
+    .includes("sedex");
+}
+
+function isPriorityShippingOption(option) {
+  const name =
+    String(option?.name || "");
+
+  return (
+    name.startsWith("Moto Uber") ||
+    name.startsWith("Retirar em mãos") ||
+    isSedexOption(option)
+  );
+}
+
 export default function Produto() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -707,8 +724,7 @@ export default function Produto() {
                           .filter(
                             (option, index) =>
                               index < 3 ||
-                              String(option.name)
-                                .startsWith("Moto Uber")
+                              isPriorityShippingOption(option)
                           )
                           .map((option) => (
                           <div
