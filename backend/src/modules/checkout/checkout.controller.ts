@@ -12,6 +12,9 @@ import {
 import {
   sendOrderPendingPaymentEmail,
 } from "../notification/order-email.service.js";
+import {
+  syncOrderPaymentStatus,
+} from "../payment-mercado-pago/payment-sync.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -506,7 +509,7 @@ export async function trackOrderController(
     });
   }
 
-  const order =
+  let order =
     await prisma.order.findUnique({
       where: {
         id:
@@ -525,6 +528,42 @@ export async function trackOrderController(
         },
       },
     });
+
+  if (order) {
+    try {
+      const syncResult =
+        await syncOrderPaymentStatus(
+          order
+        );
+
+      if (syncResult?.order) {
+        order =
+          await prisma.order.findUnique({
+            where: {
+              id:
+                orderId,
+            },
+            include: {
+              contact: true,
+              items: {
+                include: {
+                  product: {
+                    include: {
+                      images: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+      }
+    } catch (error) {
+      console.error(
+        "Erro ao sincronizar pagamento no acompanhamento:",
+        error
+      );
+    }
+  }
 
   if (
     !order ||

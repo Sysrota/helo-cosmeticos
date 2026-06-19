@@ -3,18 +3,20 @@ import {
   Response,
 } from "express";
 
-import { prisma }
-  from "../../../config/prisma.js";
-
 import {
-  Payment,
-} from "mercadopago";
-import { mercadoPagoClient } from "../mercado-pago.provider";
+  syncMercadoPagoPayment,
+} from "../payment-sync.service.js";
 
-import { io } from '../../../websocket/socket'
-import {
-  sendOrderConfirmationEmail,
-} from "../../notification/order-email.service.js";
+function getPaymentIdFromRequest(
+  req: Request
+) {
+  return (
+    req.body?.data?.id ||
+    req.body?.id ||
+    req.query?.["data.id"] ||
+    req.query?.id
+  );
+}
 
 export async function mercadoPagoWebhook(
   req: Request,
@@ -29,96 +31,29 @@ export async function mercadoPagoWebhook(
     );
 
     const paymentId =
-      req.body?.data?.id;
+      getPaymentIdFromRequest(
+        req
+      );
 
     if (!paymentId) {
 
       return res.sendStatus(200);
     }
 
-    const paymentClient =
-      new Payment(
-        mercadoPagoClient
+    const result =
+      await syncMercadoPagoPayment(
+        String(paymentId)
       );
-
-    const payment =
-      await paymentClient.get({
-        id: String(
-          paymentId
-        ),
-      });
-
-    console.log(
-      "PAYMENT:",
-      payment
-    );
 
     console.log({
-        status:
-            payment.status,
-        });
-
-    const order =
-      await prisma.order.findFirst({
-        where: {
-          mercado_pago_payment_id:
-            String(payment.id),
-        },
-      });
-
-    if (!order) {
-
-      console.log(
-        "Pedido não encontrado"
-      );
-
-      return res.sendStatus(200);
-    }
-
-    // PAGAMENTO APROVADO
-    if (
-      payment.status ===
-      "approved"
-    ) {
-
-    const updatedOrder =
-        await prisma.order.update({
-            where: {
-            id: order.id,
-            },
-
-            data: {
-            payment_status:
-                "paid",
-
-            paid_at:
-                new Date(),
-            },
-        });
-
-      console.log(
-        "Pedido pago:",
-        order.id
-      );
-
-      console.log(
-        "EMITINDO ORDER PAID"
-        );
-
-        io.emit(
-        "order_paid",
-        updatedOrder
-        );
-
-        io.emit(
-        "order_updated",
-        updatedOrder
-        );
-
-        await sendOrderConfirmationEmail(
-          order.id
-        );
-    }
+      payment_id:
+        result.payment.id,
+      payment_status:
+        result.payment.status,
+      order_id:
+        result.order?.id ||
+        null,
+    });
 
     return res.sendStatus(200);
 

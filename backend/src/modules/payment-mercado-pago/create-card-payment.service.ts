@@ -19,6 +19,9 @@ import {
 import {
   getCommercialPolicy,
 } from "../store-config/store-config.service.js";
+import {
+  getPaymentNotificationUrl,
+} from "./payment-webhook-url.js";
 
 interface Props {
 
@@ -154,8 +157,14 @@ export async function createCardPaymentService({
         payment_method_id,
 
         payer,
+
+        notification_url:
+          getPaymentNotificationUrl(),
       },
     });
+  const isApproved =
+    payment.status ===
+    "approved";
 
   // =========================
   // UPDATE ORDER
@@ -173,18 +182,24 @@ export async function createCardPaymentService({
         payment_method:
           "credit_card",
 
+        status:
+          isApproved
+            ? "paid"
+            : order.status,
+
         discount:
           0,
 
         total,
 
         payment_status:
-          payment.status,
+          isApproved
+            ? "paid"
+            : payment.status,
 
         paid_at:
 
-          payment.status ===
-          "approved"
+          isApproved
 
             ? new Date()
 
@@ -204,10 +219,12 @@ export async function createCardPaymentService({
     updatedOrder
   );
 
-  if (
-    payment.status ===
-    "approved"
-  ) {
+  if (isApproved) {
+    io.emit(
+      "order_paid",
+      updatedOrder
+    );
+
     await sendOrderConfirmationEmail(
       order.id
     );

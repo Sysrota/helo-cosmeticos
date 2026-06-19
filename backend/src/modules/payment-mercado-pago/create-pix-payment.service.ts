@@ -14,6 +14,9 @@ import {
 import {
   getCommercialPolicy,
 } from "../store-config/store-config.service.js";
+import {
+  getPaymentNotificationUrl,
+} from "./payment-webhook-url.js";
 
 interface Props {
   order_id: number;
@@ -124,6 +127,9 @@ export async function createPixPaymentService({
 
             `cliente${order.id}@helo.com`,
         },
+
+        notification_url:
+          getPaymentNotificationUrl(),
       },
     });
 

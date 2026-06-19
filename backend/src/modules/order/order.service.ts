@@ -1,6 +1,9 @@
 import { prisma }
   from "../../config/prisma.js";
 import {
+  syncOrderPaymentStatus,
+} from "../payment-mercado-pago/payment-sync.service.js";
+import {
   Request,
   Response,
 } from "express";
@@ -133,6 +136,35 @@ export async function createOrderController(
 }
 
 export async function listOrdersService() {
+  const pendingOrders =
+    await prisma.order.findMany({
+      where: {
+        mercado_pago_payment_id: {
+          not:
+            null,
+        },
+        payment_status: {
+          notIn: [
+            "paid",
+            "approved",
+          ],
+        },
+      },
+      orderBy: {
+        created_at:
+          "desc",
+      },
+      take:
+        20,
+    });
+
+  await Promise.allSettled(
+    pendingOrders.map((order) =>
+      syncOrderPaymentStatus(
+        order
+      )
+    )
+  );
 
   return prisma.order.findMany({
     orderBy: {
@@ -155,7 +187,8 @@ export async function showOrderService(
   orderId: number
 ) {
 
-  return prisma.order.findUnique({
+  const order =
+    await prisma.order.findUnique({
     where: {
       id: orderId,
     },
@@ -183,6 +216,59 @@ export async function showOrderService(
       },
     },
   });
+
+  if (!order) {
+    return order;
+  }
+
+  try {
+    const syncResult =
+      await syncOrderPaymentStatus(
+        order
+      );
+
+    if (syncResult?.order) {
+      return prisma.order.findUnique({
+        where: {
+          id:
+            orderId,
+        },
+
+        include: {
+          contact: {
+            include: {
+              addresses: {
+                orderBy: {
+                  updated_at:
+                    "desc",
+                },
+                take:
+                  1,
+              },
+            },
+          },
+
+          items: {
+            include: {
+              product: {
+                include: {
+                  images:
+                    true,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  } catch (error) {
+    console.error(
+      "Erro ao sincronizar pagamento ao buscar pedido:",
+      error
+    );
+  }
+
+  return order;
 }
 
 interface Item {
