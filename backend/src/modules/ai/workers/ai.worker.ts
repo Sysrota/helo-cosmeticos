@@ -91,6 +91,20 @@ export const aiWorker =
           return;
         }
 
+        // Verifica se o atendimento humano assumiu (blocked_ai no contato)
+        const conversation =
+          await prisma.conversation.findUnique({
+            where: { id: conversationId },
+            include: { contact: true },
+          });
+
+        if (conversation?.contact?.blocked_ai) {
+          console.log(
+            `IA bloqueada para conversa ${conversationId} (atendimento humano)`
+          );
+          return;
+        }
+
         const lastClientMessage =
           await prisma.message.findUnique({
             where: {

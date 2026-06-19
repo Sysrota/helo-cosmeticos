@@ -12,6 +12,19 @@ import {
 } from "../../ai/services/audio-transcription.service.js";
 import { renewManagerWindow } from "../../manager/manager-notification.service.js";
 import { executeAdminAgent } from "../../manager/manager-agent.service.js";
+import { getStoreConfig } from "../../store-config/store-config.service.js";
+
+// Normaliza número para comparação (remove +, espaços, e tenta variante com/sem 9 extra brasileiro)
+function phoneMatches(incoming: string, stored: string | null | undefined): boolean {
+  if (!stored) return false;
+  const a = incoming.replace(/\D/g, "");
+  const b = stored.replace(/\D/g, "");
+  if (a === b) return true;
+  // tenta com 9 extra: 5562XXXXXXXX ↔ 55629XXXXXXXX
+  if (a.length === 12 && b.length === 13) return `${a.slice(0, 4)}9${a.slice(4)}` === b;
+  if (a.length === 13 && b.length === 12) return a === `${b.slice(0, 4)}9${b.slice(4)}`;
+  return false;
+}
 
 export async function verifyWebhookController(
   req: Request,
@@ -160,11 +173,11 @@ export async function receiveWebhookController(
     // ROTEAMENTO GESTOR
     // =====================
 
-    const config = await prisma.storeConfig.findUnique({ where: { id: 1 } });
+    const config = await getStoreConfig();
 
     const isManager =
-      config &&
-      (phone === config.manager_phone_1 || phone === config.manager_phone_2);
+      phoneMatches(phone, config.manager_phone_1) ||
+      phoneMatches(phone, config.manager_phone_2);
 
     if (isManager) {
       await handleManagerMessage({ phone, name, text, type, mediaUrl });

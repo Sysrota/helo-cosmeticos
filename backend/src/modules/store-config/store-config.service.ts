@@ -84,6 +84,16 @@ export async function getCommercialPolicy() {
   };
 }
 
+function normalizeManagerPhone(value: unknown): string | null {
+  if (!value) return null;
+  const digits = String(value).replace(/\D/g, "");
+  if (!digits) return null;
+  // adiciona DDI 55 se o número não tiver (até 11 dígitos = DDD + número sem DDI)
+  return digits.startsWith("55") && digits.length > 11
+    ? digits
+    : `55${digits}`;
+}
+
 export async function updateStoreConfig(
   data: any
 ) {
@@ -151,13 +161,9 @@ export async function updateStoreConfig(
       ai_rules:
         String(data.ai_rules || ""),
       manager_phone_1:
-        data.manager_phone_1
-          ? String(data.manager_phone_1).replace(/\D/g, "")
-          : null,
+        normalizeManagerPhone(data.manager_phone_1),
       manager_phone_2:
-        data.manager_phone_2
-          ? String(data.manager_phone_2).replace(/\D/g, "")
-          : null,
+        normalizeManagerPhone(data.manager_phone_2),
     },
   });
 }

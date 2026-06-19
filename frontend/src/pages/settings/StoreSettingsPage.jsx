@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import Formatter from "../../utils/Formatter.js";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -381,26 +382,32 @@ export default function StoreSettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm text-zinc-600">
-              Gestor 1 — WhatsApp (somente números)
+              Gestor 1 — WhatsApp
               <input
                 type="text"
-                placeholder="5562999999999"
-                value={config.manager_phone_1 ?? ""}
+                placeholder="(62) 9 9999-9999"
+                value={Formatter.telefone(config.manager_phone_1 ?? "")}
                 onChange={(e) =>
-                  setConfig({ ...config, manager_phone_1: e.target.value })
+                  setConfig({
+                    ...config,
+                    manager_phone_1: Formatter.onlyNumbers(e.target.value),
+                  })
                 }
                 className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
               />
             </label>
 
             <label className="text-sm text-zinc-600">
-              Gestor 2 — WhatsApp (somente números)
+              Gestor 2 — WhatsApp
               <input
                 type="text"
-                placeholder="5562999999999"
-                value={config.manager_phone_2 ?? ""}
+                placeholder="(62) 9 9999-9999"
+                value={Formatter.telefone(config.manager_phone_2 ?? "")}
                 onChange={(e) =>
-                  setConfig({ ...config, manager_phone_2: e.target.value })
+                  setConfig({
+                    ...config,
+                    manager_phone_2: Formatter.onlyNumbers(e.target.value),
+                  })
                 }
                 className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
               />
