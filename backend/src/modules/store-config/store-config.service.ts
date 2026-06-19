@@ -150,6 +150,14 @@ export async function updateStoreConfig(
         String(data.exchange_policy || ""),
       ai_rules:
         String(data.ai_rules || ""),
+      manager_phone_1:
+        data.manager_phone_1
+          ? String(data.manager_phone_1).replace(/\D/g, "")
+          : null,
+      manager_phone_2:
+        data.manager_phone_2
+          ? String(data.manager_phone_2).replace(/\D/g, "")
+          : null,
     },
   });
 }

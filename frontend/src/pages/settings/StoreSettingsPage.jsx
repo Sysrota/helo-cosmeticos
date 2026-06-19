@@ -358,6 +358,62 @@ export default function StoreSettingsPage() {
           </div>
         </div>
 
+        {/* GESTORES */}
+        <div className="
+          bg-white
+          border
+          rounded-2xl
+          p-5
+        ">
+
+          <h2 className="
+            text-xl
+            font-semibold
+            mb-2
+          ">
+            Notificações para Gestores
+          </h2>
+
+          <p className="mb-5 text-sm leading-6 text-zinc-500">
+            Números que recebem notificações administrativas da IA (vendas, pedidos etc).
+            O gestor precisa enviar uma mensagem para a IA para abrir a janela de 24h.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm text-zinc-600">
+              Gestor 1 — WhatsApp (somente números)
+              <input
+                type="text"
+                placeholder="5562999999999"
+                value={config.manager_phone_1 ?? ""}
+                onChange={(e) =>
+                  setConfig({ ...config, manager_phone_1: e.target.value })
+                }
+                className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
+              />
+            </label>
+
+            <label className="text-sm text-zinc-600">
+              Gestor 2 — WhatsApp (somente números)
+              <input
+                type="text"
+                placeholder="5562999999999"
+                value={config.manager_phone_2 ?? ""}
+                onChange={(e) =>
+                  setConfig({ ...config, manager_phone_2: e.target.value })
+                }
+                className="mt-2 h-12 w-full rounded-xl border px-4 text-zinc-900"
+              />
+            </label>
+          </div>
+
+          <p className="mt-4 rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800">
+            A IA envia pings de renovação a cada 30 minutos após 19h sem resposta do gestor,
+            para manter a janela de 24h ativa e evitar cobranças da Meta por mensagens template.
+            Notificações enviadas fora da janela ficam na fila e são entregues quando o gestor responder.
+          </p>
+        </div>
+
         {/* ATENDIMENTO */}
         <div className="
           bg-white

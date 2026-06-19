@@ -7,6 +7,7 @@ import { app } from "./app.js";
 import { initSocket } from "./websocket/socket.js";
 
 import "./modules/ai/workers/ai.worker.js";
+import "./modules/manager/workers/manager-renewal.worker.js";
 
 const PORT = process.env.PORT || 3333;
 

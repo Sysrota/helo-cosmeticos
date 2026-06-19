@@ -222,11 +222,28 @@ model StoreConfig {
 
   ai_rules String @default("")
 
+  manager_phone_1            String?
+  manager_phone_2            String?
+  manager_1_window_opened_at DateTime?
+  manager_2_window_opened_at DateTime?
+  manager_1_last_ping_at     DateTime?
+  manager_2_last_ping_at     DateTime?
+
   created_at DateTime @default(now())
 
   updated_at DateTime @updatedAt
 
   @@map("store_config")
+}
+
+model ManagerNotification {
+  id         Int       @id @default(autoincrement())
+  phone      String
+  content    String    @db.Text
+  sent_at    DateTime?
+  created_at DateTime  @default(now())
+
+  @@map("manager_notifications")
 }
 
 model ContactAddress {
