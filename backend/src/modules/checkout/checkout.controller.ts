@@ -15,6 +15,9 @@ import {
 import {
   syncOrderPaymentStatus,
 } from "../payment-mercado-pago/payment-sync.service.js";
+import {
+  notifyManagersAboutOrder,
+} from "../manager/manager-notification.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -267,6 +270,16 @@ export async function createCheckoutController(
         },
       });
 
+    void notifyManagersAboutOrder(
+      order.id,
+      "order_created"
+    ).catch((error) => {
+      console.error(
+        "Erro ao notificar gestores sobre pedido iniciado:",
+        error
+      );
+    });
+
       console.log("Retornando Checkout: ", order)
 
     return res.json(
@@ -467,6 +480,16 @@ export async function updateCheckoutDeliveryController(
         );
       }
     );
+
+    void notifyManagersAboutOrder(
+      updatedOrder.id,
+      "delivery_selected"
+    ).catch((error) => {
+      console.error(
+        "Erro ao notificar gestores sobre entrega definida:",
+        error
+      );
+    });
 
     return res.json(
       updatedOrder

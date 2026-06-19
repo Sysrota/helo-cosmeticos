@@ -3,16 +3,62 @@ import { sendWhatsAppMessage } from "../whatsapp/services/meta.service.js";
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
+type ManagerNotificationType =
+  | "order_created"
+  | "delivery_selected"
+  | "pix_generated"
+  | "payment_paid"
+  | "payment_rejected"
+  | "payment_status";
+
 function isWindowOpen(openedAt: Date | null | undefined): boolean {
   if (!openedAt) return false;
   return Date.now() - openedAt.getTime() < WINDOW_MS;
+}
+
+function phoneMatches(incoming: string, stored: string | null | undefined): boolean {
+  if (!stored) return false;
+  const a = incoming.replace(/\D/g, "");
+  const b = stored.replace(/\D/g, "");
+  if (a === b) return true;
+  if (a.length === 12 && b.length === 13) return `${a.slice(0, 4)}9${a.slice(4)}` === b;
+  if (a.length === 13 && b.length === 12) return a === `${b.slice(0, 4)}9${b.slice(4)}`;
+  return false;
+}
+
+function formatCurrency(value: number) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatDate(date: Date) {
+  return date.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
+function paymentStatusLabel(status?: string | null) {
+  const labels: Record<string, string> = {
+    paid: "Pago",
+    approved: "Pago",
+    pending: "Pendente",
+    in_process: "Em análise",
+    rejected: "Rejeitado",
+    cancelled: "Cancelado",
+    refunded: "Estornado",
+    charged_back: "Contestação/chargeback",
+  };
+
+  return labels[String(status || "")] || String(status || "Não informado");
 }
 
 export async function renewManagerWindow(phone: string) {
   const config = await prisma.storeConfig.findUnique({ where: { id: 1 } });
   if (!config) return;
 
-  if (phone === config.manager_phone_1) {
+  if (phoneMatches(phone, config.manager_phone_1)) {
     await prisma.storeConfig.update({
       where: { id: 1 },
       data: {
@@ -20,8 +66,8 @@ export async function renewManagerWindow(phone: string) {
         manager_1_last_ping_at: null,
       },
     });
-    await drainManagerQueue(phone);
-  } else if (phone === config.manager_phone_2) {
+    await drainManagerQueue(config.manager_phone_1!);
+  } else if (phoneMatches(phone, config.manager_phone_2)) {
     await prisma.storeConfig.update({
       where: { id: 1 },
       data: {
@@ -29,8 +75,66 @@ export async function renewManagerWindow(phone: string) {
         manager_2_last_ping_at: null,
       },
     });
-    await drainManagerQueue(phone);
+    await drainManagerQueue(config.manager_phone_2!);
   }
+}
+
+export async function notifyManagersAboutOrder(
+  orderId: number,
+  type: ManagerNotificationType,
+  details?: string
+) {
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+    include: {
+      contact: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!order) return;
+
+  const titleByType: Record<ManagerNotificationType, string> = {
+    order_created: "🛒 Novo pedido iniciado",
+    delivery_selected: "🚚 Entrega definida",
+    pix_generated: "💠 PIX gerado",
+    payment_paid: "✅ Pagamento confirmado",
+    payment_rejected: "⚠️ Pagamento não aprovado",
+    payment_status: "ℹ️ Atualização de pagamento",
+  };
+
+  const items = order.items
+    .map((item) => `- ${item.product.title} x${item.quantity}`)
+    .join("\n");
+
+  const customer =
+    order.contact.name ||
+    order.contact.phone ||
+    "Cliente não identificado";
+
+  const content = `
+${titleByType[type]}
+
+Pedido #${order.id}
+Cliente: ${customer}
+Telefone: ${order.contact.phone}
+Total: ${formatCurrency(order.total)}
+Pagamento: ${paymentStatusLabel(order.payment_status)}
+Entrega: ${order.shipping_method || "não definida"}
+Data: ${formatDate(order.created_at)}
+
+Itens:
+${items || "- Sem itens"}
+${details ? `\n${details}` : ""}
+`.trim();
+
+  await sendOrQueueNotification(content);
 }
 
 export async function sendOrQueueNotification(content: string) {

@@ -5,6 +5,9 @@ import { io } from "../../websocket/socket.js";
 import {
   sendOrderConfirmationEmail,
 } from "../notification/order-email.service.js";
+import {
+  notifyManagersAboutOrder,
+} from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
 
 function getOrderIdFromReference(
@@ -77,6 +80,16 @@ export async function syncMercadoPagoPayment(
     payment.status !==
     "approved"
   ) {
+    const previousStatus =
+      String(
+        order.payment_status || ""
+      );
+    const nextStatus =
+      String(
+        payment.status ||
+        order.payment_status ||
+        "pending"
+      );
     const updatedOrder =
       await prisma.order.update({
         where: {
@@ -87,9 +100,7 @@ export async function syncMercadoPagoPayment(
           mercado_pago_payment_id:
             String(payment.id),
           payment_status:
-            payment.status ||
-            order.payment_status ||
-            "pending",
+            nextStatus,
         },
       });
 
@@ -97,6 +108,32 @@ export async function syncMercadoPagoPayment(
       "order_updated",
       updatedOrder
     );
+
+    if (
+      previousStatus !== nextStatus &&
+      nextStatus !== "pending"
+    ) {
+      const notificationType =
+        [
+          "rejected",
+          "cancelled",
+          "refunded",
+          "charged_back",
+        ].includes(nextStatus)
+          ? "payment_rejected"
+          : "payment_status";
+
+      void notifyManagersAboutOrder(
+        updatedOrder.id,
+        notificationType,
+        `Status Mercado Pago: ${payment.status_detail || nextStatus}`
+      ).catch((error) => {
+        console.error(
+          "Erro ao notificar gestores sobre atualização de pagamento:",
+          error
+        );
+      });
+    }
 
     return {
       payment,
@@ -145,6 +182,17 @@ export async function syncMercadoPagoPayment(
   );
 
   if (!wasAlreadyPaid) {
+    void notifyManagersAboutOrder(
+      order.id,
+      "payment_paid",
+      `Forma de pagamento: ${order.payment_method || payment.payment_method_id || "Mercado Pago"}`
+    ).catch((error) => {
+      console.error(
+        "Erro ao notificar gestores sobre pagamento confirmado:",
+        error
+      );
+    });
+
     await sendOrderConfirmationEmail(
       order.id
     );

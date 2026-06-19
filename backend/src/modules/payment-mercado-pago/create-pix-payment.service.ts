@@ -17,6 +17,9 @@ import {
 import {
   getPaymentNotificationUrl,
 } from "./payment-webhook-url.js";
+import {
+  notifyManagersAboutOrder,
+} from "../manager/manager-notification.service.js";
 
 interface Props {
   order_id: number;
@@ -170,6 +173,20 @@ export async function createPixPaymentService({
       mercado_pago_payment_id:
         String(payment.id),
     },
+  });
+
+  void notifyManagersAboutOrder(
+    order.id,
+    "pix_generated",
+    `Valor do PIX: ${total.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    })}`
+  ).catch((error) => {
+    console.error(
+      "Erro ao notificar gestores sobre PIX gerado:",
+      error
+    );
   });
 
   return {

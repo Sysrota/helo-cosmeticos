@@ -22,6 +22,9 @@ import {
 import {
   getPaymentNotificationUrl,
 } from "./payment-webhook-url.js";
+import {
+  notifyManagersAboutOrder,
+} from "../manager/manager-notification.service.js";
 
 interface Props {
 
@@ -225,9 +228,40 @@ export async function createCardPaymentService({
       updatedOrder
     );
 
+    void notifyManagersAboutOrder(
+      order.id,
+      "payment_paid",
+      "Forma de pagamento: cartão"
+    ).catch((error) => {
+      console.error(
+        "Erro ao notificar gestores sobre cartão aprovado:",
+        error
+      );
+    });
+
     await sendOrderConfirmationEmail(
       order.id
     );
+  } else if (
+    [
+      "rejected",
+      "cancelled",
+      "refunded",
+      "charged_back",
+    ].includes(
+      String(payment.status || "")
+    )
+  ) {
+    void notifyManagersAboutOrder(
+      order.id,
+      "payment_rejected",
+      `Forma de pagamento: cartão\nStatus Mercado Pago: ${payment.status_detail || payment.status}`
+    ).catch((error) => {
+      console.error(
+        "Erro ao notificar gestores sobre cartão não aprovado:",
+        error
+      );
+    });
   }
 
   // =========================

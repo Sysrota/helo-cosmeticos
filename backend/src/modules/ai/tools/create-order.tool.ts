@@ -1,6 +1,9 @@
 import {
   prisma,
 } from "../../../config/prisma.js";
+import {
+  notifyManagersAboutOrder,
+} from "../../manager/manager-notification.service.js";
 
 interface Props {
   conversationId: number;
@@ -140,6 +143,17 @@ export async function createOrderTool({
           "checkout",
       },
     });
+
+  void notifyManagersAboutOrder(
+    order.id,
+    "order_created",
+    "Pedido criado pela IA no WhatsApp."
+  ).catch((error) => {
+    console.error(
+      "Erro ao notificar gestores sobre pedido criado pela IA:",
+      error
+    );
+  });
 
   return order;
 }

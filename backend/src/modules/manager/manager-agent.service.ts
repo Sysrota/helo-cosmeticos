@@ -159,7 +159,14 @@ function periodStart(period: "today" | "week" | "month"): Date {
 
 async function getPendingOrders() {
   const orders = await prisma.order.findMany({
-    where: { payment_status: "approved", status: "pending" },
+    where: {
+      payment_status: {
+        in: ["paid", "approved"],
+      },
+      status: {
+        notIn: ["shipping", "finished", "cancelled"],
+      },
+    },
     include: { contact: true, items: { include: { product: true } } },
     orderBy: { created_at: "asc" },
     take: 30,
@@ -210,7 +217,12 @@ async function getSalesStats(period: "today" | "week" | "month") {
   const start = periodStart(period);
 
   const orders = await prisma.order.findMany({
-    where: { created_at: { gte: start }, payment_status: "approved" },
+    where: {
+      created_at: { gte: start },
+      payment_status: {
+        in: ["paid", "approved"],
+      },
+    },
     include: { items: { include: { product: true } } },
   });
 

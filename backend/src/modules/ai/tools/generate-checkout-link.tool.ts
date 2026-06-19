@@ -1,6 +1,9 @@
 import {
   prisma,
 } from "../../../config/prisma.js";
+import {
+  notifyManagersAboutOrder,
+} from "../../manager/manager-notification.service.js";
 
 interface Props {
 
@@ -258,8 +261,21 @@ export async function generateCheckoutLinkTool({
       checkout_url:
         url,
       last_order_id:
-        order.id,
+      order.id,
     },
+  });
+
+  void notifyManagersAboutOrder(
+    order.id,
+    "order_created",
+    canUpdateOrder
+      ? "Pedido atualizado pela IA no WhatsApp."
+      : "Pedido criado pela IA no WhatsApp."
+  ).catch((error) => {
+    console.error(
+      "Erro ao notificar gestores sobre pedido da IA:",
+      error
+    );
   });
 
   return {
