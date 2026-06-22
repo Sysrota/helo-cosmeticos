@@ -15,6 +15,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -34,6 +35,11 @@ import {
 import {
   useCommercialPolicy,
 } from "../context/useCommercialPolicy";
+import {
+  buildMetaContentIds,
+  buildMetaContents,
+  trackMetaEvent,
+} from "../services/metaPixel";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -258,6 +264,8 @@ export default function OrderTrackingPage() {
   const [paymentError,
     setPaymentError] =
     useState("");
+  const purchaseTrackedRef =
+    useRef(null);
 
   const fetchTrackedOrder =
     useCallback(async () => {
@@ -292,7 +300,7 @@ export default function OrderTrackingPage() {
           return previous;
         }
 
-        return {
+        const nextOrder = {
           ...previous,
           ...updatedOrder,
           items:
@@ -300,6 +308,21 @@ export default function OrderTrackingPage() {
           customer_name:
             previous.customer_name,
         };
+
+        if (
+          [
+            "approved",
+            "paid",
+          ].includes(
+            updatedOrder.payment_status
+          )
+        ) {
+          trackPurchase(
+            nextOrder
+          );
+        }
+
+        return nextOrder;
       });
     }
 
@@ -505,6 +528,52 @@ export default function OrderTrackingPage() {
           regularTotal,
       }
       : null;
+
+  function trackPurchase(
+    paidOrder
+  ) {
+    const trackedOrder =
+      paidOrder ||
+      order;
+
+    if (
+      !trackedOrder?.id ||
+      purchaseTrackedRef.current ===
+        trackedOrder.id
+    ) {
+      return;
+    }
+
+    purchaseTrackedRef.current =
+      trackedOrder.id;
+
+    trackMetaEvent(
+      "Purchase",
+      {
+        currency: "BRL",
+        value:
+          Number(
+            trackedOrder.total || 0
+          ),
+        contents:
+          buildMetaContents(
+            trackedOrder.items || []
+          ),
+        content_ids:
+          buildMetaContentIds(
+            trackedOrder.items || []
+          ),
+        content_type:
+          "product",
+        order_id:
+          String(trackedOrder.id),
+      },
+      {
+        eventId:
+          `purchase_${trackedOrder.id}`,
+      }
+    );
+  }
 
   return (
     <div className="bg-[#fffafb] px-5 py-10 text-[#43232d] sm:py-16">
@@ -908,6 +977,9 @@ export default function OrderTrackingPage() {
                       initialCustomer={{
                         email,
                       }}
+                      onPaymentApproved={
+                        trackPurchase
+                      }
                     />
                   )}
                 </div>

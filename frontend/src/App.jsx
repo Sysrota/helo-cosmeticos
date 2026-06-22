@@ -26,12 +26,14 @@ import PublicCheckoutPage from "./pages/PublicCheckoutPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import AdminLayout from "./components/admin/AdminLayout";
 import { CommercialPolicyProvider } from "./context/CommercialPolicyContext";
+import AnalyticsTracker from "./components/AnalyticsTracker";
 
 
 export default function App() {
   return (
     <BrowserRouter>
       <CommercialPolicyProvider>
+        <AnalyticsTracker />
         <Layout>
           <Routes>
           {/* públicas */}

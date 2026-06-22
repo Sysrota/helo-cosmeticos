@@ -56,6 +56,7 @@ export function OrderCreditCardCard({
   order,
   initialCustomer,
   maxInstallments = 12,
+  onPaymentApproved,
 }) {
 
   const mpRef =
@@ -1371,6 +1372,12 @@ export function OrderCreditCardCard({
         setPaymentReason(
           "Seu pagamento foi confirmado com sucesso."
         );
+
+        onPaymentApproved?.({
+          ...order,
+          payment_status:
+            "approved",
+        });
 
       } else if (
 

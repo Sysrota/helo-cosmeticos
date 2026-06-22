@@ -33,6 +33,11 @@ import { api } from "../services/api";
 import Formatter from "../utils/Formatter";
 import { socket } from "../websocket/socket";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
+import {
+  buildMetaContentIds,
+  buildMetaContents,
+  trackMetaEvent,
+} from "../services/metaPixel";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -217,6 +222,7 @@ export default function PublicCheckoutPage() {
       : []
   );
   const addressRequestRef = useRef(0);
+  const purchaseTrackedRef = useRef(null);
 
   useEffect(() => {
     if (
@@ -304,6 +310,9 @@ export default function PublicCheckoutPage() {
         updatedOrder.payment_status === "paid"
       ) {
         setPaymentApproved(true);
+        trackPurchase(
+          updatedOrder
+        );
       }
     }
 
@@ -365,6 +374,92 @@ export default function PublicCheckoutPage() {
         pixDiscount
       ).toFixed(2)
     );
+
+  function getPixelItems() {
+    return checkoutItems.map((item) => ({
+      ...item,
+      product_id:
+        item.product_id ??
+        item.product?.id,
+      price:
+        item.price ??
+        item.unit_price,
+    }));
+  }
+
+  function trackCheckoutEvent(
+    eventName,
+    extra = {},
+    eventId
+  ) {
+    const items =
+      getPixelItems();
+
+    trackMetaEvent(
+      eventName,
+      {
+        currency: "BRL",
+        value:
+          Number(
+            extra.value ??
+            paymentTotal ??
+            total ??
+            subtotal ??
+            0
+          ),
+        contents:
+          buildMetaContents(
+            items
+          ),
+        content_ids:
+          buildMetaContentIds(
+            items
+          ),
+        content_type:
+          "product",
+        ...extra,
+      },
+      eventId
+        ? {
+          eventId,
+        }
+        : undefined
+    );
+  }
+
+  function trackPurchase(
+    paidOrder
+  ) {
+    const orderId =
+      paidOrder?.id ||
+      order?.id;
+
+    if (
+      !orderId ||
+      purchaseTrackedRef.current ===
+        orderId
+    ) {
+      return;
+    }
+
+    purchaseTrackedRef.current =
+      orderId;
+
+    trackCheckoutEvent(
+      "Purchase",
+      {
+        value:
+          Number(
+            paidOrder?.total ??
+            paymentTotal ??
+            0
+          ),
+        order_id:
+          String(orderId),
+      },
+      `purchase_${orderId}`
+    );
+  }
 
   function updateCustomer(field, value) {
     setCustomer((previous) => ({
@@ -577,6 +672,17 @@ export default function PublicCheckoutPage() {
 
     clearCart();
 
+    trackCheckoutEvent(
+      "InitiateCheckout",
+      {
+        value:
+          Number(data.total || subtotal || 0),
+        order_id:
+          String(data.id),
+      },
+      `initiate_checkout_${data.id}`
+    );
+
     navigate(`/checkout/${data.id}`, { replace: true });
     return data;
   }
@@ -651,6 +757,22 @@ export default function PublicCheckoutPage() {
       });
 
       setOrder(data);
+      trackCheckoutEvent(
+        "AddPaymentInfo",
+        {
+          value:
+            Number(
+              data.total ||
+              paymentTotal ||
+              0
+            ),
+          order_id:
+            String(data.id),
+          payment_method:
+            selectedPaymentMethod,
+        },
+        `add_payment_info_${data.id}_${selectedPaymentMethod}`
+      );
       setStep(3);
     } catch {
       setNotice("Não foi possível salvar a entrega. Tente novamente.");
@@ -667,6 +789,22 @@ export default function PublicCheckoutPage() {
         order_id: order.id,
       });
       setPixData(data);
+      trackCheckoutEvent(
+        "AddPaymentInfo",
+        {
+          value:
+            Number(
+              data.amount ||
+              paymentTotal ||
+              0
+            ),
+          order_id:
+            String(order.id),
+          payment_method:
+            "pix",
+        },
+        `add_payment_info_${order.id}_pix`
+      );
     } catch {
       setNotice("Não foi possível gerar o PIX.");
     } finally {
@@ -1059,6 +1197,9 @@ export default function PublicCheckoutPage() {
                       order={order}
                       maxInstallments={maxInstallments}
                       initialCustomer={customer}
+                      onPaymentApproved={
+                        trackPurchase
+                      }
                     />
                   )}
                 </div>
