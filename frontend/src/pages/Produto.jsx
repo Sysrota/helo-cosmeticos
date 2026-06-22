@@ -32,6 +32,10 @@ import {
   resetSeoMeta,
   setSeoMeta,
 } from "../utils/seo";
+import {
+  trackMetaCustomEvent,
+  trackMetaEvent,
+} from "../services/metaPixel";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -219,6 +223,32 @@ export default function Produto() {
     product,
   ]);
 
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    trackMetaEvent(
+      "ViewContent",
+      {
+        currency:
+          "BRL",
+        value:
+          Number(product.price || 0),
+        content_ids:
+          [
+            String(product.id),
+          ],
+        content_name:
+          product.title,
+        content_type:
+          "product",
+      }
+    );
+  }, [
+    product,
+  ]);
+
   const mainImage = selected || cover;
   const selectedImageIndex =
     images.findIndex(
@@ -305,9 +335,31 @@ export default function Produto() {
   }
 
   function handleBuyNow() {
+    const item =
+      selectedItem();
+
+    trackMetaCustomEvent(
+      "DirectPurchaseClick",
+      {
+        currency:
+          "BRL",
+        value:
+          Number(item.price || 0) *
+          Number(item.quantity || 1),
+        content_ids:
+          [
+            String(item.product_id),
+          ],
+        content_type:
+          "product",
+        source:
+          "product_page",
+      }
+    );
+
     navigate("/checkout", {
       state: {
-        directPurchaseItem: selectedItem(),
+        directPurchaseItem: item,
       },
     });
   }

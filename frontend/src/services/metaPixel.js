@@ -72,6 +72,42 @@ export function trackMetaEvent(
   return true;
 }
 
+export function trackMetaCustomEvent(
+  eventName,
+  params = {},
+  options = {}
+) {
+  if (!canUsePixel()) {
+    return false;
+  }
+
+  initMetaPixel();
+
+  if (typeof window.fbq !== "function") {
+    return false;
+  }
+
+  if (options.eventId) {
+    window.fbq(
+      "trackCustom",
+      eventName,
+      params,
+      {
+        eventID:
+          options.eventId,
+      }
+    );
+  } else {
+    window.fbq(
+      "trackCustom",
+      eventName,
+      params
+    );
+  }
+
+  return true;
+}
+
 export function trackMetaPageView() {
   return trackMetaEvent(
     "PageView"

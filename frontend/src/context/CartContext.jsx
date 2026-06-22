@@ -5,6 +5,11 @@ import {
   useMemo,
   useState,
 } from "react";
+import {
+  buildMetaContentIds,
+  buildMetaContents,
+  trackMetaEvent,
+} from "../services/metaPixel";
 
 const CartContext =
   createContext();
@@ -70,6 +75,54 @@ export function CartProvider({
 
   const addToCart =
     (product) => {
+      const quantity =
+        Number(product.quantity || 1);
+      const price =
+        Number(
+          product.price ??
+          product.unit_price ??
+          0
+        );
+      const productId =
+        product.product_id ??
+        product.id;
+
+      trackMetaEvent(
+        "AddToCart",
+        {
+          currency:
+            "BRL",
+          value:
+            Number(
+              (
+                price *
+                quantity
+              ).toFixed(2)
+            ),
+          contents:
+            buildMetaContents([
+              {
+                ...product,
+                product_id:
+                  productId,
+                quantity,
+                price,
+              },
+            ]),
+          content_ids:
+            buildMetaContentIds([
+              {
+                ...product,
+                product_id:
+                  productId,
+                quantity,
+                price,
+              },
+            ]),
+          content_type:
+            "product",
+        }
+      );
 
       setCart((prev) => {
 

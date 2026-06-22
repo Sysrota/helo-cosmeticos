@@ -1,6 +1,9 @@
 import { ShoppingBag } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
+import {
+  trackMetaCustomEvent,
+} from "../services/metaPixel";
 
 function formatBRL(value) {
   return Number(value || 0).toLocaleString("pt-BR", {
@@ -31,6 +34,24 @@ export default function ProductCard({
   const pixPrice = numericPrice * (1 - pixDiscountPercent / 100);
 
   function handleBuyNow() {
+    trackMetaCustomEvent(
+      "DirectPurchaseClick",
+      {
+        currency:
+          "BRL",
+        value:
+          numericPrice,
+        content_ids:
+          [
+            String(id),
+          ],
+        content_type:
+          "product",
+        source:
+          "product_card",
+      }
+    );
+
     navigate("/checkout", {
       state: {
         directPurchaseItem: {

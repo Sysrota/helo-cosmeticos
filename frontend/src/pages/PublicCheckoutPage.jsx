@@ -36,6 +36,7 @@ import { useCommercialPolicy } from "../context/useCommercialPolicy";
 import {
   buildMetaContentIds,
   buildMetaContents,
+  trackMetaCustomEvent,
   trackMetaEvent,
 } from "../services/metaPixel";
 
@@ -238,7 +239,19 @@ export default function PublicCheckoutPage() {
 
     if (!id) {
       setLoading(false);
-      return;
+    }
+  }, [
+    cart.length,
+    directPurchaseItem,
+    id,
+    navigate,
+    order,
+    saving,
+  ]);
+
+  useEffect(() => {
+    if (!id) {
+      return undefined;
     }
 
     let active = true;
@@ -255,6 +268,33 @@ export default function PublicCheckoutPage() {
           data.contact?.addresses?.[0];
 
         setOrder(data);
+        setStep(
+          data.shipping_method
+            ? 3
+            : savedAddress
+              ? 2
+              : 1
+        );
+        setSelectedPaymentMethod(
+          data.payment_method ===
+            "credit_card"
+            ? "credit_card"
+            : "pix"
+        );
+        setPixData(
+          data.pix_code
+            ? {
+              qr_code:
+                data.pix_code,
+              qr_code_base64:
+                data.pix_qrcode,
+              amount:
+                data.total,
+              discount:
+                data.discount,
+            }
+            : null
+        );
         setCustomer((previous) => ({
           ...previous,
           name: data.contact?.name || previous.name,
@@ -270,6 +310,7 @@ export default function PublicCheckoutPage() {
         }));
       } catch {
         if (active) {
+          setOrder(null);
           setNotice("Não foi possível carregar este pedido.");
         }
       } finally {
@@ -285,12 +326,7 @@ export default function PublicCheckoutPage() {
       active = false;
     };
   }, [
-    cart.length,
-    directPurchaseItem,
     id,
-    navigate,
-    order,
-    saving,
   ]);
 
   useEffect(() => {
@@ -399,6 +435,47 @@ export default function PublicCheckoutPage() {
       eventName,
       {
         currency: "BRL",
+        value:
+          Number(
+            extra.value ??
+            paymentTotal ??
+            total ??
+            subtotal ??
+            0
+          ),
+        contents:
+          buildMetaContents(
+            items
+          ),
+        content_ids:
+          buildMetaContentIds(
+            items
+          ),
+        content_type:
+          "product",
+        ...extra,
+      },
+      eventId
+        ? {
+          eventId,
+        }
+        : undefined
+    );
+  }
+
+  function trackCheckoutCustomEvent(
+    eventName,
+    extra = {},
+    eventId
+  ) {
+    const items =
+      getPixelItems();
+
+    trackMetaCustomEvent(
+      eventName,
+      {
+        currency:
+          "BRL",
         value:
           Number(
             extra.value ??
@@ -696,6 +773,17 @@ export default function PublicCheckoutPage() {
     try {
       setSaving(true);
 
+      trackCheckoutCustomEvent(
+        "CheckoutPersonalDataSubmitted",
+        {
+          has_order:
+            !!order,
+        },
+        order?.id
+          ? `checkout_personal_data_${order.id}`
+          : undefined
+      );
+
       if (!order) {
         await createOrderFromCart();
       }
@@ -718,6 +806,18 @@ export default function PublicCheckoutPage() {
     try {
       setLoadingShipping(true);
       setNotice("");
+      trackCheckoutCustomEvent(
+        "CheckoutAddressSubmitted",
+        {
+          order_id:
+            String(order.id),
+          has_zipcode:
+            true,
+          has_number:
+            !!customer.number,
+        },
+        `checkout_address_submitted_${order.id}`
+      );
       const { data } = await api.post("/shipping/calculate", {
         cep: customer.zipcode,
         order_id: order.id,
@@ -734,6 +834,16 @@ export default function PublicCheckoutPage() {
               : bestOption,
           null
         )
+      );
+      trackCheckoutCustomEvent(
+        "CheckoutShippingCalculated",
+        {
+          order_id:
+            String(order.id),
+          options_count:
+            data.length,
+        },
+        `checkout_shipping_calculated_${order.id}`
       );
     } catch {
       setNotice("Não foi possível calcular a entrega para este CEP.");
@@ -757,6 +867,26 @@ export default function PublicCheckoutPage() {
       });
 
       setOrder(data);
+      trackCheckoutCustomEvent(
+        "CheckoutDeliverySelected",
+        {
+          value:
+            Number(
+              data.total ||
+              paymentTotal ||
+              0
+            ),
+          order_id:
+            String(data.id),
+          shipping_method:
+            selectedShipping.name,
+          shipping_price:
+            Number(
+              selectedShipping.price || 0
+            ),
+        },
+        `checkout_delivery_selected_${data.id}`
+      );
       trackCheckoutEvent(
         "AddPaymentInfo",
         {
@@ -818,10 +948,44 @@ export default function PublicCheckoutPage() {
     setStep((current) => Math.max(1, current - 1));
   }
 
-  if (loading || (!order && id)) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#fbf8f8]">
         <p className="text-sm text-zinc-500">Carregando checkout seguro...</p>
+      </div>
+    );
+  }
+
+  if (!order && id) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#fbf8f8] px-5 text-center">
+        <div className="max-w-md rounded-[28px] border border-[#eee2e6] bg-white p-8 shadow-[0_12px_40px_rgba(68,31,42,0.04)]">
+          <p className="font-display text-2xl text-[#43232d]">
+            Não foi possível carregar este pedido
+          </p>
+          <p className="mt-3 text-sm leading-6 text-zinc-500">
+            Confira se o link está correto ou fale com nosso atendimento para receber ajuda.
+          </p>
+          {notice && (
+            <p className="mt-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">
+              {notice}
+            </p>
+          )}
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <Link
+              to="/carrinho"
+              className="inline-flex h-12 items-center justify-center rounded-2xl border border-[#eadfe3] text-sm font-semibold text-[#873c50] transition hover:bg-[#fff5f7]"
+            >
+              Ir ao carrinho
+            </Link>
+            <Link
+              to="/contato"
+              className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#d85c7a] text-sm font-semibold text-white transition hover:bg-[#c9506d]"
+            >
+              Atendimento
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
