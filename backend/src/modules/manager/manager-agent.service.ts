@@ -251,6 +251,13 @@ function statusLabel(status?: string | null) {
   return labels[String(status || "")] || String(status || "Não informado");
 }
 
+function orderDisplayNumber(order: {
+  id: number;
+  order_number?: string | null;
+}) {
+  return order.order_number || String(order.id);
+}
+
 function periodStart(period: "today" | "week" | "month"): Date {
   const d = new Date();
   if (period === "today") d.setHours(0, 0, 0, 0);
@@ -279,7 +286,7 @@ async function getPendingOrders() {
   return {
     total: orders.length,
     pedidos: orders.map((o) => ({
-      id: o.id,
+      id: orderDisplayNumber(o),
       cliente: o.contact.name || o.contact.phone,
       telefone: o.contact.phone,
       total: formatCurrency(o.total),
@@ -306,7 +313,7 @@ async function getOrdersByPeriod(period: "today" | "week" | "month") {
     periodo: period,
     total_pedidos: orders.length,
     pedidos: orders.map((o) => ({
-      id: o.id,
+      id: orderDisplayNumber(o),
       cliente: o.contact.name || o.contact.phone,
       total: formatCurrency(o.total),
       status: statusLabel(o.status),
@@ -368,8 +375,18 @@ async function searchOrder(query: string) {
   const orderId = parseInt(query);
 
   if (!isNaN(orderId)) {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          {
+            id: orderId,
+          },
+          {
+            order_number:
+              String(orderId),
+          },
+        ],
+      },
       include: { contact: true, items: { include: { product: true } } },
     });
 
@@ -409,7 +426,7 @@ async function searchOrder(query: string) {
 
   return contacts.flatMap((c) =>
     c.orders.map((o) => ({
-      id: o.id,
+      id: orderDisplayNumber(o),
       cliente: c.name || c.phone,
       telefone: c.phone,
       total: formatCurrency(o.total),
@@ -647,9 +664,17 @@ async function previewOrderStatusUpdate({
     };
   }
 
-  const order = await prisma.order.findUnique({
+  const order = await prisma.order.findFirst({
     where: {
-      id: orderId,
+      OR: [
+        {
+          id: orderId,
+        },
+        {
+          order_number:
+            String(orderId),
+        },
+      ],
     },
     include: {
       contact: true,
@@ -674,7 +699,9 @@ async function previewOrderStatusUpdate({
     mensagem:
       "Confirme os dados antes de atualizar o pedido.",
     acao_pendente: {
-      pedido_id: order.id,
+      pedido_id: orderDisplayNumber(order),
+      numero:
+        orderDisplayNumber(order),
       status_atual: statusLabel(
         order.status
       ),
@@ -684,7 +711,7 @@ async function previewOrderStatusUpdate({
       observacao: note || null,
     },
     pedido: {
-      id: order.id,
+      id: orderDisplayNumber(order),
       cliente:
         order.contact.name ||
         order.contact.phone,
@@ -707,7 +734,7 @@ async function previewOrderStatusUpdate({
       ),
     },
     instrucao:
-      `Pergunte ao gestor se pode atualizar o pedido #${order.id} para ${statusLabel(status)}. Não atualize antes da confirmação.`,
+      `Pergunte ao gestor se pode atualizar o pedido #${orderDisplayNumber(order)} para ${statusLabel(status)}. Não atualize antes da confirmação.`,
   };
 }
 
@@ -770,9 +797,17 @@ async function updateOrderStatus({
     };
   }
 
-  const order = await prisma.order.findUnique({
+  const order = await prisma.order.findFirst({
     where: {
-      id: orderId,
+      OR: [
+        {
+          id: orderId,
+        },
+        {
+          order_number:
+            String(orderId),
+        },
+      ],
     },
     include: {
       contact: true,
@@ -798,7 +833,7 @@ async function updateOrderStatus({
 
   const updatedOrder = await prisma.order.update({
     where: {
-      id: orderId,
+      id: order.id,
     },
     data: {
       status,
@@ -840,9 +875,9 @@ async function updateOrderStatus({
 
   return {
     sucesso: true,
-    mensagem: `Pedido #${updatedOrder.id} atualizado para ${statusLabel(updatedOrder.status)}.`,
+    mensagem: `Pedido #${orderDisplayNumber(updatedOrder)} atualizado para ${statusLabel(updatedOrder.status)}.`,
     pedido: {
-      id: updatedOrder.id,
+      id: orderDisplayNumber(updatedOrder),
       cliente: updatedOrder.contact.name || updatedOrder.contact.phone,
       total: formatCurrency(updatedOrder.total),
       status: statusLabel(updatedOrder.status),

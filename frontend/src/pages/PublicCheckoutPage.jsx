@@ -118,6 +118,10 @@ function itemProductId(item) {
   return item.product_id ?? item.id;
 }
 
+function getOrderDisplayNumber(order) {
+  return order?.order_number || order?.id;
+}
+
 function mergeCartItems(items) {
   return items.reduce((combined, item) => {
     const existingIndex = combined.findIndex(
@@ -760,7 +764,7 @@ export default function PublicCheckoutPage() {
       `initiate_checkout_${data.id}`
     );
 
-    navigate(`/checkout/${data.id}`, { replace: true });
+    navigate(`/checkout/${getOrderDisplayNumber(data)}`, { replace: true });
     return data;
   }
 
@@ -1030,7 +1034,7 @@ export default function PublicCheckoutPage() {
                 to="/acompanhar-pedido"
                 state={{
                   orderId:
-                    order?.id,
+                    getOrderDisplayNumber(order),
                   email:
                     customer.email,
                 }}

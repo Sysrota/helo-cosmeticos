@@ -4,6 +4,10 @@ import {
 import {
   notifyManagersAboutOrder,
 } from "../../manager/manager-notification.service.js";
+import {
+  getOrderDisplayNumber,
+  generateOrderNumber,
+} from "../../order/order-number.service.js";
 
 interface Props {
 
@@ -217,9 +221,19 @@ export async function generateCheckoutLinkTool({
           });
         }
       )
-      : await prisma.order.create({
+      : await prisma.$transaction(
+        async (transaction) => {
+          const orderNumber =
+            await generateOrderNumber(
+              transaction
+            );
+
+          return transaction.order.create({
 
         data: {
+
+          order_number:
+            orderNumber,
 
           contact_id:
             contact.id,
@@ -241,14 +255,16 @@ export async function generateCheckoutLinkTool({
               items,
           },
         },
-      });
+          });
+        }
+      );
 
   // =====================
   // URL
   // =====================
 
   const url =
-    `${process.env.FRONTEND_URL}/checkout/${order.id}`;
+    `${process.env.FRONTEND_URL}/checkout/${getOrderDisplayNumber(order)}`;
 
   await prisma.conversation.update({
     where: {

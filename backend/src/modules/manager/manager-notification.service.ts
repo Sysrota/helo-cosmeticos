@@ -63,6 +63,13 @@ function paymentMethodLabel(method?: string | null) {
   return labels[String(method || "")] || String(method || "Não informado");
 }
 
+function orderDisplayNumber(order: {
+  id: number;
+  order_number?: string | null;
+}) {
+  return order.order_number || String(order.id);
+}
+
 export async function renewManagerWindow(phone: string) {
   const config = await prisma.storeConfig.findUnique({ where: { id: 1 } });
   if (!config) return;
@@ -139,7 +146,7 @@ export async function notifyManagersAboutOrder(
   const baseContent = `
 ${titleByType[type]}
 
-Pedido #${order.id}
+Pedido #${orderDisplayNumber(order)}
 Cliente: ${customer}
 Telefone: ${order.contact.phone}
 Total: ${formatCurrency(order.total)}

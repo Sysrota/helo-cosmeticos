@@ -148,7 +148,8 @@ export async function createCardPaymentService({
 
         description:
           buildPaymentDescription(
-            order.id,
+            order.order_number ||
+              order.id,
             order.items
           ),
 

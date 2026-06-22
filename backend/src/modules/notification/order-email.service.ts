@@ -53,6 +53,16 @@ function getOrderItemsHtml(
   ).join("");
 }
 
+function getOrderDisplayNumber(
+  order: {
+    id: number;
+    order_number?: string | null;
+  }
+) {
+  return order.order_number ||
+    String(order.id);
+}
+
 const orderStatusEmailConfig = {
   preparing: {
     title: "Pedido em preparação",
@@ -214,12 +224,16 @@ export async function sendOrderPendingPaymentEmail(
 
   const trackingUrl =
     getTrackingUrl();
-  const checkoutUrl =
-    `${getSiteUrl()}/checkout/${order.id}`;
   const itemsHtml =
     getOrderItemsHtml(
       order.items
     );
+  const orderNumber =
+    getOrderDisplayNumber(
+      order
+    );
+  const checkoutUrl =
+    `${getSiteUrl()}/checkout/${orderNumber}`;
 
   try {
     await axios.post(
@@ -230,18 +244,18 @@ export async function sendOrderPendingPaymentEmail(
           order.contact.email,
         ],
         subject:
-          `Seu pedido #${order.id} aguarda pagamento | Helô Cosméticos`,
+          `Seu pedido #${orderNumber} aguarda pagamento | Helô Cosméticos`,
         html: `
           <div style="background:#fff8fa;padding:32px 16px;font-family:Arial,sans-serif;color:#43232d;">
             <div style="background:#ffffff;border:1px solid #f1dfe5;border-radius:20px;margin:0 auto;max-width:560px;padding:32px;">
               <p style="color:#d9536f;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Helô Cosméticos</p>
               <h1 style="font-size:25px;margin:18px 0 8px;">Seu pedido foi recebido</h1>
-              <p>Olá, ${escapeHtml(order.contact.name || "cliente")}! O pedido <strong>#${order.id}</strong> está pronto e aguardando o pagamento.</p>
+              <p>Olá, ${escapeHtml(order.contact.name || "cliente")}! O pedido <strong>#${orderNumber}</strong> está pronto e aguardando o pagamento.</p>
               <ul style="padding-left:20px;">${itemsHtml}</ul>
               <p style="font-size:18px;"><strong>Total atual: ${formatMoney(Number(order.total))}</strong></p>
               <p>Entrega: ${escapeHtml(order.shipping_method || "A confirmar")} ${order.shipping_deadline ? `- ${escapeHtml(order.shipping_deadline)}` : ""}</p>
               <a href="${checkoutUrl}" style="background:#d9536f;border-radius:12px;color:#ffffff;display:inline-block;font-weight:700;margin-top:18px;padding:14px 22px;text-decoration:none;">Concluir pagamento</a>
-              <p style="color:#78636b;font-size:12px;margin-top:26px;">Você também pode <a href="${trackingUrl}" style="color:#d9536f;">acompanhar seu pedido</a> informando o número #${order.id} e este e-mail.</p>
+              <p style="color:#78636b;font-size:12px;margin-top:26px;">Você também pode <a href="${trackingUrl}" style="color:#d9536f;">acompanhar seu pedido</a> informando o número #${orderNumber} e este e-mail.</p>
             </div>
           </div>
         `,
@@ -340,6 +354,10 @@ export async function sendOrderConfirmationEmail(
     getOrderTimelineHtml(
       order.status || "paid"
     );
+  const orderNumber =
+    getOrderDisplayNumber(
+      order
+    );
 
   try {
     await axios.post(
@@ -350,13 +368,13 @@ export async function sendOrderConfirmationEmail(
           order.contact.email,
         ],
         subject:
-          `Pagamento confirmado - Pedido #${order.id} | Helô Cosméticos`,
+          `Pagamento confirmado - Pedido #${orderNumber} | Helô Cosméticos`,
         html: `
           <div style="background:#fff8fa;padding:32px 16px;font-family:Arial,sans-serif;color:#43232d;">
             <div style="background:#ffffff;border:1px solid #f1dfe5;border-radius:20px;margin:0 auto;max-width:560px;padding:32px;">
               <p style="color:#d9536f;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Helô Cosméticos</p>
               <h1 style="font-size:25px;margin:18px 0 8px;">Pagamento confirmado</h1>
-              <p>Olá, ${escapeHtml(order.contact.name || "cliente")}! Recebemos o pagamento do seu pedido <strong>#${order.id}</strong>.</p>
+              <p>Olá, ${escapeHtml(order.contact.name || "cliente")}! Recebemos o pagamento do seu pedido <strong>#${orderNumber}</strong>.</p>
               <ul style="padding-left:20px;">${itemsHtml}</ul>
               <p style="font-size:18px;"><strong>Total: ${formatMoney(Number(order.total))}</strong></p>
               <p>Entrega: ${escapeHtml(order.shipping_method || "A confirmar")} ${order.shipping_deadline ? `- ${escapeHtml(order.shipping_deadline)}` : ""}</p>
@@ -476,6 +494,10 @@ export async function sendOrderStatusMovementEmail(
     getOrderTimelineHtml(
       status
     );
+  const orderNumber =
+    getOrderDisplayNumber(
+      order
+    );
 
   try {
     await axios.post(
@@ -486,7 +508,7 @@ export async function sendOrderStatusMovementEmail(
           order.contact.email,
         ],
         subject:
-          `${config.subject} - Pedido #${order.id} | Helô Cosméticos`,
+          `${config.subject} - Pedido #${orderNumber} | Helô Cosméticos`,
         html: `
           <div style="background:#fff8fa;padding:32px 16px;font-family:Arial,sans-serif;color:#43232d;">
             <div style="background:#ffffff;border:1px solid #f1dfe5;border-radius:20px;margin:0 auto;max-width:560px;padding:32px;">

@@ -13,6 +13,9 @@ import {
   Request,
   Response,
 } from "express";
+import {
+  generateOrderNumber,
+} from "./order-number.service.js";
 
 interface Item {
   product_id: number;
@@ -77,40 +80,52 @@ export async function createOrderService({
       };
     });
 
-  return prisma.order.create({
-    data: {
-      contact_id,
+  return prisma.$transaction(
+    async (transaction) => {
+      const orderNumber =
+        await generateOrderNumber(
+          transaction
+        );
 
-      subtotal,
+      return transaction.order.create({
+        data: {
+          order_number:
+            orderNumber,
 
-      total:
-        subtotal,
+          contact_id,
 
-      items: {
-        create:
-          orderItems,
-      },
-    },
+          subtotal,
 
-    include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
+          total:
+            subtotal,
 
-      contact: {
-        include: {
-          addresses: {
-            orderBy: {
-              updated_at: "desc",
-            },
-            take: 1,
+          items: {
+            create:
+              orderItems,
           },
         },
-      },
-    },
-  });
+
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+
+          contact: {
+            include: {
+              addresses: {
+                orderBy: {
+                  updated_at: "desc",
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+      });
+    }
+  );
 }
 
 
@@ -190,13 +205,25 @@ export async function listOrdersService() {
 }
 
 export async function showOrderService(
-  orderId: number
+  orderCode: string | number
 ) {
+  const orderId =
+    Number(orderCode);
+  const orderNumber =
+    String(orderCode);
 
   const order =
-    await prisma.order.findUnique({
+    await prisma.order.findFirst({
     where: {
-      id: orderId,
+      OR: [
+        {
+          id: orderId,
+        },
+        {
+          order_number:
+            orderNumber,
+        },
+      ],
     },
 
     include: {
@@ -234,10 +261,18 @@ export async function showOrderService(
       );
 
     if (syncResult?.order) {
-      return prisma.order.findUnique({
+      return prisma.order.findFirst({
         where: {
-          id:
-            orderId,
+          OR: [
+            {
+              id:
+                orderId,
+            },
+            {
+              order_number:
+                orderNumber,
+            },
+          ],
         },
 
         include: {

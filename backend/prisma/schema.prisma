@@ -270,6 +270,8 @@ model ContactAddress {
 model Order {
   id Int @id @default(autoincrement())
 
+  order_number String? @unique
+
   contact_id Int
 
   status String @default("pending")
@@ -316,6 +318,16 @@ model Order {
   customer_notifications OrderCustomerNotification[]
 
   @@map("orders")
+}
+
+model OrderSequence {
+  year Int @id
+
+  last_number Int @default(0)
+
+  updated_at DateTime @updatedAt
+
+  @@map("order_sequences")
 }
 
 model OrderStatusEmail {

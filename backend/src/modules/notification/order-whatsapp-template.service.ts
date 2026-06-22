@@ -38,6 +38,16 @@ function firstName(
     "cliente";
 }
 
+function orderDisplayNumber(
+  order: {
+    id: number;
+    order_number?: string | null;
+  }
+) {
+  return order.order_number ||
+    String(order.id);
+}
+
 function templateLanguage() {
   return process.env.WHATSAPP_TEMPLATE_LANGUAGE ||
     "pt_BR";
@@ -220,14 +230,14 @@ export async function sendOrderPendingPaymentWhatsApp(
       pendingPaymentTemplateName(),
     bodyParams: [
       firstName(order.contact.name),
-      String(order.id),
+      orderDisplayNumber(order),
       formatMoney(Number(order.total)),
       paymentMethodLabel(
         order.payment_method
       ),
     ],
     buttonUrlParam:
-      String(order.id),
+      orderDisplayNumber(order),
   });
 }
 
@@ -266,7 +276,7 @@ export async function sendOrderStatusUpdateWhatsApp(
       orderStatusTemplateName(),
     bodyParams: [
       firstName(order.contact.name),
-      String(order.id),
+      orderDisplayNumber(order),
       config.label,
       config.message,
     ],

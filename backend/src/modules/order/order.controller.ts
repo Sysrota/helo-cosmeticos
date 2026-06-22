@@ -27,9 +27,7 @@ export async function showOrderController(
 
   const order =
     await showOrderService(
-      Number(
-        req.params.id
-      )
+      String(req.params.id)
     );
 
   return res.json(

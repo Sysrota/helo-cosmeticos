@@ -173,9 +173,17 @@ export async function trackOrderTool({
   }
 
   const order =
-    await prisma.order.findUnique({
+    await prisma.order.findFirst({
       where: {
-        id: orderId,
+        OR: [
+          {
+            id: orderId,
+          },
+          {
+            order_number:
+              String(orderId),
+          },
+        ],
       },
       include: {
         contact: true,
@@ -233,6 +241,9 @@ export async function trackOrderTool({
     status: "found",
     order: {
       id: order.id,
+      number:
+        order.order_number ||
+        String(order.id),
       status:
         orderStatusLabel(
           order.status

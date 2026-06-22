@@ -114,7 +114,8 @@ export async function createPixPaymentService({
 
         description:
           buildPaymentDescription(
-            order.id,
+            order.order_number ||
+              order.id,
             order.items
           ),
 

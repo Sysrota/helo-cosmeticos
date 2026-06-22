@@ -4,6 +4,9 @@ import {
 import {
   notifyManagersAboutOrder,
 } from "../../manager/manager-notification.service.js";
+import {
+  generateOrderNumber,
+} from "../../order/order-number.service.js";
 
 interface Props {
   conversationId: number;
@@ -72,10 +75,20 @@ export async function createOrderTool({
   // =========================
 
   const order =
-    await prisma.order
-      .create({
+    await prisma.$transaction(
+      async (transaction) => {
+        const orderNumber =
+          await generateOrderNumber(
+            transaction
+          );
+
+        return transaction.order
+          .create({
 
         data: {
+
+          order_number:
+            orderNumber,
 
           contact: {
             connect: {
@@ -125,7 +138,9 @@ export async function createOrderTool({
         include: {
           items: true,
         },
-      });
+          });
+      }
+    );
 
   // =========================
   // UPDATE CONVERSATION

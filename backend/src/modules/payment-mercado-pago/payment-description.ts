@@ -8,11 +8,11 @@ interface PaymentItem {
 const MAX_PAYMENT_DESCRIPTION_LENGTH = 120;
 
 export function buildPaymentDescription(
-  orderId: number,
+  orderNumber: number | string,
   items: PaymentItem[]
 ) {
   const firstItem = items[0];
-  const suffix = ` | Pedido #${orderId}`;
+  const suffix = ` | Pedido #${orderNumber}`;
   const prefix = "Helô Cosméticos - ";
 
   if (!firstItem) {

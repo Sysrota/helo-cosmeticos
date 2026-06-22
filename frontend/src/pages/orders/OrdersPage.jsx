@@ -25,6 +25,10 @@ function orderStatusLabel(status) {
   return labels[status] || status || "Não informado";
 }
 
+function getOrderDisplayNumber(order) {
+  return order?.order_number || order?.id;
+}
+
 export default function OrdersPage() {
 
   const navigate =
@@ -172,7 +176,7 @@ export default function OrdersPage() {
                     <h2 className="
                       font-semibold
                     ">
-                      Pedido #{order.id}
+                      Pedido #{getOrderDisplayNumber(order)}
                     </h2>
 
                     <p className="
@@ -382,7 +386,7 @@ export default function OrdersPage() {
                     >
 
                       <td className="p-4">
-                        #{order.id}
+                        #{getOrderDisplayNumber(order)}
                       </td>
 
                       <td className="p-4">

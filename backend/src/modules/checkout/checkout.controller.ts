@@ -21,6 +21,9 @@ import {
 import {
   notifyManagersAboutOrder,
 } from "../manager/manager-notification.service.js";
+import {
+  generateOrderNumber,
+} from "../order/order-number.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -218,9 +221,19 @@ export async function createCheckoutController(
     // =====================
 
     const order =
-      await prisma.order.create({
+      await prisma.$transaction(
+        async (transaction) => {
+          const orderNumber =
+            await generateOrderNumber(
+              transaction
+            );
+
+          return transaction.order.create({
 
         data: {
+
+          order_number:
+            orderNumber,
 
           contact_id:
             contact.id,
@@ -271,7 +284,9 @@ export async function createCheckoutController(
             },
           },
         },
-      });
+          });
+        }
+      );
 
     void notifyManagersAboutOrder(
       order.id,
@@ -524,10 +539,12 @@ export async function trackOrderController(
   req: Request,
   res: Response
 ) {
+  const orderCode =
+    String(
+      req.body.order_id || ""
+    ).trim();
   const orderId =
-    Number(
-      req.body.order_id
-    );
+    Number(orderCode);
   const email =
     String(
       req.body.email || ""
@@ -547,10 +564,18 @@ export async function trackOrderController(
   }
 
   let order =
-    await prisma.order.findUnique({
+    await prisma.order.findFirst({
       where: {
-        id:
-          orderId,
+        OR: [
+          {
+            order_number:
+              orderCode,
+          },
+          {
+            id:
+              orderId,
+          },
+        ],
       },
       include: {
         contact: {
@@ -585,10 +610,18 @@ export async function trackOrderController(
 
       if (syncResult?.order) {
         order =
-          await prisma.order.findUnique({
+          await prisma.order.findFirst({
             where: {
-              id:
-                orderId,
+              OR: [
+                {
+                  order_number:
+                    orderCode,
+                },
+                {
+                  id:
+                    orderId,
+                },
+              ],
             },
             include: {
               contact: {
@@ -638,6 +671,8 @@ export async function trackOrderController(
   return res.json({
     id:
       order.id,
+    order_number:
+      order.order_number,
     status:
       order.status,
     payment_status:

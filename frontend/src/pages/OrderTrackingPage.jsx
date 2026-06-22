@@ -229,6 +229,10 @@ function getAddressText(address) {
     .join(" • ");
 }
 
+function getOrderDisplayNumber(order) {
+  return order?.order_number || order?.id;
+}
+
 export default function OrderTrackingPage() {
   const {
     pix_discount_percent: pixDiscountPercent,
@@ -653,7 +657,7 @@ export default function OrderTrackingPage() {
             <div className="flex flex-col justify-between gap-4 border-b border-[#f2e7eb] pb-6 sm:flex-row sm:items-start">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b74b65]">
-                  Pedido #{order.id}
+                  Pedido #{getOrderDisplayNumber(order)}
                 </p>
                 <h2 className="mt-2 text-xl font-semibold">
                   Olá, {order.customer_name || "cliente"}

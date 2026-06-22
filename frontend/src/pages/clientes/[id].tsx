@@ -1037,7 +1037,7 @@ export default function ClienteDetalhesPage() {
                       ">
 
                         <strong>
-                          #{order.id}
+                          #{order.order_number || order.id}
                         </strong>
 
                         <strong>

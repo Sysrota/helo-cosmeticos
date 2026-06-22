@@ -2,6 +2,10 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+function getOrderDisplayNumber(order) {
+  return order?.order_number || order?.id;
+}
+
 export function OrderHeader({
   order,
   saveOrder,
@@ -40,7 +44,7 @@ export function OrderHeader({
             font-bold
             text-zinc-900
           ">
-            Pedido #{order.id}
+            Pedido #{getOrderDisplayNumber(order)}
           </h1>
 
           <span className={`
