@@ -1,5 +1,8 @@
 import OpenAI from "openai";
 import { prisma } from "../../config/prisma.js";
+import {
+  sendOrderStatusMovementEmail,
+} from "../notification/order-email.service.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -447,6 +450,18 @@ async function updateOrderStatus({
       },
     },
   });
+
+  if (order.status !== status) {
+    void sendOrderStatusMovementEmail(
+      updatedOrder.id,
+      status
+    ).catch((error) => {
+      console.error(
+        "Erro ao disparar e-mail de movimentação do pedido pelo gestor IA:",
+        error
+      );
+    });
+  }
 
   return {
     sucesso: true,

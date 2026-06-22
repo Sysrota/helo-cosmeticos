@@ -4,6 +4,9 @@ import {
   syncOrderPaymentStatus,
 } from "../payment-mercado-pago/payment-sync.service.js";
 import {
+  sendOrderStatusMovementEmail,
+} from "../notification/order-email.service.js";
+import {
   Request,
   Response,
 } from "express";
@@ -314,6 +317,15 @@ export async function updateOrderService({
   shipping_deadline
 }: Props) {
 
+  const previousOrder =
+    await prisma.order.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        status: true,
+      },
+    });
 
   // UPDATE PEDIDO
   await prisma.order.update({
@@ -371,7 +383,8 @@ export async function updateOrderService({
     });
   }
 
-  return prisma.order.findUnique({
+  const updatedOrder =
+    await prisma.order.findUnique({
     where: {
       id,
     },
@@ -386,4 +399,21 @@ export async function updateOrderService({
       },
     },
   });
+
+  if (
+    previousOrder?.status !==
+    status
+  ) {
+    void sendOrderStatusMovementEmail(
+      id,
+      status
+    ).catch((error) => {
+      console.error(
+        "Erro ao disparar e-mail de movimentação do pedido:",
+        error
+      );
+    });
+  }
+
+  return updatedOrder;
 }
