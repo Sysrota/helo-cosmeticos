@@ -1,8 +1,11 @@
 import {
+  AlertCircle,
   CheckCircle2,
   Clock3,
   CreditCard,
+  MapPin,
   Package,
+  ReceiptText,
   Search,
   Truck,
 } from "lucide-react";
@@ -136,6 +139,88 @@ function getPaymentInfo(
     className:
       "border-amber-200 bg-amber-50 text-amber-800",
   };
+}
+
+const orderStatusLabels = {
+  pending: "Pendente",
+  paid: "Pago",
+  preparing: "Em preparação",
+  shipping: "Em rota de entrega",
+  finished: "Entregue",
+  cancelled: "Cancelado",
+};
+
+const orderFlow = [
+  {
+    status: "paid",
+    label: "Pagamento",
+    description: "Pagamento confirmado",
+  },
+  {
+    status: "preparing",
+    label: "Preparação",
+    description: "Pedido em separação",
+  },
+  {
+    status: "shipping",
+    label: "Em rota de entrega",
+    description: "Saiu para entrega",
+  },
+  {
+    status: "finished",
+    label: "Entregue",
+    description: "Pedido finalizado",
+  },
+];
+
+function getOrderFlowIndex(order) {
+  if (
+    ![
+      "approved",
+      "paid",
+    ].includes(
+      order.payment_status
+    )
+  ) {
+    return -1;
+  }
+
+  const statusIndex =
+    orderFlow.findIndex(
+      (step) =>
+        step.status ===
+        order.status
+    );
+
+  return Math.max(
+    0,
+    statusIndex
+  );
+}
+
+function getAddressText(address) {
+  if (!address) {
+    return "";
+  }
+
+  return [
+    [
+      address.street,
+      address.number,
+    ]
+      .filter(Boolean)
+      .join(", "),
+    address.district,
+    [
+      address.city,
+      address.state,
+    ]
+      .filter(Boolean)
+      .join(" - "),
+    address.cep,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 }
 
 export default function OrderTrackingPage() {
@@ -374,6 +459,14 @@ export default function OrderTrackingPage() {
       : null;
   const PaymentIcon =
     paymentInfo?.icon;
+  const flowIndex =
+    order
+      ? getOrderFlowIndex(order)
+      : -1;
+  const addressText =
+    getAddressText(
+      order?.address
+    );
   const canPay =
     order &&
     ![
@@ -487,7 +580,7 @@ export default function OrderTrackingPage() {
         )}
 
         {order && paymentInfo && (
-          <section className="mx-auto mt-8 max-w-[700px] rounded-[28px] border border-[#f0e0e6] bg-white p-6 shadow-[0_18px_48px_rgba(88,35,52,0.05)] sm:p-8">
+          <section className="mx-auto mt-8 max-w-[860px] rounded-[28px] border border-[#f0e0e6] bg-white p-6 shadow-[0_18px_48px_rgba(88,35,52,0.05)] sm:p-8">
             <div className="flex flex-col justify-between gap-4 border-b border-[#f2e7eb] pb-6 sm:flex-row sm:items-start">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b74b65]">
@@ -500,9 +593,21 @@ export default function OrderTrackingPage() {
                   Realizado em {formatDate(order.created_at)}
                 </p>
               </div>
-              <p className="text-2xl font-semibold text-[#43232d]">
-                {formatMoney(order.total)}
-              </p>
+              <div className="sm:text-right">
+                <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  order.status === "cancelled"
+                    ? "bg-red-50 text-red-700"
+                    : "bg-[#fff0f4] text-[#b74662]"
+                }`}>
+                  {order.status === "cancelled" && (
+                    <AlertCircle size={14} />
+                  )}
+                  {orderStatusLabels[order.status] || order.status}
+                </span>
+                <p className="mt-3 text-2xl font-semibold text-[#43232d]">
+                  {formatMoney(order.total)}
+                </p>
+              </div>
             </div>
 
             <div className={`mt-6 flex gap-3 rounded-2xl border p-4 ${paymentInfo.className}`}>
@@ -517,7 +622,74 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 rounded-3xl border border-[#f2e1e7] bg-[#fffafb] p-5">
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#b74b65]">
+                Trâmite do pedido
+              </p>
+
+              {order.status === "cancelled" ? (
+                <div className="flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-red-700">
+                  <AlertCircle size={20} className="shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Pedido cancelado
+                    </p>
+                    <p className="mt-1 text-xs leading-5">
+                      O fluxo deste pedido foi encerrado. Se precisar, fale com nossa equipe de atendimento.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-4">
+                  {orderFlow.map(
+                    (step, index) => {
+                      const completed =
+                        flowIndex >= index;
+                      const current =
+                        flowIndex === index;
+
+                      return (
+                        <div
+                          key={step.status}
+                          className={`rounded-2xl border p-4 ${
+                            completed
+                              ? "border-[#d9536f] bg-white"
+                              : "border-[#efdee4] bg-white/70"
+                          }`}
+                        >
+                          <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold ${
+                            completed
+                              ? "border-[#d9536f] bg-[#d9536f] text-white"
+                              : "border-[#ead8df] bg-white text-[#b69aa4]"
+                          }`}>
+                            {completed
+                              ? <CheckCircle2 size={18} />
+                              : index + 1}
+                          </div>
+                          <p className={`text-sm font-semibold ${
+                            completed
+                              ? "text-[#43232d]"
+                              : "text-[#9a828b]"
+                          }`}>
+                            {step.label}
+                            {current && (
+                              <span className="ml-1 text-[#d9536f]">
+                                agora
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-[#78636b]">
+                            {step.description}
+                          </p>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
               <div className="rounded-2xl bg-[#fff7f9] p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
                   <Truck size={17} className="text-[#d9536f]" />
@@ -550,6 +722,43 @@ export default function OrderTrackingPage() {
                     Confirmado em {formatDate(order.paid_at)}
                   </p>
                 )}
+              </div>
+
+              <div className="rounded-2xl bg-[#fff7f9] p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <MapPin size={17} className="text-[#d9536f]" />
+                  Endereço
+                </div>
+                <p className="text-sm leading-6 text-[#78636b]">
+                  {addressText || "Endereço não informado"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-[#f3e7eb] p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <ReceiptText size={17} className="text-[#d9536f]" />
+                Resumo financeiro
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4 text-[#78636b]">
+                  <span>Produtos</span>
+                  <span>{formatMoney(order.subtotal)}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-[#78636b]">
+                  <span>Frete</span>
+                  <span>{formatMoney(order.shipping)}</span>
+                </div>
+                {Number(order.discount || 0) > 0 && (
+                  <div className="flex justify-between gap-4 text-[#b74662]">
+                    <span>Desconto</span>
+                    <span>- {formatMoney(order.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between gap-4 border-t border-[#f1e2e7] pt-3 font-semibold text-[#43232d]">
+                  <span>Total</span>
+                  <span>{formatMoney(order.total)}</span>
+                </div>
               </div>
             </div>
 

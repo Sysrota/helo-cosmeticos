@@ -539,7 +539,17 @@ export async function trackOrderController(
           orderId,
       },
       include: {
-        contact: true,
+        contact: {
+          include: {
+            addresses: {
+              orderBy: {
+                updated_at:
+                  "desc",
+              },
+              take: 1,
+            },
+          },
+        },
         items: {
           include: {
             product: {
@@ -567,7 +577,17 @@ export async function trackOrderController(
                 orderId,
             },
             include: {
-              contact: true,
+              contact: {
+                include: {
+                  addresses: {
+                    orderBy: {
+                      updated_at:
+                        "desc",
+                    },
+                    take: 1,
+                  },
+                },
+              },
               items: {
                 include: {
                   product: {
@@ -632,6 +652,25 @@ export async function trackOrderController(
       order.created_at,
     customer_name:
       order.contact.name,
+    customer_phone:
+      order.contact.phone,
+    address:
+      order.contact.addresses[0]
+        ? {
+          cep:
+            order.contact.addresses[0].cep,
+          street:
+            order.contact.addresses[0].street,
+          number:
+            order.contact.addresses[0].number,
+          district:
+            order.contact.addresses[0].district,
+          city:
+            order.contact.addresses[0].city,
+          state:
+            order.contact.addresses[0].state,
+        }
+        : null,
     items:
       order.items.map(
         (item) => ({
@@ -644,6 +683,8 @@ export async function trackOrderController(
           product: {
             title:
               item.product.title,
+            subtitle:
+              item.product.subtitle,
             images:
               item.product.images,
           },

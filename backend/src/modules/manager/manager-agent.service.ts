@@ -31,7 +31,9 @@ REGRAS:
 - Valores em formato R$ XX,XX
 - Datas em formato brasileiro DD/MM/YYYY HH:mm
 - Ao listar pedidos, mostre: nº do pedido, cliente, valor total, itens, status de pagamento
-- Quando o gestor disser algo como "pedido 10 está sendo preparado", "pedido 10 enviado", "pedido 10 entregue" ou "pedido 10 cancelado", use update_order_status.
+- Quando o gestor disser algo como "pedido 10 está sendo preparado", "pedido 10 enviado", "pedido 10 entregue" ou "pedido 10 cancelado", confirme antes de alterar.
+- Para confirmar uma alteração de status, primeiro chame update_order_status. Se a tool retornar "needs_confirmation", mostre os dados do pedido, o status atual, o novo status pretendido e pergunte se pode atualizar.
+- Só chame update_order_status para concluir depois que o gestor responder claramente confirmando, como "sim", "confirmo", "pode atualizar" ou "pode".
 - Use status "preparing" para pedido em preparo, "shipping" para enviado/em rota, "finished" para entregue e "cancelled" para cancelado.
 `.trim();
 
@@ -161,11 +163,31 @@ REGRAS:
       } else if (fn === "search_order") {
         result = await searchOrder(args.query);
       } else if (fn === "update_order_status") {
-        result = await updateOrderStatus({
-          orderId: Number(args.order_id),
-          status: args.status,
-          note: args.note,
-        });
+        const orderId =
+          Number(args.order_id);
+        const status =
+          args.status;
+
+        if (
+          !hasExplicitUpdateConfirmation(
+            messages,
+            orderId,
+            status
+          )
+        ) {
+          result =
+            await previewOrderStatusUpdate({
+              orderId,
+              status,
+              note: args.note,
+            });
+        } else {
+          result = await updateOrderStatus({
+            orderId,
+            status,
+            note: args.note,
+          });
+        }
       }
 
       history.push({
@@ -368,6 +390,175 @@ async function searchOrder(query: string) {
       data: formatDate(o.created_at),
     }))
   );
+}
+
+function getLastUserMessage(messages: any[]) {
+  const userMessages =
+    messages.filter(
+      (message) =>
+        message.role === "user" &&
+        typeof message.content ===
+          "string"
+    );
+
+  return String(
+    userMessages.at(-1)?.content ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function hasExplicitUpdateConfirmation(
+  messages: any[],
+  orderId: number,
+  status: string
+) {
+  const lastMessage =
+    getLastUserMessage(
+      messages
+    );
+
+  if (!lastMessage) {
+    return false;
+  }
+
+  const confirmationPattern =
+    /\b(sim|confirmo|confirmado|pode|autoriza|autorizo|atualize|atualizar|ok|correto|isso mesmo)\b/i;
+  const denialPattern =
+    /\b(n[aã]o|nao|cancelar|cancela|errado|pera|espera)\b/i;
+
+  if (
+    denialPattern.test(
+      lastMessage
+    ) ||
+    !confirmationPattern.test(
+      lastMessage
+    )
+  ) {
+    return false;
+  }
+
+  const assistantMessages =
+    messages.filter(
+      (message) =>
+        message.role === "assistant" &&
+        typeof message.content ===
+          "string"
+    );
+  const previousAssistantMessage =
+    String(
+      assistantMessages.at(-1)?.content ||
+        ""
+    ).toLowerCase();
+
+  return (
+    previousAssistantMessage.includes(
+      `#${orderId}`
+    ) &&
+    previousAssistantMessage.includes(
+      statusLabel(status).toLowerCase()
+    )
+  );
+}
+
+async function previewOrderStatusUpdate({
+  orderId,
+  status,
+  note,
+}: {
+  orderId: number;
+  status: string;
+  note?: string;
+}) {
+  const allowedStatus = new Set([
+    "pending",
+    "paid",
+    "preparing",
+    "shipping",
+    "finished",
+    "cancelled",
+  ]);
+
+  if (
+    !Number.isInteger(orderId) ||
+    orderId <= 0
+  ) {
+    return {
+      sucesso: false,
+      mensagem: "Número do pedido inválido.",
+    };
+  }
+
+  if (!allowedStatus.has(status)) {
+    return {
+      sucesso: false,
+      mensagem: "Status inválido para atualização do pedido.",
+    };
+  }
+
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+    include: {
+      contact: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    return {
+      sucesso: false,
+      mensagem: `Pedido #${orderId} não encontrado.`,
+    };
+  }
+
+  return {
+    sucesso: true,
+    needs_confirmation: true,
+    mensagem:
+      "Confirme os dados antes de atualizar o pedido.",
+    acao_pendente: {
+      pedido_id: order.id,
+      status_atual: statusLabel(
+        order.status
+      ),
+      novo_status: statusLabel(
+        status
+      ),
+      observacao: note || null,
+    },
+    pedido: {
+      id: order.id,
+      cliente:
+        order.contact.name ||
+        order.contact.phone,
+      telefone:
+        order.contact.phone,
+      total: formatCurrency(
+        order.total
+      ),
+      status_pagamento:
+        order.payment_status,
+      frete:
+        order.shipping_method ||
+        "não definido",
+      itens: order.items.map(
+        (item) =>
+          `${item.product.title} x${item.quantity}`
+      ),
+      data: formatDate(
+        order.created_at
+      ),
+    },
+    instrucao:
+      `Pergunte ao gestor se pode atualizar o pedido #${order.id} para ${statusLabel(status)}. Não atualize antes da confirmação.`,
+  };
 }
 
 async function updateOrderStatus({
