@@ -13,6 +13,32 @@ export async function executeAdminAgent({
   conversationId: number;
   messages: any[];
 }) {
+  const pendingStatusUpdate =
+    getPendingStatusUpdateFromMessages(
+      messages
+    );
+
+  if (
+    pendingStatusUpdate &&
+    isConfirmationMessage(
+      getLastUserMessage(
+        messages
+      )
+    )
+  ) {
+    const result =
+      await updateOrderStatus({
+        orderId:
+          pendingStatusUpdate.orderId,
+        status:
+          pendingStatusUpdate.status,
+      });
+
+    return formatOrderStatusUpdateResponse(
+      result
+    );
+  }
+
   const systemPrompt = `
 Você é a assistente administrativa da Helo Cosméticos, auxiliando os gestores internos da loja.
 
@@ -409,6 +435,135 @@ function getLastUserMessage(messages: any[]) {
     .toLowerCase();
 }
 
+function normalizeText(
+  value: string
+) {
+  return value
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .trim();
+}
+
+function statusFromLabel(
+  value: string
+) {
+  const normalized =
+    normalizeText(value);
+
+  if (
+    normalized.includes("preparo") ||
+    normalized.includes("preparacao")
+  ) {
+    return "preparing";
+  }
+
+  if (
+    normalized.includes("rota") ||
+    normalized.includes("enviado") ||
+    normalized.includes("envio")
+  ) {
+    return "shipping";
+  }
+
+  if (
+    normalized.includes("entregue") ||
+    normalized.includes("finalizado")
+  ) {
+    return "finished";
+  }
+
+  if (normalized.includes("cancelado")) {
+    return "cancelled";
+  }
+
+  if (normalized.includes("pago")) {
+    return "paid";
+  }
+
+  if (normalized.includes("pendente")) {
+    return "pending";
+  }
+
+  return null;
+}
+
+function getPendingStatusUpdateFromMessages(
+  messages: any[]
+) {
+  const assistantMessages =
+    messages.filter(
+      (message) =>
+        message.role === "assistant" &&
+        typeof message.content ===
+          "string"
+    );
+  const previousAssistantMessage =
+    String(
+      assistantMessages.at(-1)?.content ||
+        ""
+    );
+
+  if (!previousAssistantMessage) {
+    return null;
+  }
+
+  const orderMatch =
+    previousAssistantMessage.match(
+      /pedido\s*(?:n[ºo°]?\s*)?[#º°]?\s*(\d+)/i
+    );
+  const statusMatch =
+    previousAssistantMessage.match(
+      /novo status pretendido:\s*([^\n\r]+)/i
+    ) ||
+    previousAssistantMessage.match(
+      /atualizar[^#\n\r]*#?\s*\d+[^"“”\n\r]*(?:para|como)\s*["“”']?([^"“”'\n\r?.]+)/i
+    );
+
+  if (
+    !orderMatch ||
+    !statusMatch
+  ) {
+    return null;
+  }
+
+  const status =
+    statusFromLabel(
+      statusMatch[1]
+    );
+
+  if (!status) {
+    return null;
+  }
+
+  return {
+    orderId:
+      Number(orderMatch[1]),
+    status,
+  };
+}
+
+function isConfirmationMessage(
+  message: string
+) {
+  const confirmationPattern =
+    /\b(sim|confirmo|confirmado|pode|autoriza|autorizo|atualize|atualizar|ok|correto|isso mesmo)\b/i;
+  const denialPattern =
+    /\b(n[aã]o|nao|cancelar|cancela|errado|pera|espera)\b/i;
+
+  return (
+    confirmationPattern.test(
+      message
+    ) &&
+    !denialPattern.test(
+      message
+    )
+  );
+}
+
 function hasExplicitUpdateConfirmation(
   messages: any[],
   orderId: number,
@@ -423,16 +578,8 @@ function hasExplicitUpdateConfirmation(
     return false;
   }
 
-  const confirmationPattern =
-    /\b(sim|confirmo|confirmado|pode|autoriza|autorizo|atualize|atualizar|ok|correto|isso mesmo)\b/i;
-  const denialPattern =
-    /\b(n[aã]o|nao|cancelar|cancela|errado|pera|espera)\b/i;
-
   if (
-    denialPattern.test(
-      lastMessage
-    ) ||
-    !confirmationPattern.test(
+    !isConfirmationMessage(
       lastMessage
     )
   ) {
@@ -559,6 +706,30 @@ async function previewOrderStatusUpdate({
     instrucao:
       `Pergunte ao gestor se pode atualizar o pedido #${order.id} para ${statusLabel(status)}. Não atualize antes da confirmação.`,
   };
+}
+
+function formatOrderStatusUpdateResponse(
+  result: any
+) {
+  if (!result?.sucesso) {
+    return result?.mensagem ||
+      "Não foi possível atualizar o pedido.";
+  }
+
+  const pedido =
+    result.pedido;
+
+  return [
+    `✅ ${result.mensagem}`,
+    "",
+    `Pedido nº ${pedido.id}`,
+    `Cliente: ${pedido.cliente}`,
+    `Valor: ${pedido.total}`,
+    `Status: ${pedido.status}`,
+    `Pagamento: ${pedido.status_pagamento}`,
+    `Frete: ${pedido.frete}`,
+    `Itens: ${pedido.itens.join(", ")}`,
+  ].join("\n");
 }
 
 async function updateOrderStatus({
