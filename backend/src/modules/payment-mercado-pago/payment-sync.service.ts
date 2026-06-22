@@ -13,16 +13,25 @@ import {
 } from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
 
-function getOrderIdFromReference(
+function getOrderReference(
   externalReference: unknown
 ) {
-  const orderId =
-    Number(externalReference);
+  const orderCode =
+    String(
+      externalReference || ""
+    ).trim();
+  const numericOrderId =
+    Number(orderCode);
 
-  return Number.isInteger(orderId) &&
-    orderId > 0
-    ? orderId
-    : null;
+  return {
+    orderCode:
+      orderCode || null,
+    numericOrderId:
+      Number.isInteger(numericOrderId) &&
+      numericOrderId > 0
+        ? numericOrderId
+        : null,
+  };
 }
 
 export async function getMercadoPagoPayment(
@@ -46,8 +55,11 @@ export async function syncMercadoPagoPayment(
     await getMercadoPagoPayment(
       paymentId
     );
-  const externalOrderId =
-    getOrderIdFromReference(
+  const {
+    orderCode,
+    numericOrderId,
+  } =
+    getOrderReference(
       payment.external_reference
     );
 
@@ -59,11 +71,19 @@ export async function syncMercadoPagoPayment(
             mercado_pago_payment_id:
               String(payment.id),
           },
-          ...(externalOrderId
+          ...(numericOrderId
             ? [
               {
                 id:
-                  externalOrderId,
+                  numericOrderId,
+              },
+            ]
+            : []),
+          ...(orderCode
+            ? [
+              {
+                order_number:
+                  orderCode,
               },
             ]
             : []),

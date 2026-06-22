@@ -120,7 +120,10 @@ export async function createPixPaymentService({
           ),
 
         external_reference:
-          String(order.id),
+          String(
+            order.order_number ||
+              order.id
+          ),
 
         payment_method_id:
           "pix",

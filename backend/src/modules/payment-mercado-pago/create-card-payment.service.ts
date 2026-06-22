@@ -154,7 +154,10 @@ export async function createCardPaymentService({
           ),
 
         external_reference:
-          String(order.id),
+          String(
+            order.order_number ||
+              order.id
+          ),
 
         installments:
           Number(
