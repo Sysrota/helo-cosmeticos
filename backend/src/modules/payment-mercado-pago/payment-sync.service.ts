@@ -6,6 +6,9 @@ import {
   sendOrderConfirmationEmail,
 } from "../notification/order-email.service.js";
 import {
+  sendOrderPaymentConfirmedWhatsApp,
+} from "../notification/order-whatsapp-template.service.js";
+import {
   notifyManagersAboutOrder,
 } from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
@@ -194,6 +197,10 @@ export async function syncMercadoPagoPayment(
     });
 
     await sendOrderConfirmationEmail(
+      order.id
+    );
+
+    await sendOrderPaymentConfirmedWhatsApp(
       order.id
     );
   }

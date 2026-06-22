@@ -13,6 +13,9 @@ import {
   sendOrderPendingPaymentEmail,
 } from "../notification/order-email.service.js";
 import {
+  sendOrderPendingPaymentWhatsApp,
+} from "../notification/order-whatsapp-template.service.js";
+import {
   syncOrderPaymentStatus,
 } from "../payment-mercado-pago/payment-sync.service.js";
 import {
@@ -476,6 +479,17 @@ export async function updateCheckoutDeliveryController(
       (error) => {
         console.error(
           "Erro ao iniciar e-mail de pedido pendente:",
+          error
+        );
+      }
+    );
+
+    void sendOrderPendingPaymentWhatsApp(
+      updatedOrder.id
+    ).catch(
+      (error) => {
+        console.error(
+          "Erro ao iniciar WhatsApp de pedido pendente:",
           error
         );
       }

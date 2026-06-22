@@ -54,6 +54,15 @@ function paymentStatusLabel(status?: string | null) {
   return labels[String(status || "")] || String(status || "Não informado");
 }
 
+function paymentMethodLabel(method?: string | null) {
+  const labels: Record<string, string> = {
+    pix: "PIX",
+    credit_card: "Cartão de crédito",
+  };
+
+  return labels[String(method || "")] || String(method || "Não informado");
+}
+
 export async function renewManagerWindow(phone: string) {
   const config = await prisma.storeConfig.findUnique({ where: { id: 1 } });
   if (!config) return;
@@ -84,6 +93,15 @@ export async function notifyManagersAboutOrder(
   type: ManagerNotificationType,
   details?: string
 ) {
+  if (
+    ![
+      "order_created",
+      "payment_paid",
+    ].includes(type)
+  ) {
+    return;
+  }
+
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
@@ -101,7 +119,7 @@ export async function notifyManagersAboutOrder(
   if (!order) return;
 
   const titleByType: Record<ManagerNotificationType, string> = {
-    order_created: "🛒 Novo pedido iniciado",
+    order_created: "🛒 Pedido feito",
     delivery_selected: "🚚 Entrega definida",
     pix_generated: "💠 PIX gerado",
     payment_paid: "✅ Pagamento confirmado",
@@ -118,20 +136,32 @@ export async function notifyManagersAboutOrder(
     order.contact.phone ||
     "Cliente não identificado";
 
-  const content = `
+  const baseContent = `
 ${titleByType[type]}
 
 Pedido #${order.id}
 Cliente: ${customer}
 Telefone: ${order.contact.phone}
 Total: ${formatCurrency(order.total)}
-Pagamento: ${paymentStatusLabel(order.payment_status)}
 Entrega: ${order.shipping_method || "não definida"}
-Data: ${formatDate(order.created_at)}
 
 Itens:
 ${items || "- Sem itens"}
+`.trim();
+
+  const content =
+    type === "payment_paid"
+      ? `
+${baseContent}
+
+Pagamento: ${paymentMethodLabel(order.payment_method)}
+Status: ${paymentStatusLabel(order.payment_status)}
 ${details ? `\n${details}` : ""}
+`.trim()
+      : `
+${baseContent}
+
+Data: ${formatDate(order.created_at)}
 `.trim();
 
   await sendOrQueueNotification(content);

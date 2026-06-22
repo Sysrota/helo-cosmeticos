@@ -43,6 +43,78 @@ export async function sendWhatsAppMessage(
   return response.data;
 }
 
+export async function sendWhatsAppTemplateMessage({
+  to,
+  templateName,
+  language = "pt_BR",
+  bodyParams = [],
+  buttonUrlParam,
+}: {
+  to: string;
+  templateName: string;
+  language?: string;
+  bodyParams?: string[];
+  buttonUrlParam?: string;
+}) {
+  const url =
+    `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+  const components: any[] = [];
+
+  if (bodyParams.length) {
+    components.push({
+      type: "body",
+      parameters:
+        bodyParams.map((text) => ({
+          type: "text",
+          text,
+        })),
+    });
+  }
+
+  if (buttonUrlParam) {
+    components.push({
+      type: "button",
+      sub_type: "url",
+      index: "0",
+      parameters: [
+        {
+          type: "text",
+          text: buttonUrlParam,
+        },
+      ],
+    });
+  }
+
+  const response =
+    await axios.post(
+      url,
+      {
+        messaging_product:
+          "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: {
+            code: language,
+          },
+          components,
+        },
+      },
+      {
+        headers: {
+          Authorization:
+            `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+          "Content-Type":
+            "application/json",
+        },
+      }
+    );
+
+  return response.data;
+}
+
 export async function downloadWhatsAppMedia(
   mediaId: string
 ) {

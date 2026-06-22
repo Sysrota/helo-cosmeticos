@@ -14,6 +14,9 @@ import {
   sendOrderConfirmationEmail,
 } from "../notification/order-email.service.js";
 import {
+  sendOrderPaymentConfirmedWhatsApp,
+} from "../notification/order-whatsapp-template.service.js";
+import {
   buildPaymentDescription,
 } from "./payment-description.js";
 import {
@@ -240,6 +243,10 @@ export async function createCardPaymentService({
     });
 
     await sendOrderConfirmationEmail(
+      order.id
+    );
+
+    await sendOrderPaymentConfirmedWhatsApp(
       order.id
     );
   } else if (

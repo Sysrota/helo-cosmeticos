@@ -7,6 +7,9 @@ import {
   sendOrderStatusMovementEmail,
 } from "../notification/order-email.service.js";
 import {
+  sendOrderStatusUpdateWhatsApp,
+} from "../notification/order-whatsapp-template.service.js";
+import {
   Request,
   Response,
 } from "express";
@@ -410,6 +413,16 @@ export async function updateOrderService({
     ).catch((error) => {
       console.error(
         "Erro ao disparar e-mail de movimentação do pedido:",
+        error
+      );
+    });
+
+    void sendOrderStatusUpdateWhatsApp(
+      id,
+      status
+    ).catch((error) => {
+      console.error(
+        "Erro ao disparar WhatsApp de movimentação do pedido:",
         error
       );
     });

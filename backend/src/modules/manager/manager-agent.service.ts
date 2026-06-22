@@ -3,6 +3,9 @@ import { prisma } from "../../config/prisma.js";
 import {
   sendOrderStatusMovementEmail,
 } from "../notification/order-email.service.js";
+import {
+  sendOrderStatusUpdateWhatsApp,
+} from "../notification/order-whatsapp-template.service.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -820,6 +823,16 @@ async function updateOrderStatus({
     ).catch((error) => {
       console.error(
         "Erro ao disparar e-mail de movimentação do pedido pelo gestor IA:",
+        error
+      );
+    });
+
+    void sendOrderStatusUpdateWhatsApp(
+      updatedOrder.id,
+      status
+    ).catch((error) => {
+      console.error(
+        "Erro ao disparar WhatsApp de movimentação do pedido pelo gestor IA:",
         error
       );
     });
