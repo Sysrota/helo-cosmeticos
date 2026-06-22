@@ -211,12 +211,16 @@ export function OrderSummary({
               Pago
             </option>
 
+            <option value="preparing">
+              Em preparo
+            </option>
+
             <option value="shipping">
               Enviando
             </option>
 
             <option value="finished">
-              Finalizado
+              Entregue
             </option>
 
             <option value="cancelled">

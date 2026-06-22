@@ -5,6 +5,7 @@ import {
 export function OrderHeader({
   order,
   saveOrder,
+  savingOrder = false,
 }) {
 
   const navigate =
@@ -109,6 +110,7 @@ export function OrderHeader({
 
         <button
           onClick={saveOrder}
+          disabled={savingOrder}
 
           className="
             px-5
@@ -117,9 +119,13 @@ export function OrderHeader({
             bg-black
             text-white
             font-semibold
+            disabled:cursor-not-allowed
+            disabled:opacity-60
           "
         >
-          Salvar Pedido
+          {savingOrder
+            ? "Salvando..."
+            : "Salvar Pedido"}
         </button>
       </div>
     </div>

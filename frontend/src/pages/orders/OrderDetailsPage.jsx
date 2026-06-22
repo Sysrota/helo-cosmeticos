@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -82,6 +83,16 @@ export default function OrderDetailsPage() {
   const [paymentApproved,
     setPaymentApproved] =
     useState(false);
+
+  const [savingOrder,
+    setSavingOrder] =
+    useState(false);
+
+  const [toast,
+    setToast] =
+    useState(null);
+  const toastTimeoutRef =
+    useRef(null);
 
   const [storeConfig,
     setStoreConfig] =
@@ -411,25 +422,86 @@ export default function OrderDetailsPage() {
 
   async function saveOrder() {
 
-    await fetch(
-      `${API_URL}/orders/${id}`,
-      {
-        method: "PUT",
+    try {
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      setSavingOrder(true);
 
-        body: JSON.stringify({
-          ...order,
+      const res =
+        await fetch(
+          `${API_URL}/orders/${id}`,
+          {
+            method: "PUT",
 
-          subtotal,
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-          total,
-        }),
+            body: JSON.stringify({
+              ...order,
+
+              subtotal,
+
+              total,
+            }),
+          }
+        );
+
+      const data =
+        await res.json()
+          .catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error ||
+          "Erro ao salvar pedido"
+        );
       }
-    );
+
+      if (data) {
+        setOrder(data);
+      }
+
+      showToast(
+        "Pedido salvo com sucesso.",
+        "success"
+      );
+
+    } catch (error) {
+
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o pedido.",
+        "error"
+      );
+
+    } finally {
+
+      setSavingOrder(false);
+    }
+  }
+
+  function showToast(
+    message,
+    type = "success"
+  ) {
+    setToast({
+      message,
+      type,
+    });
+
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(
+        toastTimeoutRef.current
+      );
+    }
+
+    toastTimeoutRef.current =
+      window.setTimeout(
+        () => setToast(null),
+        3500
+      );
   }
 
   // =========================
@@ -557,6 +629,32 @@ return (
     p-3
     lg:p-6
   ">
+
+    {toast && (
+      <div className="
+        fixed
+        right-4
+        top-4
+        z-[9999]
+        max-w-sm
+        rounded-2xl
+        px-5
+        py-4
+        text-sm
+        font-semibold
+        text-white
+        shadow-xl
+      "
+      style={{
+        backgroundColor:
+          toast.type === "error"
+            ? "#dc2626"
+            : "#16a34a",
+      }}
+      >
+        {toast.message}
+      </div>
+    )}
 
     <div className="
       max-w-[1700px]
@@ -687,6 +785,7 @@ return (
       <OrderHeader
         order={order}
         saveOrder={saveOrder}
+        savingOrder={savingOrder}
       />
 
 {/* MAIN */}

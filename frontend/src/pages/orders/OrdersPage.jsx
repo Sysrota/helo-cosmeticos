@@ -12,6 +12,19 @@ import Formatter
 const API_URL =
   import.meta.env.VITE_API_URL;
 
+function orderStatusLabel(status) {
+  const labels = {
+    pending: "Pendente",
+    paid: "Pago",
+    preparing: "Em preparo",
+    shipping: "Enviando",
+    finished: "Entregue",
+    cancelled: "Cancelado",
+  };
+
+  return labels[status] || status || "Não informado";
+}
+
 export default function OrdersPage() {
 
   const navigate =
@@ -180,7 +193,7 @@ export default function OrdersPage() {
                     bg-zinc-100
                     text-xs
                   ">
-                    {order.status}
+                    {orderStatusLabel(order.status)}
                   </span>
                 </div>
 
@@ -387,7 +400,7 @@ export default function OrdersPage() {
                           bg-zinc-100
                           text-xs
                         ">
-                          {order.status}
+                          {orderStatusLabel(order.status)}
                         </span>
                       </td>
 

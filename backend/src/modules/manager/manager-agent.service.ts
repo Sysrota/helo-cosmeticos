@@ -19,6 +19,7 @@ OBJETIVO:
 - Fornecer estatísticas de vendas e faturamento
 - Identificar produtos mais vendidos
 - Buscar pedidos específicos por ID ou nome do cliente
+- Atualizar status de pedidos quando o gestor informar preparação, envio, entrega ou cancelamento
 
 REGRAS:
 - Seja direta e objetiva
@@ -27,6 +28,8 @@ REGRAS:
 - Valores em formato R$ XX,XX
 - Datas em formato brasileiro DD/MM/YYYY HH:mm
 - Ao listar pedidos, mostre: nº do pedido, cliente, valor total, itens, status de pagamento
+- Quando o gestor disser algo como "pedido 10 está sendo preparado", "pedido 10 enviado", "pedido 10 entregue" ou "pedido 10 cancelado", use update_order_status.
+- Use status "preparing" para pedido em preparo, "shipping" para enviado/em rota, "finished" para entregue e "cancelled" para cancelado.
 `.trim();
 
   let history: any[] = [
@@ -95,6 +98,32 @@ REGRAS:
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "update_order_status",
+        description: "Atualiza o status operacional de um pedido. Use quando o gestor informar que o pedido está em preparo, enviado, entregue ou cancelado.",
+        parameters: {
+          type: "object",
+          properties: {
+            order_id: {
+              type: "number",
+              description: "Número do pedido",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "paid", "preparing", "shipping", "finished", "cancelled"],
+              description: "Novo status do pedido",
+            },
+            note: {
+              type: "string",
+              description: "Observação curta sobre a atualização",
+            },
+          },
+          required: ["order_id", "status"],
+        },
+      },
+    },
   ];
 
   for (let step = 0; step < 5; step++) {
@@ -128,6 +157,12 @@ REGRAS:
         result = await getSalesStats(args.period);
       } else if (fn === "search_order") {
         result = await searchOrder(args.query);
+      } else if (fn === "update_order_status") {
+        result = await updateOrderStatus({
+          orderId: Number(args.order_id),
+          status: args.status,
+          note: args.note,
+        });
       }
 
       history.push({
@@ -147,6 +182,19 @@ function formatDate(date: Date) {
 
 function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function statusLabel(status?: string | null) {
+  const labels: Record<string, string> = {
+    pending: "Pendente",
+    paid: "Pago",
+    preparing: "Em preparo",
+    shipping: "Enviado",
+    finished: "Entregue",
+    cancelled: "Cancelado",
+  };
+
+  return labels[String(status || "")] || String(status || "Não informado");
 }
 
 function periodStart(period: "today" | "week" | "month"): Date {
@@ -181,6 +229,7 @@ async function getPendingOrders() {
       cliente: o.contact.name || o.contact.phone,
       telefone: o.contact.phone,
       total: formatCurrency(o.total),
+      status: statusLabel(o.status),
       frete: o.shipping_method || "não definido",
       itens: o.items.map((i) => `${i.product.title} x${i.quantity}`),
       data: formatDate(o.created_at),
@@ -206,6 +255,7 @@ async function getOrdersByPeriod(period: "today" | "week" | "month") {
       id: o.id,
       cliente: o.contact.name || o.contact.phone,
       total: formatCurrency(o.total),
+      status: statusLabel(o.status),
       status_pagamento: o.payment_status,
       itens: o.items.map((i) => `${i.product.title} x${i.quantity}`),
       data: formatDate(o.created_at),
@@ -276,7 +326,7 @@ async function searchOrder(query: string) {
       cliente: order.contact.name || order.contact.phone,
       telefone: order.contact.phone,
       total: formatCurrency(order.total),
-      status: order.status,
+      status: statusLabel(order.status),
       status_pagamento: order.payment_status,
       frete: order.shipping_method || "não definido",
       itens: order.items.map((i) => `${i.product.title} x${i.quantity} — ${formatCurrency(i.total)}`),
@@ -309,9 +359,106 @@ async function searchOrder(query: string) {
       cliente: c.name || c.phone,
       telefone: c.phone,
       total: formatCurrency(o.total),
+      status: statusLabel(o.status),
       status_pagamento: o.payment_status,
       itens: o.items.map((i) => `${i.product.title} x${i.quantity}`),
       data: formatDate(o.created_at),
     }))
   );
+}
+
+async function updateOrderStatus({
+  orderId,
+  status,
+  note,
+}: {
+  orderId: number;
+  status: string;
+  note?: string;
+}) {
+  const allowedStatus = new Set([
+    "pending",
+    "paid",
+    "preparing",
+    "shipping",
+    "finished",
+    "cancelled",
+  ]);
+
+  if (
+    !Number.isInteger(orderId) ||
+    orderId <= 0
+  ) {
+    return {
+      sucesso: false,
+      mensagem: "Número do pedido inválido.",
+    };
+  }
+
+  if (!allowedStatus.has(status)) {
+    return {
+      sucesso: false,
+      mensagem: "Status inválido para atualização do pedido.",
+    };
+  }
+
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+    include: {
+      contact: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    return {
+      sucesso: false,
+      mensagem: `Pedido #${orderId} não encontrado.`,
+    };
+  }
+
+  const currentNotes =
+    String(order.notes || "").trim();
+  const statusNote =
+    `[${formatDate(new Date())}] Status alterado para ${statusLabel(status)} pela IA gestora${note ? `: ${note}` : ""}`;
+
+  const updatedOrder = await prisma.order.update({
+    where: {
+      id: orderId,
+    },
+    data: {
+      status,
+      notes: currentNotes
+        ? `${currentNotes}\n${statusNote}`
+        : statusNote,
+    },
+    include: {
+      contact: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  return {
+    sucesso: true,
+    mensagem: `Pedido #${updatedOrder.id} atualizado para ${statusLabel(updatedOrder.status)}.`,
+    pedido: {
+      id: updatedOrder.id,
+      cliente: updatedOrder.contact.name || updatedOrder.contact.phone,
+      total: formatCurrency(updatedOrder.total),
+      status: statusLabel(updatedOrder.status),
+      status_pagamento: updatedOrder.payment_status,
+      frete: updatedOrder.shipping_method || "não definido",
+      itens: updatedOrder.items.map((item) => `${item.product.title} x${item.quantity}`),
+    },
+  };
 }
