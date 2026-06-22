@@ -26,6 +26,15 @@ SET "order_number" =
 FROM numbered_orders
 WHERE "orders"."id" = numbered_orders."id";
 
+WITH numbered_orders AS (
+  SELECT
+    EXTRACT(YEAR FROM "created_at")::INTEGER AS "order_year",
+    ROW_NUMBER() OVER (
+      PARTITION BY EXTRACT(YEAR FROM "created_at")::INTEGER
+      ORDER BY "created_at", "id"
+    ) AS "sequence"
+  FROM "orders"
+)
 INSERT INTO "order_sequences" ("year", "last_number", "updated_at")
 SELECT
   numbered_orders."order_year",
