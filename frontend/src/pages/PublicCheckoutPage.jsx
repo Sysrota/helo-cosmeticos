@@ -228,6 +228,37 @@ export default function PublicCheckoutPage() {
   );
   const addressRequestRef = useRef(0);
   const purchaseTrackedRef = useRef(null);
+  const initiateCheckoutTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      id ||
+      directPurchaseItem ||
+      !cart.length ||
+      initiateCheckoutTrackedRef.current
+    ) {
+      return;
+    }
+    initiateCheckoutTrackedRef.current = true;
+    const items = cart.map((item) => ({
+      ...item,
+      product_id: item.product_id ?? item.id,
+      price: item.price ?? item.unit_price,
+    }));
+    const value = items.reduce(
+      (sum, item) =>
+        sum + Number(item.price || 0) * Number(item.quantity || 1),
+      0
+    );
+    trackMetaEvent("InitiateCheckout", {
+      currency: "BRL",
+      value,
+      contents: buildMetaContents(items),
+      content_ids: buildMetaContentIds(items),
+      content_type: "product",
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (
@@ -376,6 +407,7 @@ export default function PublicCheckoutPage() {
     }
 
     return checkoutCart.map((item) => ({
+      product_id: item.product_id ?? item.id,
       quantity: item.quantity || 1,
       unit_price: item.price,
       product: {
