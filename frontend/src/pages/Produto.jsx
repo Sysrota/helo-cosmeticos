@@ -33,6 +33,8 @@ import {
   setSeoMeta,
 } from "../utils/seo";
 import {
+  buildMetaContentIds,
+  buildMetaContents,
   trackMetaCustomEvent,
   trackMetaEvent,
 } from "../services/metaPixel";
@@ -338,14 +340,17 @@ export default function Produto() {
     const item =
       selectedItem();
 
+    const itemValue =
+      Number(item.price || 0) *
+      Number(item.quantity || 1);
+
     trackMetaCustomEvent(
       "DirectPurchaseClick",
       {
         currency:
           "BRL",
         value:
-          Number(item.price || 0) *
-          Number(item.quantity || 1),
+          itemValue,
         content_ids:
           [
             String(item.product_id),
@@ -354,6 +359,22 @@ export default function Produto() {
           "product",
         source:
           "product_page",
+      }
+    );
+
+    trackMetaEvent(
+      "InitiateCheckout",
+      {
+        currency:
+          "BRL",
+        value:
+          itemValue,
+        contents:
+          buildMetaContents([item]),
+        content_ids:
+          buildMetaContentIds([item]),
+        content_type:
+          "product",
       }
     );
 
