@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "destaques" TEXT NOT NULL DEFAULT '';

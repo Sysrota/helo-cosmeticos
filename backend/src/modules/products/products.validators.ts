@@ -19,6 +19,8 @@ export const createProductSchema = z.object({
 
   o_que_vai_sentir: z.string().optional().default(""),
 
+  destaques: z.string().optional().default(""),
+
   is_active: z.boolean().optional().default(true),
 
   is_featured: z.boolean().optional().default(false),

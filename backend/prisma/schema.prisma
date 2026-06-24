@@ -25,6 +25,7 @@ model Product {
 
   dicas_uso         String   @default("")
   o_que_vai_sentir  String   @default("")
+  destaques         String   @default("")
 
   is_active         Boolean  @default(true)
   is_featured       Boolean  @default(false)

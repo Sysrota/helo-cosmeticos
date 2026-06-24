@@ -212,7 +212,7 @@ CONDIÇÕES COMERCIAIS VIGENTES:
 - ${pixCondition}
 - Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.
 - Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis.
-- Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos grátis está disponível para Goiânia e região metropolitana em qualquer valor de compra. Moto Uber está disponível para Goiânia e região metropolitana; em compras acima de ${shippingMinimum}, tem valor fixo de R$ 10,00 cobrado no checkout; abaixo desse valor, o cliente paga o valor da Moto Uber ao entregador.` : "indisponíveis no momento."}
+- Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra.` : "indisponíveis no momento."}
 - O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.
 
 HORÁRIO DE ATENDIMENTO:

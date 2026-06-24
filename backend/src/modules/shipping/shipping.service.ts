@@ -72,8 +72,7 @@ const MOTO_UBER_CITIES = new Set([
   "trindade",
 ]);
 
-const MOTO_UBER_FIXED_PRICE = 10;
-const MOTO_UBER_CUSTOMER_PAID_PRICE = 0;
+const MOTO_UBER_PRICE = 0;
 const LOCAL_PICKUP_OPTION: ShippingOption = {
   name:
     "Retirar em mãos",
@@ -125,24 +124,13 @@ export function getMotoUberShippingOption(
     return null;
   }
 
-  if (!fixedPrice) {
-    return {
-      name:
-        "Moto Uber",
-      price:
-        MOTO_UBER_CUSTOMER_PAID_PRICE,
-      deadline:
-        "Valor pago ao entregador",
-    };
-  }
-
   return {
     name:
       "Moto Uber",
     price:
-      MOTO_UBER_FIXED_PRICE,
+      MOTO_UBER_PRICE,
     deadline:
-      "Entrega rápida local",
+      "Grátis para Goiânia e Região Metropolitana",
   };
 }
 

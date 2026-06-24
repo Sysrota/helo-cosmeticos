@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "docker start helo-redis 2>nul & tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
