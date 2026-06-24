@@ -7,7 +7,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "/helo-logo.png";
@@ -34,6 +34,8 @@ export default function Header() {
     card_interest_free_installments: interestFreeInstallments,
   } = useCommercialPolicy();
   const hasPixDiscount = Number(pixDiscountPercent) > 0;
+  const { pathname } = useLocation();
+  const isProductPage = /^\/produto\//.test(pathname);
   const topBenefits = [
     hasPixDiscount
       ? {
@@ -97,7 +99,7 @@ export default function Header() {
 
       <div className={`
         overflow-hidden border-b border-[#f5e5ea] bg-[#fff8fa] text-center text-[#43232d] transition-all duration-300 sm:hidden
-        ${compact ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
+        ${compact || isProductPage ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
       `}>
         <p className="flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.04em]">
           {hasPixDiscount && (
