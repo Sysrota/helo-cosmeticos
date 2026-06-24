@@ -6,7 +6,7 @@ function formatShippingOptionPrice(option) {
     String(option?.name || "").startsWith("Moto Uber") &&
     Number(option?.price || 0) === 0
   ) {
-    return "Pago ao entregador";
+    return "Grátis";
   }
 
   return Formatter.formataMoeda(

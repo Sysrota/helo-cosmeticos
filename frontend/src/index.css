@@ -230,21 +230,6 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .product-sale-details {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-
-    .product-sale-description {
-      grid-column: span 3;
-    }
-
-    .product-sale-feelings {
-      grid-column: span 2;
-    }
-
-    .product-sale-usage {
-      grid-column: 1 / -1;
-    }
   }
 
   @media (max-width: 639px) {
@@ -253,12 +238,32 @@
     }
 
     .product-sale-title {
-      font-size: 2.15rem;
+      font-size: 1.85rem;
     }
 
+    /* Container retangular no mobile — imagem exibida completa com object-contain */
+    .product-sale-image {
+      aspect-ratio: unset;
+      height: 58vw;
+      max-height: 270px;
+    }
+
+    .product-sale-card {
+      padding: 1rem;
+    }
+
+    .product-sale-price-box {
+      padding: 0.65rem 1rem;
+    }
+
+    /* Preço e quantidade ficam lado a lado no mobile */
     .product-sale-price-row {
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: flex-end;
+    }
+
+    .product-sale-buy-button {
+      min-height: 3.25rem;
     }
   }
 }

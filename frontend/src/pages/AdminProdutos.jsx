@@ -83,6 +83,7 @@ export default function AdminProdutos() {
 
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
+  const [destaques, setDestaques] = useState("");
 
   // galeria
   const [gallery, setGallery] = useState([]); // [{id,image_url,sort_order}]
@@ -346,6 +347,7 @@ export default function AdminProdutos() {
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
     setOQueVaiSentir(p.o_que_vai_sentir || "");
+    setDestaques(p.destaques || "");
 
     setWeight(p.weight || 0);
     setHeight(p.height || 0);
@@ -364,6 +366,7 @@ export default function AdminProdutos() {
       setMetaDescription(full.meta_description || p.meta_description || "");
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
+      setDestaques(full.destaques || p.destaques || "");
       setPricing(extractPricing(full));
     } catch (err) {
       console.error(err);
@@ -384,6 +387,7 @@ export default function AdminProdutos() {
     is_featured: isFeatured,
     dicas_uso: dicasUso,
     o_que_vai_sentir: oQueVaiSentir,
+    destaques,
     keywords: tagsIA,
     weight,
     height,
@@ -1191,6 +1195,38 @@ export default function AdminProdutos() {
         />
         <p className="mt-1 text-xs text-zinc-500">
           Use **texto** para destacar palavras importantes.
+        </p>
+      </div>
+
+      {/* DESTAQUES COMERCIAIS */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Destaques comerciais
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[100px]
+          "
+          placeholder={"Frete grátis\nNecessaire inclusa\n3x sem juros\nCompra segura"}
+          value={destaques}
+          onChange={(e) => setDestaques(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          Um destaque por linha. Exibidos como badges próximos ao preço na página do produto. Deixe vazio para não exibir nenhum badge.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { buildWhatsAppUrl } from "../constants/store";
+import { trackClarityEvent } from "../services/clarity";
 
 export default function FloatingWhatsApp() {
   return (
@@ -9,6 +10,7 @@ export default function FloatingWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a Helô pelo WhatsApp"
+      onClick={() => trackClarityEvent("whatsapp_click")}
       className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-green-500 rounded-full shadow-xl hover:scale-110 transition transform"
     >
       <svg

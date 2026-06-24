@@ -27,3 +27,10 @@ export function initClarity() {
   initialized = true;
   return true;
 }
+
+export function trackClarityEvent(eventName) {
+  if (!canUseClarity()) return false;
+  if (typeof window.clarity !== "function") return false;
+  window.clarity("event", eventName);
+  return true;
+}
