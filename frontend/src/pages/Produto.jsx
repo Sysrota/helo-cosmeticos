@@ -95,6 +95,7 @@ export default function Produto() {
   const [shippingOptions, setShippingOptions] = useState([]);
   const [shippingError, setShippingError] = useState("");
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [feelingsExpanded, setFeelingsExpanded] = useState(false);
   const dragStartRef = useRef(null);
 
   const cover = useMemo(() => {
@@ -493,7 +494,7 @@ export default function Produto() {
               {/* ── Destaques visuais — vindos do banco (o_que_vai_sentir) ── */}
               {feelingList.length > 0 && (
                 <div className="mt-3 space-y-1.5 sm:mt-4 sm:space-y-2">
-                  {feelingList.slice(0, 3).map((feeling) => (
+                  {(feelingsExpanded ? feelingList : feelingList.slice(0, 3)).map((feeling) => (
                     <div key={feeling} className="flex items-start gap-2 text-sm text-zinc-700">
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#d85c7a] text-white">
                         <svg
@@ -513,10 +514,14 @@ export default function Produto() {
                       </span>
                     </div>
                   ))}
-                  {feelingList.length > 3 && (
-                    <p className="pl-6 text-xs text-[#a85a6d]">
-                      + {feelingList.length - 3} benefício{feelingList.length - 3 > 1 ? "s" : ""}
-                    </p>
+                  {feelingList.length > 3 && !feelingsExpanded && (
+                    <button
+                      type="button"
+                      onClick={() => setFeelingsExpanded(true)}
+                      className="pl-6 text-xs font-semibold text-[#b74662] hover:text-[#d85c7a]"
+                    >
+                      ver mais benefícios
+                    </button>
                   )}
                 </div>
               )}
