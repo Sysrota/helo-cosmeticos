@@ -129,7 +129,7 @@
   }
 
   .product-sale-image {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 16 / 9;
     height: auto;
     background: linear-gradient(135deg, #fffafb 0%, #fff1f5 100%);
   }
@@ -241,11 +241,10 @@
       font-size: 1.85rem;
     }
 
-    /* Container retangular no mobile — imagem exibida completa com object-contain */
     .product-sale-image {
-      aspect-ratio: unset;
-      height: 58vw;
-      max-height: 270px;
+      aspect-ratio: 16 / 9;
+      height: auto;
+      max-height: unset;
     }
 
     .product-sale-card {
