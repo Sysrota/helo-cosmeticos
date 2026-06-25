@@ -121,7 +121,8 @@ export function CartProvider({
             ]),
           content_type:
             "product",
-        }
+        },
+        { eventId: `add_to_cart_${productId}_${Date.now()}` }
       );
 
       setCart((prev) => {

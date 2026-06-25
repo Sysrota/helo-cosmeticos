@@ -268,8 +268,9 @@ export default function OrderTrackingPage() {
   const [paymentError,
     setPaymentError] =
     useState("");
-  const purchaseTrackedRef =
-    useRef(null);
+  const purchaseTrackedRef = useRef(null);
+  // Ref espelho do state — permite ler order dentro de callbacks sem closure stale
+  const latestOrderRef = useRef(null);
 
   const fetchTrackedOrder =
     useCallback(async () => {
@@ -290,57 +291,45 @@ export default function OrderTrackingPage() {
       orderId,
     ]);
 
+  // Mantém ref espelho do state para usar em callbacks
   useEffect(() => {
+    latestOrderRef.current = order;
+  }, [order]);
 
-    function handleOrderUpdated(
-      updatedOrder
+  // Na carga inicial: se pedido já está pago, registra no localStorage para
+  // evitar que eventos de socket posteriores disparem Purchase novamente.
+  useEffect(() => {
+    if (
+      order?.id &&
+      ["approved", "paid"].includes(order.payment_status)
     ) {
-      setOrder((previous) => {
-        if (
-          !previous ||
-          updatedOrder.id !==
-            previous.id
-        ) {
-          return previous;
-        }
+      localStorage.setItem(`helo_purchase_${order.id}`, "1");
+    }
+  // Roda apenas quando order.id muda (primeira carga do pedido)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id]);
 
-        const nextOrder = {
-          ...previous,
-          ...updatedOrder,
-          items:
-            previous.items,
-          customer_name:
-            previous.customer_name,
-        };
+  useEffect(() => {
+    function handleOrderUpdated(updatedOrder) {
+      const current = latestOrderRef.current;
+      if (!current || updatedOrder.id !== current.id) return;
 
-        if (
-          [
-            "approved",
-            "paid",
-          ].includes(
-            updatedOrder.payment_status
-          )
-        ) {
-          trackPurchase(
-            nextOrder
-          );
-        }
+      const nextOrder = {
+        ...current,
+        ...updatedOrder,
+        items: current.items,
+        customer_name: current.customer_name,
+      };
 
-        return nextOrder;
-      });
+      setOrder(nextOrder);
+
+      if (["approved", "paid"].includes(updatedOrder.payment_status)) {
+        trackPurchase(nextOrder);
+      }
     }
 
-    socket.on(
-      "order_updated",
-      handleOrderUpdated
-    );
-
-    return () => {
-      socket.off(
-        "order_updated",
-        handleOrderUpdated
-      );
-    };
+    socket.on("order_updated", handleOrderUpdated);
+    return () => { socket.off("order_updated", handleOrderUpdated); };
   }, []);
 
   useEffect(() => {
@@ -533,49 +522,34 @@ export default function OrderTrackingPage() {
       }
       : null;
 
-  function trackPurchase(
-    paidOrder
-  ) {
-    const trackedOrder =
-      paidOrder ||
-      order;
+  function trackPurchase(paidOrder) {
+    const trackedOrder = paidOrder || latestOrderRef.current;
+    if (!trackedOrder?.id) return;
 
-    if (
-      !trackedOrder?.id ||
-      purchaseTrackedRef.current ===
-        trackedOrder.id
-    ) {
-      return;
-    }
+    // localStorage persiste entre recargas — evita disparo duplo se usuário
+    // recarregar a página enquanto MP retenta o webhook.
+    const storageKey = `helo_purchase_${trackedOrder.id}`;
+    if (localStorage.getItem(storageKey)) return;
+    if (purchaseTrackedRef.current === trackedOrder.id) return;
 
-    purchaseTrackedRef.current =
-      trackedOrder.id;
+    localStorage.setItem(storageKey, "1");
+    purchaseTrackedRef.current = trackedOrder.id;
+
+    const items = trackedOrder.items || [];
+    const numItems = items.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
 
     trackMetaEvent(
       "Purchase",
       {
         currency: "BRL",
-        value:
-          Number(
-            trackedOrder.total || 0
-          ),
-        contents:
-          buildMetaContents(
-            trackedOrder.items || []
-          ),
-        content_ids:
-          buildMetaContentIds(
-            trackedOrder.items || []
-          ),
-        content_type:
-          "product",
-        order_id:
-          String(trackedOrder.id),
+        value: Number(trackedOrder.total || 0),
+        contents: buildMetaContents(items),
+        content_ids: buildMetaContentIds(items),
+        content_type: "product",
+        num_items: numItems || undefined,
+        order_id: String(trackedOrder.id),
       },
-      {
-        eventId:
-          `purchase_${trackedOrder.id}`,
-      }
+      { eventId: `purchase_${trackedOrder.id}` }
     );
   }
 

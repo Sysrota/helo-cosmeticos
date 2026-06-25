@@ -230,35 +230,9 @@ export default function PublicCheckoutPage() {
   const purchaseTrackedRef = useRef(null);
   const initiateCheckoutTrackedRef = useRef(false);
 
-  useEffect(() => {
-    if (
-      id ||
-      directPurchaseItem ||
-      !cart.length ||
-      initiateCheckoutTrackedRef.current
-    ) {
-      return;
-    }
-    initiateCheckoutTrackedRef.current = true;
-    const items = cart.map((item) => ({
-      ...item,
-      product_id: item.product_id ?? item.id,
-      price: item.price ?? item.unit_price,
-    }));
-    const value = items.reduce(
-      (sum, item) =>
-        sum + Number(item.price || 0) * Number(item.quantity || 1),
-      0
-    );
-    trackMetaEvent("InitiateCheckout", {
-      currency: "BRL",
-      value,
-      contents: buildMetaContents(items),
-      content_ids: buildMetaContentIds(items),
-      content_type: "product",
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // InitiateCheckout com event_id é disparado em createOrderFromCart (quando
+  // o pedido é criado), garantindo deduplicação correta com o order.id.
+  // O disparo antigo sem event_id (no mount) foi removido para evitar duplicação.
 
   useEffect(() => {
     if (
@@ -381,9 +355,9 @@ export default function PublicCheckoutPage() {
         updatedOrder.payment_status === "paid"
       ) {
         setPaymentApproved(true);
-        trackPurchase(
-          updatedOrder
-        );
+        // Purchase é rastreado pela OrderTrackingPage (com dados completos)
+        // e pela Conversions API no backend. Não disparar aqui para evitar
+        // evento incompleto (sem items) e duplicação com event_id.
       }
     }
 
@@ -923,22 +897,8 @@ export default function PublicCheckoutPage() {
         },
         `checkout_delivery_selected_${data.id}`
       );
-      trackCheckoutEvent(
-        "AddPaymentInfo",
-        {
-          value:
-            Number(
-              data.total ||
-              paymentTotal ||
-              0
-            ),
-          order_id:
-            String(data.id),
-          payment_method:
-            selectedPaymentMethod,
-        },
-        `add_payment_info_${data.id}_${selectedPaymentMethod}`
-      );
+      // AddPaymentInfo é disparado quando o usuário efetivamente escolhe
+      // o método (gerar PIX ou confirmar cartão) — não antecipado aqui.
       setStep(3);
     } catch {
       setNotice("Não foi possível salvar a entrega. Tente novamente.");

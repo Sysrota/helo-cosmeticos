@@ -12,6 +12,7 @@ import {
   notifyManagersAboutOrder,
 } from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
+import { sendMetaCapiEvent } from "../meta/meta-capi.service.js";
 
 function getOrderReference(
   externalReference: unknown
@@ -194,17 +195,12 @@ export async function syncMercadoPagoPayment(
       },
     });
 
-  io.emit(
-    "order_paid",
-    updatedOrder
-  );
-
-  io.emit(
-    "order_updated",
-    updatedOrder
-  );
-
+  // Emitir socket apenas na primeira confirmação — evita Purchase duplicado
+  // quando o Mercado Pago retenta o webhook para pedido já pago.
   if (!wasAlreadyPaid) {
+    io.emit("order_paid", updatedOrder);
+    io.emit("order_updated", updatedOrder);
+
     void notifyManagersAboutOrder(
       order.id,
       "payment_paid",
@@ -216,19 +212,52 @@ export async function syncMercadoPagoPayment(
       );
     });
 
-    await sendOrderConfirmationEmail(
-      order.id
-    );
+    await sendOrderConfirmationEmail(order.id);
+    await sendOrderPaymentConfirmedWhatsApp(order.id);
 
-    await sendOrderPaymentConfirmedWhatsApp(
-      order.id
-    );
+    // Conversions API — mesmo event_id que o frontend usa para deduplicação
+    void (async () => {
+      try {
+        const orderWithContact = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: {
+            contact: { select: { email: true, phone: true } },
+            items: { include: { product: { select: { id: true } } } },
+          },
+        });
+
+        if (!orderWithContact) return;
+
+        const contentIds = orderWithContact.items.map((item) =>
+          String(item.product_id)
+        );
+        const numItems = orderWithContact.items.reduce(
+          (sum, item) => sum + Number(item.quantity || 1),
+          0
+        );
+
+        await sendMetaCapiEvent({
+          event_name: "Purchase",
+          event_id: `purchase_${order.id}`,
+          value: Number(orderWithContact.total),
+          currency: "BRL",
+          content_ids: contentIds,
+          content_type: "product",
+          num_items: numItems,
+          user_data: {
+            email: orderWithContact.contact?.email ?? null,
+            phone: orderWithContact.contact?.phone ?? null,
+          },
+        });
+      } catch (error) {
+        console.error("[Meta CAPI] Purchase failed:", error);
+      }
+    })();
   }
 
   return {
     payment,
-    order:
-      updatedOrder,
+    order: updatedOrder,
   };
 }
 

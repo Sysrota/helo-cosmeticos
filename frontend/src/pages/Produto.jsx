@@ -191,13 +191,17 @@ export default function Produto() {
 
   useEffect(() => {
     if (!product) return;
-    trackMetaEvent("ViewContent", {
-      currency: "BRL",
-      value: Number(product.price || 0),
-      content_ids: [String(product.id)],
-      content_name: product.title,
-      content_type: "product",
-    });
+    trackMetaEvent(
+      "ViewContent",
+      {
+        currency: "BRL",
+        value: Number(product.price || 0),
+        content_ids: [String(product.id)],
+        content_name: product.title,
+        content_type: "product",
+      },
+      { eventId: `view_content_${product.id}` }
+    );
   }, [product]);
 
   const mainImage = selected || cover;
