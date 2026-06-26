@@ -10,6 +10,7 @@ import {
   Truck,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -215,6 +216,12 @@ export default function Produto() {
   );
   const pixSavings = Number((productTotal - pixTotal).toFixed(2));
 
+  const goToImage = useCallback((direction) => {
+    if (images.length <= 1) return;
+    const nextIndex = (currentImageIndex + direction + images.length) % images.length;
+    setSelected(images[nextIndex].full);
+  }, [currentImageIndex, images]);
+
   useEffect(() => {
     if (images.length <= 1) return undefined;
 
@@ -227,7 +234,7 @@ export default function Produto() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => { window.removeEventListener("keydown", handleKeyDown); };
-  }, [currentImageIndex, images]);
+  }, [goToImage, images.length]);
 
   function selectedItem() {
     return {
@@ -266,12 +273,6 @@ export default function Produto() {
       content_type: "product",
     });
     navigate("/checkout", { state: { directPurchaseItem: item } });
-  }
-
-  function goToImage(direction) {
-    if (images.length <= 1) return;
-    const nextIndex = (currentImageIndex + direction + images.length) % images.length;
-    setSelected(images[nextIndex].full);
   }
 
   function handleGalleryPointerDown(event) {
@@ -382,7 +383,7 @@ export default function Produto() {
               </div>
 
               <div
-                className="product-sale-image relative w-full touch-pan-y select-none"
+                className="product-sale-image relative w-full touch-pan-y touch-pinch-zoom select-none"
                 onPointerDown={handleGalleryPointerDown}
                 onPointerUp={handleGalleryPointerUp}
                 onPointerCancel={() => { dragStartRef.current = null; }}
@@ -392,6 +393,8 @@ export default function Produto() {
                   alt={product.title}
                   className="h-full w-full rounded-[1.5rem] bg-[#fff7f9]"
                   imageClassName="h-full w-full rounded-[1.5rem] object-contain object-center"
+                  onZoomOpen={() => trackClarityEvent("product_image_zoom_open")}
+                  showZoomHint
                   zoomLabel="Ampliar imagem do produto"
                 />
                 {images.length > 1 && (
