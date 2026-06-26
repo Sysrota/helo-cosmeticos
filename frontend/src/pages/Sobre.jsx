@@ -150,7 +150,7 @@ export default function Sobre() {
               </div>
             </div>
             <Link to={productRoute} className="mt-6 block rounded-3xl bg-white p-4">
-              <div className="h-[270px]">
+              <div className="aspect-square">
                 <img
                   src={productImage}
                   alt={featuredProduct?.title || "Helô Cosméticos"}

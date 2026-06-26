@@ -323,6 +323,7 @@ export default function ProductImagePreview({
           src={src}
           alt={alt}
           className={imageClassName}
+          draggable={false}
           loading="lazy"
           decoding="async"
           sizes={sizes}

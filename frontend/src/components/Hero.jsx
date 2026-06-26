@@ -129,7 +129,7 @@ export default function Hero({ featuredProduct }) {
                   alt={featuredProduct?.title || "Helô Cosméticos"}
                   className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
                     featuredProduct
-                      ? "object-cover object-center"
+                      ? "object-contain object-center p-4 sm:p-6"
                       : "object-contain p-9 sm:p-12"
                   }`}
                 />

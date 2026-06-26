@@ -86,7 +86,7 @@ export default function ProductCard({
           <img
             src={image}
             alt={title}
-            className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
+            className="h-full w-full object-contain object-center p-3 transition duration-500 group-hover:scale-[1.015]"
             loading="lazy"
             decoding="async"
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

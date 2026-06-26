@@ -98,6 +98,7 @@ export default function Produto() {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [feelingsExpanded, setFeelingsExpanded] = useState(false);
   const dragStartRef = useRef(null);
+  const suppressImageClickRef = useRef(false);
 
   const cover = useMemo(() => {
     if (!product?.image_url) return "";
@@ -276,19 +277,63 @@ export default function Produto() {
   }
 
   function handleGalleryPointerDown(event) {
-    dragStartRef.current = { x: event.clientX, y: event.clientY };
+    if (
+      images.length <= 1 ||
+      event.button > 0 ||
+      event.target.closest("[data-gallery-control]")
+    ) {
+      return;
+    }
+
+    suppressImageClickRef.current = false;
+    dragStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      pointerId: event.pointerId,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handleGalleryPointerMove(event) {
+    if (!dragStartRef.current || dragStartRef.current.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragStartRef.current.x;
+    const deltaY = event.clientY - dragStartRef.current.y;
+
+    if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      suppressImageClickRef.current = true;
+      event.preventDefault();
+    }
   }
 
   function handleGalleryPointerUp(event) {
-    if (!dragStartRef.current || images.length <= 1) {
+    if (!dragStartRef.current || dragStartRef.current.pointerId !== event.pointerId) {
       dragStartRef.current = null;
       return;
     }
+
     const deltaX = event.clientX - dragStartRef.current.x;
     const deltaY = event.clientY - dragStartRef.current.y;
     dragStartRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+
     if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    suppressImageClickRef.current = true;
     goToImage(deltaX < 0 ? 1 : -1);
+  }
+
+  function handleGalleryPointerCancel(event) {
+    if (dragStartRef.current?.pointerId === event.pointerId) {
+      dragStartRef.current = null;
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
+  }
+
+  function handleGalleryClickCapture(event) {
+    if (!suppressImageClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressImageClickRef.current = false;
   }
 
   function updateQuantity(value) {
@@ -384,14 +429,16 @@ export default function Produto() {
 
               <div
                 className="product-sale-image relative w-full touch-pan-y touch-pinch-zoom select-none"
+                onClickCapture={handleGalleryClickCapture}
                 onPointerDown={handleGalleryPointerDown}
+                onPointerMove={handleGalleryPointerMove}
                 onPointerUp={handleGalleryPointerUp}
-                onPointerCancel={() => { dragStartRef.current = null; }}
+                onPointerCancel={handleGalleryPointerCancel}
               >
                 <ProductImagePreview
                   src={mainImage}
                   alt={product.title}
-                  className="h-full w-full rounded-[1.5rem] bg-[#fff7f9]"
+                  className="h-full w-full cursor-grab rounded-[1.5rem] bg-[#fff7f9] active:cursor-grabbing"
                   imageClassName="h-full w-full rounded-[1.5rem] object-contain object-center"
                   onZoomOpen={() => trackClarityEvent("product_image_zoom_open")}
                   showZoomHint
@@ -401,6 +448,7 @@ export default function Produto() {
                   <>
                     <button
                       type="button"
+                      data-gallery-control
                       onClick={(event) => { event.stopPropagation(); goToImage(-1); }}
                       className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white sm:left-3 sm:h-11 sm:w-11"
                       aria-label="Imagem anterior"
@@ -409,6 +457,7 @@ export default function Produto() {
                     </button>
                     <button
                       type="button"
+                      data-gallery-control
                       onClick={(event) => { event.stopPropagation(); goToImage(1); }}
                       className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white sm:right-3 sm:h-11 sm:w-11"
                       aria-label="Próxima imagem"
@@ -423,9 +472,9 @@ export default function Produto() {
               </div>
             </div>
 
-            {/* Miniaturas — ocultas no mobile para não empurrar o painel */}
+            {/* Miniaturas */}
             {images.length > 1 && (
-              <div className="hidden grid-cols-4 gap-2.5 sm:grid sm:grid-cols-5 sm:gap-3">
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:gap-3 sm:overflow-visible sm:pb-0">
                 {images.map((image) => {
                   const active = image.full === mainImage;
                   return (
@@ -433,12 +482,13 @@ export default function Produto() {
                       key={image.id}
                       type="button"
                       onClick={() => setSelected(image.full)}
-                      className={`aspect-square overflow-hidden rounded-[1.25rem] border bg-white p-1.5 transition ${
+                      className={`h-16 w-16 shrink-0 overflow-hidden rounded-[1.1rem] border bg-white p-1.5 transition sm:h-auto sm:w-auto sm:aspect-square sm:rounded-[1.25rem] ${
                         active
                           ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
                           : "border-[#f0e4e8] hover:border-[#e7bdc8]"
                       }`}
                       aria-label="Ver imagem do produto"
+                      aria-current={active ? "true" : undefined}
                     >
                       <img src={image.full} alt="" className="h-full w-full object-contain" />
                     </button>
