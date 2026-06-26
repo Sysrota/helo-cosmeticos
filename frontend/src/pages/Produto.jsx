@@ -1,5 +1,4 @@
 import {
-  ChevronLeft,
   ChevronRight,
   CreditCard,
   Minus,
@@ -446,57 +445,37 @@ export default function Produto() {
                   zoomLabel="Ampliar imagem do produto"
                 />
                 {images.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      data-gallery-control
-                      onClick={(event) => { event.stopPropagation(); goToImage(-1); }}
-                      className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white sm:left-3 sm:h-11 sm:w-11"
-                      aria-label="Imagem anterior"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      data-gallery-control
-                      onClick={(event) => { event.stopPropagation(); goToImage(1); }}
-                      className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#873c50] shadow-sm transition hover:bg-white sm:right-3 sm:h-11 sm:w-11"
-                      aria-label="Próxima imagem"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                    <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-[#873c50] shadow-sm">
-                      {currentImageIndex + 1}/{images.length}
-                    </div>
-                  </>
+                  <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-[#873c50] shadow-sm">
+                    {currentImageIndex + 1}/{images.length}
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Miniaturas */}
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:gap-3 sm:overflow-visible sm:pb-0">
-                {images.map((image) => {
-                  const active = image.full === mainImage;
-                  return (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => setSelected(image.full)}
-                      className={`h-16 w-16 shrink-0 overflow-hidden rounded-[1.1rem] border bg-white p-1.5 transition sm:h-auto sm:w-auto sm:aspect-square sm:rounded-[1.25rem] ${
-                        active
-                          ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
-                          : "border-[#f0e4e8] hover:border-[#e7bdc8]"
-                      }`}
-                      aria-label="Ver imagem do produto"
-                      aria-current={active ? "true" : undefined}
-                    >
-                      <img src={image.full} alt="" className="h-full w-full object-contain" />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              {/* Miniaturas */}
+              {images.length > 1 && (
+                <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
+                  {images.map((image, index) => {
+                    const active = image.full === mainImage;
+                    return (
+                      <button
+                        key={image.id}
+                        type="button"
+                        onClick={() => setSelected(image.full)}
+                        className={`aspect-square overflow-hidden rounded-[1rem] border bg-white p-1.5 transition sm:rounded-[1.25rem] ${
+                          active
+                            ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
+                            : "border-[#f0e4e8] hover:border-[#e7bdc8]"
+                        }`}
+                        aria-label={`Ver imagem ${index + 1} do produto`}
+                        aria-current={active ? "true" : undefined}
+                      >
+                        <img src={image.full} alt="" className="h-full w-full object-contain" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </section>
 
           {/* ── Painel de compra ── */}
