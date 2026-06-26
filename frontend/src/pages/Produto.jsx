@@ -440,6 +440,7 @@ export default function Produto() {
                   alt={product.title}
                   className="h-full w-full cursor-grab rounded-[1.5rem] bg-[#fff7f9] active:cursor-grabbing"
                   imageClassName="h-full w-full rounded-[1.5rem] object-contain object-center"
+                  onNavigate={images.length > 1 ? goToImage : undefined}
                   onZoomOpen={() => trackClarityEvent("product_image_zoom_open")}
                   showZoomHint
                   zoomLabel="Ampliar imagem do produto"

@@ -12,6 +12,7 @@ import {
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const DOUBLE_TAP_DELAY = 280;
+const SWIPE_NAVIGATION_THRESHOLD = 55;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -32,6 +33,7 @@ export default function ProductImagePreview({
   alt,
   className = "",
   imageClassName = "",
+  onNavigate,
   onZoomOpen,
   showZoomHint = false,
   sizes,
@@ -71,6 +73,8 @@ export default function ProductImagePreview({
   const zoomHintClass = showZoomHint
     ? "opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 sm:group-focus-visible/image:opacity-100"
     : "opacity-0 group-hover/image:opacity-100 group-focus-visible/image:opacity-100";
+  const canNavigateBySwipe =
+    typeof onNavigate === "function";
 
   function clampPosition(nextPosition, nextZoom = zoomRef.current) {
     if (nextZoom <= MIN_ZOOM) {
@@ -218,6 +222,17 @@ export default function ProductImagePreview({
       pointersRef.current.size;
     const gesture =
       gestureRef.current;
+    const deltaX =
+      event.clientX - gesture.dragStart.x;
+    const deltaY =
+      event.clientY - gesture.dragStart.y;
+    const didSwipeNavigate =
+      canNavigateBySwipe &&
+      pointersBeforeEnd === 1 &&
+      !gesture.hasPinched &&
+      zoomRef.current <= MIN_ZOOM + 0.05 &&
+      Math.abs(deltaX) >= SWIPE_NAVIGATION_THRESHOLD &&
+      Math.abs(deltaX) > Math.abs(deltaY);
     const wasTap =
       pointersBeforeEnd === 1 &&
       !gesture.hasMoved &&
@@ -238,6 +253,14 @@ export default function ProductImagePreview({
         startPosition: positionRef.current,
         startZoom: zoomRef.current,
       };
+    }
+
+    if (didSwipeNavigate) {
+      event.preventDefault();
+      lastTapRef.current =
+        0;
+      onNavigate(deltaX < 0 ? 1 : -1);
+      return;
     }
 
     if (!wasTap || event.pointerType !== "touch") return;
@@ -355,7 +378,7 @@ export default function ProductImagePreview({
 
           <div
             ref={viewportRef}
-            className={`relative flex h-full w-full items-center justify-center overflow-hidden ${zoom > MIN_ZOOM ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
+            className={`relative flex h-full w-full items-center justify-center overflow-hidden ${zoom > MIN_ZOOM || canNavigateBySwipe ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
             onClick={(event) => {
               if (event.target !== event.currentTarget) {
                 event.stopPropagation();
