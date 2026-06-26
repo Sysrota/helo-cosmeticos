@@ -428,12 +428,13 @@ export default function Produto() {
               </div>
 
               <div
-                className="product-sale-image relative w-full touch-pan-y touch-pinch-zoom select-none"
+                className="product-sale-image aspect-square relative w-full touch-pan-y touch-pinch-zoom select-none"
                 onClickCapture={handleGalleryClickCapture}
                 onPointerDown={handleGalleryPointerDown}
                 onPointerMove={handleGalleryPointerMove}
                 onPointerUp={handleGalleryPointerUp}
                 onPointerCancel={handleGalleryPointerCancel}
+                style={{ aspectRatio: "1 / 1" }}
               >
                 <ProductImagePreview
                   src={mainImage}
