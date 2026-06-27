@@ -174,6 +174,8 @@ REGRAS:
 - Prefira linguagem objetiva com base nos campos reais: "foi desenvolvido para", "reúne", "oferece", "proporciona" e "ajuda a".
 - Ao fazer diagnóstico, prefira opções curtas para a cliente escolher.
 - Depois que a cliente informar uma necessidade, recomende o produto para aquela necessidade antes de apresentar preço, frete ou pedido.
+- Use "Destaques comerciais" do produto antes do preço quando esse campo estiver preenchido.
+- Se "Destaques comerciais" estiver vazio ou "Não informado no banco", não invente diferenciais comerciais.
 - Não responda necessidades diferentes com o mesmo texto.
 `,
     });

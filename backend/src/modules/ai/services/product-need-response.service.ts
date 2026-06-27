@@ -24,6 +24,66 @@ function formatBRL(
     });
 }
 
+function cleanListItem(
+  value: string
+) {
+  return value
+    .replace(/^[\s•*_-]+/, "")
+    .replace(/\s+/g, " ")
+    .replace(/[.;:,]+$/, "")
+    .trim();
+}
+
+function joinNaturalList(
+  values: string[]
+) {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} e ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")} e ${
+    values[values.length - 1]
+  }`;
+}
+
+function lowerFirst(
+  value: string
+) {
+  if (!value) {
+    return "";
+  }
+
+  if (
+    value === value.toUpperCase()
+  ) {
+    return value;
+  }
+
+  return `${value.charAt(0).toLocaleLowerCase("pt-BR")}${value.slice(1)}`;
+}
+
+function commercialHighlightsText(
+  highlights: string
+) {
+  const items =
+    highlights
+      .split(/\r?\n|;/)
+      .map(cleanListItem)
+      .filter(Boolean)
+      .slice(0, 4)
+      .map(lowerFirst);
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `Além disso, tem ${joinNaturalList(items)}.`;
+}
+
 function productDisplayName(
   title: string
 ) {
@@ -244,6 +304,16 @@ export async function buildProductNeedResponse({
       kitItems:
         context.kit_items,
     });
+  const highlightsText =
+    commercialHighlightsText(
+      context.highlights
+    );
+
+  if (highlightsText) {
+    lines.push(
+      highlightsText
+    );
+  }
 
   lines.push(
     `${priceSubject} está ${formatBRL(context.price)}. Me passa seu CEP para eu calcular o frete certinho?`
