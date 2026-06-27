@@ -151,7 +151,6 @@ function categoryResponse(
   ) {
     return [
       "Olá! 😊 Vi que você estava olhando nossa linha de cuidados com a pele.",
-      "",
       "Para eu indicar a melhor rotina para você 😊",
       "O que você mais gostaria de melhorar hoje?",
       "• Oleosidade",
@@ -171,7 +170,6 @@ function categoryResponse(
   ) {
     return [
       "Olá! 😊 Vi que você estava olhando nossa linha de cuidados com o cabelo.",
-      "",
       "Para eu te indicar o cuidado mais adequado 😊",
       "O que você quer melhorar hoje?",
       "• Alinhamento e redução de volume",
@@ -183,7 +181,6 @@ function categoryResponse(
 
   return [
     "Olá! 😊 Vi que você estava olhando nossos produtos.",
-    "",
     "O que você procura hoje?",
     "• Cuidados com a pele",
     "• Cuidados com o cabelo",
@@ -194,7 +191,6 @@ function categoryResponse(
 function homeResponse() {
   return [
     "Olá! 😊 Que bom receber você aqui na Helô Cosméticos.",
-    "",
     "O que você procura hoje?",
     "• Cuidados com a pele",
     "• Cuidados com o cabelo",

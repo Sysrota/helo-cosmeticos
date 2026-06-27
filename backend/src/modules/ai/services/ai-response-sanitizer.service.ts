@@ -22,6 +22,7 @@ export function sanitizeAiResponse(content: string) {
       })
       .join("\n")
       .replace(/\n{3,}/g, "\n\n")
+      .replace(/\n\n(• )/g, "\n$1")
       .trim();
 
   return (

@@ -83,15 +83,12 @@ export async function buildCatalogResponse({
 
   return [
     "Temos outras opções sim 😊",
-    "",
     "Hoje você pode escolher por:",
     categoryLines,
-    "",
     "O que você quer ver primeiro?",
     "• Cuidados com a pele",
     "• Cuidados com o cabelo",
     "• Ver catálogo completo",
-    "",
     `Catálogo: ${getProductsUrl()}`,
   ].join("\n");
 }
