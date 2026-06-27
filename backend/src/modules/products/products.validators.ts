@@ -22,6 +22,9 @@ export const createProductSchema = z.object({
   destaques: z.string().optional().default(""),
 
   composicao: z.string().optional().default(""),
+  indicacoes: z.string().optional().default(""),
+  restricoes: z.string().optional().default(""),
+  faq: z.string().optional().default(""),
 
   is_active: z.boolean().optional().default(true),
 

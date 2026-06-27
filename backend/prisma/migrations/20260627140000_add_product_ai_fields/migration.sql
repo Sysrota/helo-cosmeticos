@@ -1,0 +1,3 @@
+ALTER TABLE "products" ADD COLUMN "indicacoes" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "products" ADD COLUMN "restricoes" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "products" ADD COLUMN "faq" TEXT NOT NULL DEFAULT '';

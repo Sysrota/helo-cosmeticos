@@ -27,6 +27,9 @@ model Product {
   o_que_vai_sentir  String   @default("")
   destaques         String   @default("")
   composicao        String   @default("")
+  indicacoes        String   @default("")
+  restricoes        String   @default("")
+  faq               String   @default("")
 
   is_active         Boolean  @default(true)
   is_featured       Boolean  @default(false)

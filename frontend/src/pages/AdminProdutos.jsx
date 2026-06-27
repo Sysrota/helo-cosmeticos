@@ -85,6 +85,9 @@ export default function AdminProdutos() {
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
   const [destaques, setDestaques] = useState("");
   const [composicao, setComposicao] = useState("");
+  const [indicacoes, setIndicacoes] = useState("");
+  const [restricoes, setRestricoes] = useState("");
+  const [faq, setFaq] = useState("");
 
   // galeria
   const [gallery, setGallery] = useState([]); // [{id,image_url,sort_order}]
@@ -324,6 +327,9 @@ export default function AdminProdutos() {
     setDicasUso("");
     setOQueVaiSentir("");
     setComposicao("");
+    setIndicacoes("");
+    setRestricoes("");
+    setFaq("");
     setTagsIA("");
     setWeight(0);
     setHeight(0);
@@ -351,6 +357,9 @@ export default function AdminProdutos() {
     setOQueVaiSentir(p.o_que_vai_sentir || "");
     setDestaques(p.destaques || "");
     setComposicao(p.composicao || "");
+    setIndicacoes(p.indicacoes || "");
+    setRestricoes(p.restricoes || "");
+    setFaq(p.faq || "");
 
     setWeight(p.weight || 0);
     setHeight(p.height || 0);
@@ -371,6 +380,9 @@ export default function AdminProdutos() {
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
       setDestaques(full.destaques || p.destaques || "");
       setComposicao(full.composicao || p.composicao || "");
+      setIndicacoes(full.indicacoes || p.indicacoes || "");
+      setRestricoes(full.restricoes || p.restricoes || "");
+      setFaq(full.faq || p.faq || "");
       setPricing(extractPricing(full));
     } catch (err) {
       console.error(err);
@@ -393,6 +405,9 @@ export default function AdminProdutos() {
     o_que_vai_sentir: oQueVaiSentir,
     destaques,
     composicao,
+    indicacoes,
+    restricoes,
+    faq,
     keywords: tagsIA,
     weight,
     height,
@@ -1301,6 +1316,99 @@ export default function AdminProdutos() {
         />
         <p className="mt-1 text-xs text-zinc-500">
           Ingredientes e ativos do produto. A IA usa quando o cliente perguntar sobre fórmula, composição ou compatibilidade com tipo de pele.
+        </p>
+      </div>
+
+      {/* INDICAÇÕES */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Indicações (para quem é recomendado)
+        </label>
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[80px]
+          "
+          placeholder="Indicado para pele oleosa, mista ou com tendência a cravos. Adequado para uso diário..."
+          value={indicacoes}
+          onChange={(e) => setIndicacoes(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          A IA usa para contextualizar para quem o produto é mais indicado quando o cliente descrever seu perfil.
+        </p>
+      </div>
+
+      {/* RESTRIÇÕES */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Restrições / Contraindicações
+        </label>
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[80px]
+          "
+          placeholder="Evitar contato com os olhos. Não usar em pele com feridas abertas ou irritada..."
+          value={restricoes}
+          onChange={(e) => setRestricoes(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          A IA usa quando o cliente perguntar sobre contraindicações, alergias ou compatibilidade com condições específicas.
+        </p>
+      </div>
+
+      {/* FAQ */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Perguntas frequentes (FAQ)
+        </label>
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[140px]
+          "
+          placeholder={"P: Posso usar todo dia?\nR: O esfoliante é recomendado 2 a 3 vezes por semana.\n\nP: Tem perfume?\nR: Não tem fragrância adicionada."}
+          value={faq}
+          onChange={(e) => setFaq(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          Escreva perguntas e respostas no formato P: / R:. A IA prioriza essas respostas antes de gerar texto livre.
         </p>
       </div>
 

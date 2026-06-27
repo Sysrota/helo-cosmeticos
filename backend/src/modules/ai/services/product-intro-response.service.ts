@@ -327,8 +327,19 @@ export async function buildProductIntroResponse({
       ),
   };
 
+  const greetingOptions = [
+    `Que bom que você veio conhecer o ${displayName}! 😊`,
+    `Seja bem-vinda! 😊 Vi que você se interessou pelo ${displayName}.`,
+    `Olá! 😊 Fico feliz que tenha vindo conhecer o ${displayName}.`,
+    `Oi! 😊 Que ótimo saber que você veio conhecer o ${displayName}.`,
+  ];
+  const greeting =
+    greetingOptions[
+      Math.floor(Math.random() * greetingOptions.length)
+    ];
+
   const lines = [
-    `Olá! 😊 Que bom que você veio conhecer o ${displayName}.`,
+    greeting,
     buildProductPresentation(
       displayContext,
       displayName,
@@ -346,7 +357,6 @@ export async function buildProductIntroResponse({
   }
 
   lines.push(
-    "",
     ...buildNeedOptions(context)
   );
 

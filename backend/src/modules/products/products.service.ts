@@ -110,6 +110,9 @@ interface CreateProductDTO {
   dicas_uso?: string;
   o_que_vai_sentir?: string;
   composicao?: string;
+  indicacoes?: string;
+  restricoes?: string;
+  faq?: string;
   is_active?: boolean;
   is_featured?: boolean;
   sort_order?: number;
@@ -164,6 +167,9 @@ export async function createProduct(
         dicas_uso: data.dicas_uso ?? "",
         o_que_vai_sentir: data.o_que_vai_sentir ?? "",
         composicao: data.composicao ?? "",
+        indicacoes: data.indicacoes ?? "",
+        restricoes: data.restricoes ?? "",
+        faq: data.faq ?? "",
         is_active: data.is_active ?? true,
         is_featured: data.is_featured ?? false,
         sort_order:
@@ -201,6 +207,9 @@ interface UpdateProductDTO {
   dicas_uso?: string;
   o_que_vai_sentir?: string;
   composicao?: string;
+  indicacoes?: string;
+  restricoes?: string;
+  faq?: string;
   is_active?: boolean;
   is_featured?: boolean;
   sort_order?: number;
