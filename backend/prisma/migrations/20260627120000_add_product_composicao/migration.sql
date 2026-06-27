@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "composicao" TEXT NOT NULL DEFAULT '';

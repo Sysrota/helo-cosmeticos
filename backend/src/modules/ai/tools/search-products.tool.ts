@@ -124,6 +124,7 @@ ${product.keywords}
 ${product.dicas_uso}
 ${product.o_que_vai_sentir}
 ${product.destaques}
+${product.composicao}
 `
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")

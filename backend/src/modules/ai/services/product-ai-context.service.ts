@@ -28,6 +28,7 @@ export type ProductForAiContext = {
   dicas_uso?: string | null;
   o_que_vai_sentir?: string | null;
   destaques?: string | null;
+  composicao?: string | null;
   is_active: boolean;
   images?: ProductImageRef[];
 };
@@ -303,6 +304,8 @@ export function buildProductAiContext(
       cleanText(product.destaques),
     expected_experience:
       cleanText(product.o_que_vai_sentir),
+    composicao:
+      cleanText(product.composicao),
     ai_tags:
       cleanText(product.keywords),
     is_active:
@@ -363,6 +366,8 @@ Destaques comerciais:
 ${optionalText(context.highlights)}
 O que o cliente vai sentir:
 ${optionalText(context.expected_experience)}
+Composição / Ativos principais:
+${optionalText(context.composicao)}
 Tags para IA:
 ${optionalText(context.ai_tags)}
 É kit: ${context.is_kit ? "Sim" : "Não"}

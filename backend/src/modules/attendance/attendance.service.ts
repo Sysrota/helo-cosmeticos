@@ -348,7 +348,7 @@ export async function createMessage(
 
       await sendWhatsAppMessage(
         conversation.contact.phone,
-        data.content
+        data.content.trim()
       );
     }
 

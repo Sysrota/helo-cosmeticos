@@ -227,7 +227,7 @@ function buildNeedOptions(
       "• Ressecamento",
       "• Pele sem brilho",
       "• Quero começar uma rotina",
-      "• Outro",
+      "• Outro motivo",
     ];
   }
 
@@ -238,7 +238,7 @@ function buildNeedOptions(
     "• Brilho",
     "• Maciez",
     "• Reparação",
-    "• Outro",
+    "• Outro motivo",
   ];
 }
 
