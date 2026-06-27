@@ -38,6 +38,9 @@ import {
 import {
   buildProductNeedResponse,
 } from "../services/product-need-response.service.js";
+import {
+  buildCatalogResponse,
+} from "../services/catalog-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -146,6 +149,37 @@ export const aiWorker =
 
             content:
               `Claro! Aqui está o link do ${requestedProductLink.productTitle}:\n\n${requestedProductLink.productUrl}`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const catalogResponse =
+          lastClientMessage?.content
+            ? await buildCatalogResponse({
+                message:
+                  lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (catalogResponse) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              catalogResponse,
 
             type:
               "text",

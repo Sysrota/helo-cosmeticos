@@ -11,6 +11,10 @@ import {
 import {
   getStoreContext,
 } from "./store-context.service.js";
+import {
+  classifyCustomerIntent,
+  shouldUseSavedProductContext,
+} from "./customer-intent.service.js";
 
 type Role =
   | "system"
@@ -93,6 +97,38 @@ export async function buildContext(
           greeting
         )
     );
+  const customerIntent =
+    classifyCustomerIntent(
+      lastUserMessage.content
+    );
+
+  if (customerIntent === "catalog") {
+    await prisma.conversation.updateMany({
+      where: {
+        id:
+          conversationId,
+      },
+
+      data: {
+        last_product_id:
+          null,
+      },
+    });
+  }
+
+  if (customerIntent === "product_search") {
+    await prisma.conversation.updateMany({
+      where: {
+        id:
+          conversationId,
+      },
+
+      data: {
+        last_product_id:
+          null,
+      },
+    });
+  }
 
   // NOVA INTERAÇÃO
   // NÃO USA CONTEXTO ANTIGO
@@ -108,6 +144,11 @@ export async function buildContext(
     await getProductsContext(
       lastUserMessage.content,
       {
+        conversationId,
+        allowFallbackProduct:
+          shouldUseSavedProductContext(
+            customerIntent
+          ),
         fallbackProductId:
           isGreeting
             ? null
@@ -184,6 +225,31 @@ REGRAS:
   // INTENÇÃO ATUAL
   let currentIntent =
     "";
+
+  if (customerIntent === "catalog") {
+    currentIntent =
+      `
+O cliente mudou a intenção atual para CATÁLOGO/OUTRAS OPÇÕES.
+
+REGRAS:
+- Priorize a última intenção do cliente acima do produto de origem.
+- Não continue vendendo apenas o produto anterior.
+- Use o CATÁLOGO ATIVO DA LOJA para apresentar categorias e linhas disponíveis.
+- Ofereça opções curtas para a cliente escolher a próxima linha.
+`;
+  }
+
+  if (customerIntent === "product_search") {
+    currentIntent =
+      `
+O cliente mudou a intenção atual para BUSCA DE PRODUTO OU CATEGORIA.
+
+REGRAS:
+- Priorize a busca atual, não o produto de origem.
+- Responda com base nos produtos encontrados agora.
+- Se houver várias opções, apresente as mais relevantes e conduza para escolha.
+`;
+  }
 
   // PREÇO
   if (

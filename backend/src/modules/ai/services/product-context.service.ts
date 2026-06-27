@@ -64,6 +64,8 @@ const ignoredWords = [
 
 interface GetProductsContextOptions {
   fallbackProductId?: number | null;
+  allowFallbackProduct?: boolean;
+  conversationId?: number;
 }
 
 function normalizeText(value: string) {
@@ -118,6 +120,7 @@ export async function getProductsContext(
     });
 
   const fallbackProduct =
+    options.allowFallbackProduct !== false &&
     options.fallbackProductId
       ? products.find(
           (product) =>
@@ -311,6 +314,23 @@ ${product.keywords}
 
   if (!finalProducts.length) {
     return null;
+  }
+
+  if (
+    options.conversationId &&
+    !shouldUseFallbackAsPrimary
+  ) {
+    await prisma.conversation.updateMany({
+      where: {
+        id:
+          options.conversationId,
+      },
+
+      data: {
+        last_product_id:
+          finalProducts[0].id,
+      },
+    });
   }
 
   const primaryProduct =
