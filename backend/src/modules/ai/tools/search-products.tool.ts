@@ -7,6 +7,9 @@ import {
 import {
   debugAiLog,
 } from "../services/debug-log.service.js";
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 interface Props {
   query: string;
@@ -78,6 +81,9 @@ export async function searchProductsTool({
 
   const search =
     normalizeText(query);
+
+  const commercialPolicy =
+    await getCommercialPolicy();
 
   const words =
     search
@@ -197,7 +203,8 @@ ${product.destaques}
     .map(
       (item) => ({
         ...buildProductAiContext(
-          item.product
+          item.product,
+          commercialPolicy
         ),
 
         score:

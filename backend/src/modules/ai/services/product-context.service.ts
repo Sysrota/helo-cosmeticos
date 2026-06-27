@@ -9,6 +9,9 @@ import {
 import {
   debugAiLog,
 } from "./debug-log.service.js";
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 const ignoredWords = [
   "oi",
@@ -382,11 +385,15 @@ ${product.keywords}
     }
   );
 
+  const commercialPolicy =
+    await getCommercialPolicy();
+
   debugAiLog(
     "Produto retornado do banco",
     finalProducts[0]
       ? buildProductAiContext(
-          finalProducts[0]
+          finalProducts[0],
+          commercialPolicy
         )
       : null
   );
@@ -396,7 +403,7 @@ ${product.keywords}
   context += `
 PRODUTO MAIS RELEVANTE:
 
-${formatProductForPrompt(primaryProduct)}
+${formatProductForPrompt(primaryProduct, commercialPolicy)}
 -------------------
 `;
 
@@ -412,7 +419,7 @@ PRODUTOS INDIVIDUAIS:
     for (const product of individualProducts) {
 
       context += `
-${formatProductForPrompt(product)}
+${formatProductForPrompt(product, commercialPolicy)}
 -------------------
 `;
     }
@@ -428,7 +435,7 @@ KITS RELACIONADOS:
     for (const product of kits) {
 
       context += `
-${formatProductForPrompt(product)}
+${formatProductForPrompt(product, commercialPolicy)}
 -------------------
 `;
     }

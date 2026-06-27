@@ -4,6 +4,12 @@ import {
 import {
   getProductUrl,
 } from "./public-url.service.js";
+import {
+  type CommercialPolicy,
+  type CommercialPriceResult,
+  computeCommercialPrice,
+  formatCommercialPriceForPrompt,
+} from "./commercial-price.service.js";
 
 type ProductImageRef = {
   image_url?: string | null;
@@ -258,12 +264,19 @@ export function extractKitItems(
 }
 
 export function buildProductAiContext(
-  product: ProductForAiContext
+  product: ProductForAiContext,
+  commercialPolicy?: CommercialPolicy
 ) {
   const kitItems =
     extractKitItems(product);
   const isKit =
     isKitProduct(product);
+  const basePrice =
+    Number(product.price || 0);
+  const commercialPrice: CommercialPriceResult | null =
+    commercialPolicy
+      ? computeCommercialPrice(basePrice, commercialPolicy)
+      : null;
 
   return {
     id:
@@ -273,9 +286,11 @@ export function buildProductAiContext(
     category:
       product.category,
     price:
-      Number(product.price || 0),
+      basePrice,
     price_formatted:
-      formatBRL(product.price),
+      formatBRL(basePrice),
+    commercial_price:
+      commercialPrice,
     subtitle:
       cleanText(product.subtitle),
     meta_description:
@@ -312,10 +327,11 @@ export function buildProductAiContext(
 }
 
 export function formatProductForPrompt(
-  product: ProductForAiContext
+  product: ProductForAiContext,
+  commercialPolicy?: CommercialPolicy
 ) {
   const context =
-    buildProductAiContext(product);
+    buildProductAiContext(product, commercialPolicy);
 
   const kitItems =
     context.kit_items.length
@@ -324,12 +340,17 @@ export function formatProductForPrompt(
         .join("\n")
       : "Não informado no banco";
 
+  const priceBlock =
+    context.commercial_price
+      ? formatCommercialPriceForPrompt(context.commercial_price)
+      : `Preço base: ${context.price_formatted}`;
+
   return `
 ID: ${context.id}
 Título: ${context.title}
 Categoria: ${context.category}
 Disponibilidade/ativo: ${context.availability}
-Preço: ${context.price_formatted} (${context.price})
+${priceBlock}
 Subtítulo para venda:
 ${optionalText(context.subtitle)}
 Meta descrição SEO:
