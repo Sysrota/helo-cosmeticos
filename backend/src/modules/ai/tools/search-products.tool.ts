@@ -35,6 +35,7 @@ const ignoredWords = [
   "quero",
   "queria",
   "tem",
+  "ter",
   "vim",
   "veio",
   "vindo",
@@ -48,6 +49,7 @@ const ignoredWords = [
   "essa",
   "este",
   "esta",
+  "isso",
   "desse",
   "dessa",
   "deste",
@@ -65,6 +67,12 @@ const ignoredWords = [
   "pra",
   "um",
   "uma",
+  "posso",
+  "pode",
+  "informacao",
+  "informacoes",
+  "gostaria",
+  "poderia",
 ];
 
 function normalizeText(value: string) {

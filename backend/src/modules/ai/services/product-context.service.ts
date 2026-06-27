@@ -26,6 +26,7 @@ const ignoredWords = [
   "quero",
   "queria",
   "tem",
+  "ter",
   "vim",
   "veio",
   "vindo",
@@ -39,6 +40,7 @@ const ignoredWords = [
   "essa",
   "este",
   "esta",
+  "isso",
   "desse",
   "dessa",
   "deste",
@@ -63,6 +65,13 @@ const ignoredWords = [
   "menos",
   "produto",
   "produtos",
+  "posso",
+  "pode",
+  "informacao",
+  "informacoes",
+  "gostaria",
+  "poderia",
+  "queria",
 ];
 
 interface GetProductsContextOptions {

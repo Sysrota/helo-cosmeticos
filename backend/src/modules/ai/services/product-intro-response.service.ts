@@ -2,6 +2,15 @@ import {
   searchProductsTool,
 } from "../tools/search-products.tool.js";
 
+import { prisma }
+  from "../../../config/prisma.js";
+
+const GENERIC_GREETING_NO_CONTEXT = [
+  "Olá! 😊 Seja bem-vinda à Helô Cosméticos.",
+  "Posso ajudar você a conhecer nossos produtos para pele ou cabelo.",
+  "Sobre qual produto você gostaria de saber mais?",
+].join("\n");
+
 function normalizeText(
   value: string
 ) {
@@ -242,6 +251,41 @@ function buildNeedOptions(
   ];
 }
 
+function isGenericInfoRequest(
+  message: string
+) {
+  const normalized =
+    normalizeText(message);
+
+  const hasVagueRef =
+    normalized.includes("sobre isso") ||
+    normalized.includes("sobre esse") ||
+    normalized.includes("sobre este") ||
+    normalized.includes("sobre essa") ||
+    normalized.includes("sobre esta") ||
+    normalized.includes("sobre aqui") ||
+    normalized.includes("vim pelo anuncio") ||
+    normalized.includes("vi o anuncio") ||
+    normalized.includes("vi no anuncio");
+
+  const hasInfoIntent =
+    normalized.includes("mais informacoes") ||
+    normalized.includes("informacoes sobre") ||
+    normalized.includes("saber mais") ||
+    normalized.includes("gostaria de saber") ||
+    normalized.includes("quero saber");
+
+  const mentionsSpecificProduct =
+    normalized.includes("kit") ||
+    normalized.includes("primeskin") ||
+    normalized.includes("forte liso");
+
+  return (
+    (hasVagueRef || hasInfoIntent) &&
+    !mentionsSpecificProduct
+  );
+}
+
 function isProductIntroRequest(
   message: string
 ) {
@@ -278,7 +322,22 @@ export async function buildProductIntroResponse({
   message: string;
   conversationId: number;
 }) {
-  if (!isProductIntroRequest(message)) {
+  const isExplicit = isProductIntroRequest(message);
+  const isGeneric = !isExplicit && isGenericInfoRequest(message);
+
+  if (!isExplicit && !isGeneric) {
+    return null;
+  }
+
+  if (isGeneric) {
+    const conv = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { last_product_id: true },
+    });
+    if (!conv?.last_product_id) {
+      return GENERIC_GREETING_NO_CONTEXT;
+    }
+    // Tem contexto salvo — deixa o AI agent responder com o produto correto
     return null;
   }
 
