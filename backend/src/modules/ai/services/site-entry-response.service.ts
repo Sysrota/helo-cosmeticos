@@ -48,6 +48,77 @@ function fieldValue(
   );
 }
 
+function naturalProductName(
+  message: string
+) {
+  const match =
+    message.match(
+      /p[aá]gina do (.+?)(?:\.|\n|$)/i
+    );
+
+  const value =
+    cleanField(match?.[1]);
+
+  if (
+    !value ||
+    normalizeText(value).includes("produto da helo")
+  ) {
+    return "";
+  }
+
+  return value;
+}
+
+function naturalCategoryName(
+  message: string
+) {
+  const match =
+    message.match(
+      /categoria (.+?) da hel[oô]/i
+    );
+
+  return cleanField(
+    match?.[1]
+  );
+}
+
+function naturalCartItems(
+  message: string
+) {
+  const lines =
+    message
+      .split(/\r?\n/)
+      .map(cleanField)
+      .filter(Boolean);
+
+  const items =
+    lines
+      .filter((line) =>
+        line.startsWith("•")
+      )
+      .map((line) =>
+        cleanField(
+          line.replace(/^•\s*/, "")
+        )
+      )
+      .filter(Boolean);
+
+  return items.join("; ");
+}
+
+function naturalCartValue(
+  message: string
+) {
+  const match =
+    message.match(
+      /total:\s*([^\n]+)/i
+    );
+
+  return cleanField(
+    match?.[1]
+  );
+}
+
 function isSiteEntryMessage(
   message: string
 ) {
@@ -57,6 +128,11 @@ function isSiteEntryMessage(
   return (
     normalized.includes("vim pelo site") ||
     normalized.includes("vim pela pagina") ||
+    normalized.includes("vim pela categoria") ||
+    normalized.includes("vim pelo carrinho") ||
+    normalized.includes("pagina inicial") ||
+    normalized.includes("pagina do") ||
+    normalized.includes("meu carrinho") ||
     normalized.includes("contexto do site") ||
     normalized.includes("origem=")
   );
@@ -142,18 +218,25 @@ export async function buildSiteEntryResponse({
       fieldValue(message, "origem")
     );
   const productName =
-    fieldValue(message, "produto");
+    fieldValue(message, "produto") ||
+    naturalProductName(message);
   const productId =
     Number(
       fieldValue(message, "produto_id")
     );
   const category =
     fieldValue(message, "categoria_nome") ||
-    fieldValue(message, "categoria");
+    fieldValue(message, "categoria") ||
+    naturalCategoryName(message);
   const cartItems =
-    fieldValue(message, "carrinho_itens");
+    fieldValue(message, "carrinho_itens") ||
+    naturalCartItems(message);
   const cartValue =
-    fieldValue(message, "carrinho_valor");
+    fieldValue(message, "carrinho_valor") ||
+    naturalCartValue(message);
+  const genericProductPage =
+    normalizeText(message)
+      .includes("pagina de um produto");
 
   if (
     origin === "carrinho" ||
@@ -176,7 +259,8 @@ export async function buildSiteEntryResponse({
   if (
     origin === "produto" ||
     productName ||
-    productId
+    productId ||
+    genericProductPage
   ) {
     const productById =
       Number.isFinite(productId) &&
@@ -191,11 +275,13 @@ export async function buildSiteEntryResponse({
     const products =
       productById
         ? []
-        : await searchProductsTool({
+        : productName
+          ? await searchProductsTool({
             query:
               productName || message,
             conversationId,
-          });
+          })
+          : [];
     const product =
       productById ||
       products[0];

@@ -71,11 +71,14 @@ function cartSummary(cart = []) {
   };
 }
 
-function contextLines(lines) {
+function cartText(cartInfo) {
+  if (!cartInfo) return "";
+
   return [
     "",
-    "Contexto do site:",
-    ...lines.filter(Boolean),
+    "Meu carrinho:",
+    ...cartInfo.items.map((item) => `• ${item}`),
+    `Total: ${formatBRL(cartInfo.total)}`,
   ].join("\n");
 }
 
@@ -132,12 +135,8 @@ export function buildSiteWhatsAppMessage({
 
   if (isCartPath && cartInfo) {
     return [
-      "Olá! Vim pelo carrinho da Helô Cosméticos.",
-      contextLines([
-        "origem=carrinho",
-        `carrinho_itens=${cartInfo.items.join("; ")}`,
-        `carrinho_valor=${formatBRL(cartInfo.total)}`,
-      ]),
+      "Olá! Vim pelo carrinho da Helô Cosméticos e quero ajuda para finalizar.",
+      cartText(cartInfo),
     ].join("");
   }
 
@@ -149,59 +148,33 @@ export function buildSiteWhatsAppMessage({
     const name = productDisplayName(productContext.title);
     return [
       `Olá! Vim pela página do ${name}.`,
-      contextLines([
-        "origem=produto",
-        `produto=${name}`,
-        `produto_id=${productContext.id}`,
-        productContext.category ? `categoria=${productContext.category}` : "",
-        cartInfo ? `carrinho_itens=${cartInfo.items.join("; ")}` : "",
-        cartInfo ? `carrinho_valor=${formatBRL(cartInfo.total)}` : "",
-      ]),
+      cartText(cartInfo),
     ].join("");
   }
 
   if (isProductPath) {
     return [
       "Olá! Vim pela página de um produto da Helô Cosméticos.",
-      contextLines([
-        "origem=produto",
-        productPathId ? `produto_id=${productPathId}` : "",
-        cartInfo ? `carrinho_itens=${cartInfo.items.join("; ")}` : "",
-        cartInfo ? `carrinho_valor=${formatBRL(cartInfo.total)}` : "",
-      ]),
+      cartText(cartInfo),
     ].join("");
   }
 
   if (isProductsPath && categoryContext?.category) {
     return [
       `Olá! Vim pela categoria ${categoryContext.label} da Helô Cosméticos.`,
-      contextLines([
-        "origem=categoria",
-        `categoria=${categoryContext.category}`,
-        `categoria_nome=${categoryContext.label}`,
-        cartInfo ? `carrinho_itens=${cartInfo.items.join("; ")}` : "",
-        cartInfo ? `carrinho_valor=${formatBRL(cartInfo.total)}` : "",
-      ]),
+      cartText(cartInfo),
     ].join("");
   }
 
   if (isHomePath) {
     return [
       "Olá! Vim pela página inicial da Helô Cosméticos.",
-      contextLines([
-        "origem=home",
-        cartInfo ? `carrinho_itens=${cartInfo.items.join("; ")}` : "",
-        cartInfo ? `carrinho_valor=${formatBRL(cartInfo.total)}` : "",
-      ]),
+      cartText(cartInfo),
     ].join("");
   }
 
   return [
     "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento.",
-    contextLines([
-      "origem=site",
-      cartInfo ? `carrinho_itens=${cartInfo.items.join("; ")}` : "",
-      cartInfo ? `carrinho_valor=${formatBRL(cartInfo.total)}` : "",
-    ]),
+    cartText(cartInfo),
   ].join("");
 }
