@@ -10,6 +10,8 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 
+PM2_APP_NAME="${PM2_APP_NAME:-helo-backend}"
+
 # -----------------------------
 # Atualiza projeto
 # -----------------------------
@@ -18,6 +20,12 @@ echo "📦 Atualizando repositório..."
 cd "$PROJECT_DIR"
 
 git pull --ff-only
+
+echo "📌 Commit em produção:"
+git log -1 --oneline
+
+echo "📌 Branch/status:"
+git status -sb
 
 # -----------------------------
 # Backend
@@ -45,6 +53,25 @@ if grep -R 'require("@/' "$BACKEND_DIR/dist" >/dev/null 2>&1; then
   echo "ERRO: build backend contém import '@/'. Corrija antes de reiniciar o PM2."
   exit 1
 fi
+
+echo "🔎 Validando correção da IA do WhatsApp..."
+
+if [ ! -f "$BACKEND_DIR/src/modules/ai/services/product-intro-response.service.ts" ]; then
+  echo "ERRO: correção da primeira resposta do produto não está no src. Confira se o commit foi enviado para o servidor."
+  exit 1
+fi
+
+if [ ! -f "$BACKEND_DIR/dist/modules/ai/services/product-intro-response.service.js" ]; then
+  echo "ERRO: correção da primeira resposta do produto não entrou no build dist."
+  exit 1
+fi
+
+if ! grep -q 'buildProductIntroResponse' "$BACKEND_DIR/dist/modules/ai/workers/ai.worker.js"; then
+  echo "ERRO: worker da IA no dist não está usando buildProductIntroResponse."
+  exit 1
+fi
+
+echo "✅ Correção da IA do WhatsApp presente no build."
 
 # -----------------------------
 # Frontend
@@ -96,7 +123,14 @@ echo "✅ Página SEO sem barra final validada: $SEO_SAMPLE_FLAT_FILE"
 # -----------------------------
 echo "🔄 Reiniciando backend..."
 
-pm2 restart helo-backend --update-env
+if ! pm2 describe "$PM2_APP_NAME" >/dev/null 2>&1; then
+  echo "ERRO: app PM2 '$PM2_APP_NAME' não encontrado."
+  echo "Defina o nome correto com: PM2_APP_NAME=nome-do-app ./deploy.sh"
+  pm2 list
+  exit 1
+fi
+
+pm2 restart "$PM2_APP_NAME" --update-env
 pm2 save
 
 # -----------------------------
