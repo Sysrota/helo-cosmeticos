@@ -187,7 +187,7 @@ export async function executeAiAgent({
           2
         )
 
-      : "Carrinho vazio";
+      : "Nenhum item confirmado no carrinho ainda. Se houver produto identificado e o cliente pedir CEP/frete, adicione o produto ao carrinho antes de calcular.";
 
   const savedAddress =
     await prisma.contactAddress.findFirst({
@@ -330,6 +330,7 @@ IMPORTANTE:
 - Se o cliente já informou CEP/endereço antes, use calculate_shipping sem pedir o CEP novamente; a tool consulta o último endereço salvo do contato
 - Se o carrinho tiver shipping_needs_recalculation true e o cliente perguntar frete, entrega, prazo ou total com frete, recalcule com calculate_shipping antes de responder
 - Quando add_cart_item ou update_cart_item alterar o carrinho e já existir endereço salvo, recalcule o frete com calculate_shipping antes de informar valores finais de entrega; não reutilize cotação antiga removida ou desatualizada
+- Nunca peça CEP para calcular frete de um produto identificado deixando o carrinho vazio. Antes de pedir ou calcular frete, deixe claro que vai separar o produto e use add_cart_item com o ID real do produto se ele ainda não estiver no carrinho.
 - Quando houver "Retirar em mãos" em options, apresente como opção grátis de retirada. Se também houver "Moto Uber", apresente como entrega local rápida e grátis para Goiânia e Região Metropolitana. Depois apresente as demais opções em ordem do menor para o maior valor final
 - Quando não houver "Moto Uber" em options, apresente primeiro a opção mais barata e informe que ela é a opção mais econômica; depois apresente as demais opções, sempre na ordem do menor para o maior valor final
 - Se calculate_shipping retornar policy "free_shipping_threshold", diga que a compra atingiu o frete grátis acima de ${freeShippingMinimum}; informe cada serviço, prazo e valor final retornado em options.price. Retirar em mãos e Moto Uber são grátis para Goiânia e Região Metropolitana
@@ -340,8 +341,9 @@ IMPORTANTE:
 - Se calculate_shipping retornar policy "invalid_zipcode", avise que não localizou o CEP informado e peça para o cliente conferir e enviar um CEP válido com 8 números
 - Se calculate_shipping retornar policy "address_unavailable", avise que a consulta de CEP está temporariamente indisponível e ofereça tentar novamente ou calcular no checkout; não invente endereço, preço ou prazo
 - Se calculate_shipping retornar policy "zipcode_required", peça o CEP do cliente com 8 números para calcular o frete
+- Se calculate_shipping retornar policy "cart_required", pergunte qual produto o cliente quer calcular; se houver produto identificado no contexto, use add_cart_item e chame calculate_shipping novamente.
 - Se o cliente pedir "finalizar compra", "enviar link", "gerar checkout" ou equivalente e o carrinho já tiver produtos, use generate_checkout_link diretamente; não execute calculate_shipping sem um pedido explícito de cotação de frete
-- Use add_cart_item somente quando o cliente pedir para acrescentar unidades ou incluir um novo produto
+- Use add_cart_item quando o cliente pedir para acrescentar/incluir produto ou quando você for separar um produto identificado antes de calcular frete
 - Se o cliente pedir para trocar, corrigir, definir ou reduzir a quantidade de um produto que já está no carrinho, use update_cart_item; a quantidade informada é o total desejado, não um acréscimo
 - Para remover um produto do carrinho, use update_cart_item com quantity 0
 - Se um link de checkout já foi enviado e o cliente alterar o carrinho, atualize o item e gere o link novamente para sincronizar o pedido pendente

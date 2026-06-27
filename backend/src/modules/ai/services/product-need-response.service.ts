@@ -4,6 +4,9 @@ import {
 import {
   buildProductAiContext,
 } from "./product-ai-context.service.js";
+import {
+  ensureCartItemTool,
+} from "../tools/add-cart-item.tool.js";
 
 function normalizeText(
   value: string
@@ -92,6 +95,21 @@ function productDisplayName(
     .replace(/\s*-\s*Helo Cosméticos.*$/i, "")
     .replace(/\s*-\s*Helô Cosméticos.*$/i, "")
     .trim();
+}
+
+function productOrderReference(
+  displayName: string
+) {
+  const normalized =
+    normalizeText(displayName);
+
+  if (
+    normalized.startsWith("kit ")
+  ) {
+    return `o ${displayName}`;
+  }
+
+  return displayName;
 }
 
 function itemDisplayName(
@@ -315,8 +333,16 @@ export async function buildProductNeedResponse({
     );
   }
 
+  await ensureCartItemTool({
+    conversationId,
+    productId:
+      product.id,
+    quantity:
+      1,
+  });
+
   lines.push(
-    `${priceSubject} está ${formatBRL(context.price)}. Me passa seu CEP para eu calcular o frete certinho?`
+    `Vou deixar ${productOrderReference(displayName)} separado para você 😊\n\n${priceSubject} está ${formatBRL(context.price)}. Me passa seu CEP que já calculo a entrega certinho?`
   );
 
   return lines.join("\n\n");

@@ -14,11 +14,14 @@ interface Props {
   quantity?: number;
 }
 
-export async function addCartItemTool({
+async function saveCartItem({
   conversationId,
   productId,
   quantity = 1,
-}: Props) {
+  incrementExisting,
+}: Props & {
+  incrementExisting: boolean;
+}) {
   const normalizedProductId =
     Number(productId);
 
@@ -127,12 +130,20 @@ export async function addCartItemTool({
 
   if (existingItem) {
 
-    existingItem.quantity =
+    const currentQuantity =
       Number(
         existingItem.quantity ||
         0
-      ) +
-      quantityToAdd;
+      );
+
+    existingItem.quantity =
+      incrementExisting
+        ? currentQuantity +
+          quantityToAdd
+        : Math.max(
+          currentQuantity,
+          quantityToAdd
+        );
 
   } else {
 
@@ -201,4 +212,24 @@ export async function addCartItemTool({
     });
 
   return cart;
+}
+
+export async function addCartItemTool(
+  props: Props
+) {
+  return saveCartItem({
+    ...props,
+    incrementExisting:
+      true,
+  });
+}
+
+export async function ensureCartItemTool(
+  props: Props
+) {
+  return saveCartItem({
+    ...props,
+    incrementExisting:
+      false,
+  });
 }

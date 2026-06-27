@@ -14,6 +14,9 @@ import {
   rememberCartShippingAddress,
   rememberCartShippingQuote,
 } from "./cart-shipping-state.js";
+import {
+  ensureCartItemTool,
+} from "./add-cart-item.tool.js";
 
 interface Props {
   conversationId: number;
@@ -104,8 +107,38 @@ export async function calculateShippingTool({
   // CART
   // =========================
 
-  const cart: any =
-    conversation.cart_json;
+  let cart: any =
+    conversation.cart_json
+      ? JSON.parse(
+        JSON.stringify(
+          conversation.cart_json
+        )
+      )
+      : null;
+
+  if (
+    !cart ||
+    !cart.items?.length
+  ) {
+    if (conversation.last_product_id) {
+      const ensuredCart =
+        await ensureCartItemTool({
+          conversationId,
+          productId:
+            conversation.last_product_id,
+          quantity:
+            1,
+        });
+
+      if (
+        !("error" in ensuredCart) &&
+        ensuredCart.items?.length
+      ) {
+        cart =
+          ensuredCart;
+      }
+    }
+  }
 
   if (
     !cart ||
@@ -113,8 +146,10 @@ export async function calculateShippingTool({
   ) {
 
     return {
-      error:
-        "Carrinho vazio",
+      policy:
+        "cart_required",
+      message:
+        "Antes de calcular o frete, confirme qual produto deve entrar no pedido.",
     };
   }
 
