@@ -239,7 +239,7 @@ ${product.destaques}
     conversationId &&
     results.length
   ) {
-    await prisma.conversation.update({
+    await prisma.conversation.updateMany({
       where: {
         id: conversationId,
       },

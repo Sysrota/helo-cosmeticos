@@ -29,6 +29,9 @@ import {
 import {
   debugAiLog,
 } from "../services/debug-log.service.js";
+import {
+  buildProductIntroResponse,
+} from "../services/product-intro-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -168,6 +171,37 @@ export const aiWorker =
 
             content:
               `O ${requestedProductPrice.productTitle} custa ${requestedProductPrice.formattedPrice}.\n\nQuer que eu adicione ao seu carrinho?`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const productIntroResponse =
+          lastClientMessage?.content
+            ? await buildProductIntroResponse({
+                message:
+                  lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (productIntroResponse) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              productIntroResponse,
 
             type:
               "text",
