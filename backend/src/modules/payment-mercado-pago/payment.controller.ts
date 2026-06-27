@@ -3,11 +3,12 @@ import {
   Response,
 } from "express";
 import { createPixPaymentService } from "./create-pix-payment.service";
+import { createCardPaymentService } from "./create-card-payment.service";
+import { createBoletoPaymentService } from "./create-boleto-payment.service";
 
 import {
   MercadoPagoConfig
 } from "mercadopago";
-import { createCardPaymentService } from "./create-card-payment.service";
 
 const client =
   new MercadoPagoConfig({
@@ -53,6 +54,26 @@ export async function createPixPaymentController(
         error instanceof Error
           ? error.message
           : "Erro ao gerar PIX",
+    });
+  }
+}
+
+export async function createBoletoPaymentController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const payment = await createBoletoPaymentService({
+      order_id: Number(req.body.order_id),
+    });
+    return res.json(payment);
+  } catch (error) {
+    console.log(JSON.stringify(error, null, 2));
+    return res.status(400).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao gerar boleto",
     });
   }
 }

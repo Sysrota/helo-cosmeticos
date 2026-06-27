@@ -296,6 +296,9 @@ model Order {
   pix_code String?
   pix_qrcode String?
 
+  boleto_url     String?
+  boleto_barcode String?
+
   mercado_pago_payment_id String?
 
   pending_email_sent_at DateTime?

@@ -26,6 +26,7 @@ import {
 } from "react-router-dom";
 import { OrderCreditCardCard } from "../components/orders/OrderCreditCardCard";
 import { OrderPixCard } from "../components/orders/OrderPixCard";
+import { OrderBoletoCard } from "../components/orders/OrderBoletoCard";
 import UpsellProducts from "../components/UpsellProducts";
 import ProductImagePreview from "../components/ProductImagePreview";
 import { useCart } from "../context/CartContext";
@@ -221,6 +222,8 @@ export default function PublicCheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
+  const [boletoData, setBoletoData] = useState(null);
+  const [loadingBoleto, setLoadingBoleto] = useState(false);
   const [directPurchaseCart, setDirectPurchaseCart] = useState(() =>
     directPurchaseItem
       ? mergeCartItems([directPurchaseItem, ...cart])
@@ -285,22 +288,28 @@ export default function PublicCheckoutPage() {
               : 1
         );
         setSelectedPaymentMethod(
-          data.payment_method ===
-            "credit_card"
+          data.payment_method === "credit_card"
             ? "credit_card"
-            : "pix"
+            : data.payment_method === "boleto"
+              ? "boleto"
+              : "pix"
         );
         setPixData(
           data.pix_code
             ? {
-              qr_code:
-                data.pix_code,
-              qr_code_base64:
-                data.pix_qrcode,
-              amount:
-                data.total,
-              discount:
-                data.discount,
+              qr_code: data.pix_code,
+              qr_code_base64: data.pix_qrcode,
+              amount: data.total,
+              discount: data.discount,
+            }
+            : null
+        );
+        setBoletoData(
+          data.boleto_url || data.boleto_barcode
+            ? {
+              boleto_url: data.boleto_url,
+              boleto_barcode: data.boleto_barcode,
+              amount: data.total,
             }
             : null
         );
@@ -938,6 +947,33 @@ export default function PublicCheckoutPage() {
     }
   }
 
+  async function generateBoleto() {
+    try {
+      setLoadingBoleto(true);
+      setNotice("");
+      const { data } = await api.post("/payment/boleto", {
+        order_id: order.id,
+      });
+      setBoletoData(data);
+      trackCheckoutEvent(
+        "AddPaymentInfo",
+        {
+          value: Number(data.amount || paymentTotal || 0),
+          order_id: String(order.id),
+          payment_method: "boleto",
+        },
+        `add_payment_info_${order.id}_boleto`
+      );
+    } catch (error) {
+      setNotice(
+        error?.response?.data?.error ||
+          "Não foi possível gerar o boleto. Verifique seus dados e tente novamente."
+      );
+    } finally {
+      setLoadingBoleto(false);
+    }
+  }
+
   function previousStep() {
     setNotice("");
     setErrors({});
@@ -1311,7 +1347,7 @@ export default function PublicCheckoutPage() {
                   )}
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-6 grid grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod("pix")}
@@ -1338,6 +1374,22 @@ export default function PublicCheckoutPage() {
                     <p className="text-sm font-semibold">Cartão</p>
                     <p className="mt-1 text-xs text-zinc-500">{cardLabel}</p>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod("boleto")}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      selectedPaymentMethod === "boleto"
+                        ? "border-[#d85c7a] bg-[#fff5f7]"
+                        : "border-[#eee2e6]"
+                    }`}
+                  >
+                    <svg className="mb-3 text-[#d85c7a]" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="5" width="20" height="14" rx="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                    </svg>
+                    <p className="text-sm font-semibold">Boleto</p>
+                    <p className="mt-1 text-xs text-zinc-500">Vence em 3 dias úteis</p>
+                  </button>
                 </div>
 
                 <div className="mt-6">
@@ -1357,9 +1409,16 @@ export default function PublicCheckoutPage() {
                       order={order}
                       maxInstallments={maxInstallments}
                       initialCustomer={customer}
-                      onPaymentApproved={
-                        trackPurchase
-                      }
+                      onPaymentApproved={trackPurchase}
+                    />
+                  )}
+                  {selectedPaymentMethod === "boleto" && (
+                    <OrderBoletoCard
+                      generateBoleto={generateBoleto}
+                      loadingBoleto={loadingBoleto}
+                      boletoData={boletoData}
+                      order={order}
+                      total={paymentTotal}
                     />
                   )}
                 </div>
