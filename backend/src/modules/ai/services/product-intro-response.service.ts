@@ -20,6 +20,15 @@ function productDisplayName(
     .trim();
 }
 
+function itemDisplayName(
+  item: string
+) {
+  return item
+    .replace(/\bPrimeSkin\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function firstExpectedFeelings(
   expectedExperience: string
 ) {
@@ -66,6 +75,39 @@ function introFromSubtitle(
     .replace(/\.$/, "");
 }
 
+function stepsFromText(
+  value: string
+) {
+  const normalized =
+    normalizeText(value);
+  const steps: string[] = [];
+
+  if (
+    normalized.includes("limpar") ||
+    normalized.includes("limpeza")
+  ) {
+    steps.push("limpeza");
+  }
+
+  if (
+    normalized.includes("renovar") ||
+    normalized.includes("renovacao") ||
+    normalized.includes("esfoliante")
+  ) {
+    steps.push("renovação");
+  }
+
+  if (
+    normalized.includes("hidratar") ||
+    normalized.includes("hidratacao") ||
+    normalized.includes("hidratante")
+  ) {
+    steps.push("hidratação");
+  }
+
+  return steps;
+}
+
 function summarizeSkinFeeling(
   feelings: string[]
 ) {
@@ -99,6 +141,47 @@ function summarizeSkinFeeling(
   }
 
   return `sensação de pele ${selected.join(", ").replace(/, ([^,]*)$/, " e $1")}`;
+}
+
+function buildProductPresentation(
+  product: {
+    title: string;
+    subtitle: string;
+    description: string;
+    expected_experience: string;
+    is_kit: boolean;
+    kit_items: string[];
+  },
+  displayName: string,
+  intro: string,
+  feelingSummary: string
+) {
+  if (product.is_kit) {
+    const steps =
+      stepsFromText(
+        [
+          product.subtitle,
+          product.description,
+          product.kit_items.join(" "),
+        ].join(" ")
+      );
+    const stepText =
+      steps.length
+        ? `: ${joinNaturalList(steps)}`
+        : "";
+    const countText =
+      product.kit_items.length
+        ? `${product.kit_items.length} passos`
+        : "passos";
+    const itemText =
+      product.kit_items.length
+        ? `${joinNaturalList(product.kit_items)} para uma rotina completa de skincare`
+        : `os ${countText} de uma rotina completa de skincare`;
+
+    return `O ${displayName} reúne ${itemText}${stepText}, proporcionando ${feelingSummary}.`;
+  }
+
+  return `O ${displayName} oferece ${intro.toLowerCase()}, proporcionando ${feelingSummary}.`;
 }
 
 function isSkinCareContext(
@@ -138,7 +221,7 @@ function buildNeedOptions(
     isSkinCareContext(product)
   ) {
     return [
-      "Me conta uma coisa 😊",
+      "Para eu indicar a melhor rotina para você 😊",
       "O que você mais gostaria de melhorar na sua pele hoje?",
       "• Oleosidade",
       "• Ressecamento",
@@ -149,7 +232,7 @@ function buildNeedOptions(
   }
 
   return [
-    "Me conta uma coisa 😊",
+    "Para eu te indicar o cuidado mais adequado 😊",
     "O que você mais gostaria de melhorar hoje?",
     "• Hidratação",
     "• Brilho",
@@ -231,26 +314,35 @@ export async function buildProductIntroResponse({
   const kitItemsText =
     context.kit_items.length
       ? joinNaturalList(
-          context.kit_items
+          context.kit_items.map(
+            itemDisplayName
+          )
         )
       : "";
-  const subject =
-    context.is_kit
-      ? "Esse kit"
-      : "Esse produto";
+  const displayContext = {
+    ...context,
+    kit_items:
+      context.kit_items.map(
+        itemDisplayName
+      ),
+  };
 
   const lines = [
     `Olá! 😊 Que bom que você veio conhecer o ${displayName}.`,
-    `${subject} foi desenvolvido para quem procura ${intro.toLowerCase()}.`,
+    buildProductPresentation(
+      displayContext,
+      displayName,
+      intro,
+      feelingSummary
+    ),
   ];
 
   if (
     context.is_kit &&
-    kitItemsText
+    kitItemsText &&
+    !lines[1].includes(kitItemsText)
   ) {
-    lines.push(
-      `Ele reúne ${kitItemsText} para proporcionar ${feelingSummary}.`
-    );
+    lines[1] += ` Ele contém ${kitItemsText}.`;
   }
 
   lines.push(

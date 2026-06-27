@@ -35,6 +35,9 @@ import {
 import {
   buildSiteEntryResponse,
 } from "../services/site-entry-response.service.js";
+import {
+  buildProductNeedResponse,
+} from "../services/product-need-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -143,6 +146,37 @@ export const aiWorker =
 
             content:
               `Claro! Aqui está o link do ${requestedProductLink.productTitle}:\n\n${requestedProductLink.productUrl}`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const productNeedResponse =
+          lastClientMessage?.content
+            ? await buildProductNeedResponse({
+                message:
+                  lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (productNeedResponse) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              productNeedResponse,
 
             type:
               "text",

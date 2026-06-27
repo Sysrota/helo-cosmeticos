@@ -173,6 +173,8 @@ REGRAS:
 - Não use expressões de suposição ou venda fraca como "costuma agradar", "geralmente", "normalmente", "pode ajudar" ou "pode conter".
 - Prefira linguagem objetiva com base nos campos reais: "foi desenvolvido para", "reúne", "oferece", "proporciona" e "ajuda a".
 - Ao fazer diagnóstico, prefira opções curtas para a cliente escolher.
+- Depois que a cliente informar uma necessidade, recomende o produto para aquela necessidade antes de apresentar preço, frete ou pedido.
+- Não responda necessidades diferentes com o mesmo texto.
 `,
     });
   }
