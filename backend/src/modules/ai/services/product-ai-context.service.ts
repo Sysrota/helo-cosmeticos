@@ -115,6 +115,91 @@ function splitInlineItems(
     : [clean];
 }
 
+function pushUniqueItems(
+  target: string[],
+  values: string[]
+) {
+  for (const value of values) {
+    const item =
+      cleanKitItem(value);
+
+    if (
+      item &&
+      !target.includes(item)
+    ) {
+      target.push(item);
+    }
+  }
+}
+
+function extractItemsAfterMarker(
+  text: string,
+  marker: RegExp
+) {
+  const match =
+    text.match(marker);
+
+  if (!match || match.index === undefined) {
+    return [];
+  }
+
+  const afterMarker =
+    text.slice(
+      match.index + match[0].length
+    );
+
+  const items: string[] = [];
+
+  for (const rawLine of afterMarker.split(/\r?\n/)) {
+    const line =
+      cleanKitItem(rawLine);
+
+    if (!line) {
+      if (items.length) {
+        break;
+      }
+
+      continue;
+    }
+
+    if (
+      items.length &&
+      isStopLine(line)
+    ) {
+      break;
+    }
+
+    pushUniqueItems(
+      items,
+      splitInlineItems(line)
+    );
+  }
+
+  return items;
+}
+
+function extractInlineComposition(
+  text: string
+) {
+  const match =
+    text.match(
+      /(?:compost[oa]\s+por|(?:kit\s+[\wÀ-ÿ\s-]*?\s+)?com)\s+(.+?)(?:\.\s|,\s+(?:o|a)\s+kit\b|\n|$)/i
+    );
+
+  if (!match?.[1]) {
+    return [];
+  }
+
+  const inlineText =
+    match[1]
+      .replace(/\s+e\s+/gi, ", ")
+      .trim();
+
+  return splitInlineItems(
+    inlineText
+  );
+}
+
 export function isKitProduct(
   product: ProductForAiContext
 ) {
@@ -141,61 +226,31 @@ export function extractKitItems(
   }
 
   const candidates = [
+    product.meta_description,
     product.description,
     product.destaques,
-    product.meta_description,
     product.subtitle,
   ].map(cleanText)
     .filter(Boolean);
 
   for (const text of candidates) {
-    const marker =
-      text.match(
+    const items =
+      extractItemsAfterMarker(
+        text,
         /(?:itens\s+do\s+kit|composi[cç][aã]o(?:\s+do\s+kit)?|(?:o\s+)?kit\s+cont[eé]m|cont[eé]m|inclui|acompanha)\s*:/i
       );
 
-    if (!marker || marker.index === undefined) {
-      continue;
-    }
-
-    const afterMarker =
-      text.slice(
-        marker.index + marker[0].length
-      );
-
-    const items: string[] = [];
-
-    for (const rawLine of afterMarker.split(/\r?\n/)) {
-      const line =
-        cleanKitItem(rawLine);
-
-      if (!line) {
-        if (items.length) {
-          break;
-        }
-
-        continue;
-      }
-
-      if (
-        items.length &&
-        isStopLine(line)
-      ) {
-        break;
-      }
-
-      for (const item of splitInlineItems(line)) {
-        if (
-          item &&
-          !items.includes(item)
-        ) {
-          items.push(item);
-        }
-      }
-    }
-
     if (items.length) {
       return items.slice(0, 10);
+    }
+
+    const inlineItems =
+      extractInlineComposition(
+        text
+      );
+
+    if (inlineItems.length > 1) {
+      return inlineItems.slice(0, 10);
     }
   }
 

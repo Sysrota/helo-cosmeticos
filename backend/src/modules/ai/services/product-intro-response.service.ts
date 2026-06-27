@@ -25,9 +25,29 @@ function firstExpectedFeelings(
 ) {
   return expectedExperience
     .split(/\r?\n/)
-    .map((item) => item.trim())
+    .map((item) =>
+      item
+        .trim()
+        .replace(/[.;:,]+$/, "")
+    )
     .filter(Boolean)
     .slice(0, 3);
+}
+
+function joinNaturalList(
+  values: string[]
+) {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} e ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")} e ${
+    values[values.length - 1]
+  }`;
 }
 
 function introFromSubtitle(
@@ -137,7 +157,7 @@ export async function buildProductIntroResponse({
   if (feelings.length) {
     lines.push(
       "",
-      `Ele é ideal para quem busca ${feelings.join(", ").toLowerCase()}.`
+      `Ele é ideal para quem busca ${joinNaturalList(feelings).toLowerCase()}.`
     );
   }
 
