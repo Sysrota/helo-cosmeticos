@@ -3,6 +3,7 @@ import { createElement, useEffect, useMemo, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import ProductsFilter from "../components/ProductsFilter";
 import { useCommercialPolicy } from "../context/useCommercialPolicy";
+import { saveWhatsAppCategoryContext } from "../utils/whatsappContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -121,6 +122,10 @@ export default function Produtos() {
 
     return result;
   }, [filters, products]);
+
+  useEffect(() => {
+    saveWhatsAppCategoryContext(filters.category);
+  }, [filters.category]);
 
   return (
     <div className="min-h-screen bg-[#fff8fa] pb-20">

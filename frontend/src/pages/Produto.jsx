@@ -39,6 +39,7 @@ import {
   trackMetaEvent,
 } from "../services/metaPixel";
 import { trackClarityEvent } from "../services/clarity";
+import { saveWhatsAppProductContext } from "../utils/whatsappContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -203,6 +204,11 @@ export default function Produto() {
       },
       { eventId: `view_content_${product.id}` }
     );
+  }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+    saveWhatsAppProductContext(product);
   }, [product]);
 
   const mainImage = selected || cover;

@@ -32,6 +32,9 @@ import {
 import {
   buildProductIntroResponse,
 } from "../services/product-intro-response.service.js";
+import {
+  buildSiteEntryResponse,
+} from "../services/site-entry-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -171,6 +174,37 @@ export const aiWorker =
 
             content:
               `O ${requestedProductPrice.productTitle} custa ${requestedProductPrice.formattedPrice}.\n\nQuer que eu adicione ao seu carrinho?`,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const siteEntryResponse =
+          lastClientMessage?.content
+            ? await buildSiteEntryResponse({
+                message:
+                  lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (siteEntryResponse) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              siteEntryResponse,
 
             type:
               "text",

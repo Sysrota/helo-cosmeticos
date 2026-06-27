@@ -1,7 +1,33 @@
-import { Link } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { buildWhatsAppUrl } from "../constants/store";
+import { useEffect, useState } from "react";
+import { useCart } from "../context/CartContext";
+import {
+  buildSiteWhatsAppMessage,
+  subscribeWhatsAppContextEvent,
+} from "../utils/whatsappContext";
 
 export default function Footer() {
+  const location = useLocation();
+  const { cart } = useCart();
+  const [, setContextVersion] = useState(0);
+
+  useEffect(
+    () =>
+      subscribeWhatsAppContextEvent(() =>
+        setContextVersion((version) => version + 1)
+      ),
+    []
+  );
+
+  const whatsappMessage = buildSiteWhatsAppMessage({
+    pathname: location.pathname,
+    cart,
+  });
+
   return (
     <footer
       className="
@@ -148,9 +174,7 @@ export default function Footer() {
             "
           >
             <a
-              href={buildWhatsAppUrl(
-                "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento."
-              )}
+              href={buildWhatsAppUrl(whatsappMessage)}
               target="_blank"
               rel="noreferrer"
               className="

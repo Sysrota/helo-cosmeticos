@@ -1,12 +1,34 @@
 import { buildWhatsAppUrl } from "../constants/store";
 import { trackClarityEvent } from "../services/clarity";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import {
+  buildSiteWhatsAppMessage,
+  subscribeWhatsAppContextEvent,
+} from "../utils/whatsappContext";
 
 export default function FloatingWhatsApp() {
+  const location = useLocation();
+  const { cart } = useCart();
+  const [, setContextVersion] = useState(0);
+
+  useEffect(
+    () =>
+      subscribeWhatsAppContextEvent(() =>
+        setContextVersion((version) => version + 1)
+      ),
+    []
+  );
+
+  const message = buildSiteWhatsAppMessage({
+    pathname: location.pathname,
+    cart,
+  });
+
   return (
     <a
-      href={buildWhatsAppUrl(
-        "Olá! Vim pelo site da Helô Cosméticos e gostaria de atendimento."
-      )}
+      href={buildWhatsAppUrl(message)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a Helô pelo WhatsApp"
