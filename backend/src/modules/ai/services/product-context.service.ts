@@ -62,6 +62,10 @@ const ignoredWords = [
   "produtos",
 ];
 
+interface GetProductsContextOptions {
+  fallbackProductId?: number | null;
+}
+
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
@@ -70,7 +74,8 @@ function normalizeText(value: string) {
 }
 
 export async function getProductsContext(
-  message: string
+  message: string,
+  options: GetProductsContextOptions = {}
 ) {
 
   const search =
@@ -92,7 +97,10 @@ export async function getProductsContext(
           )
       );
 
-  if (!words.length) {
+  if (
+    !words.length &&
+    !options.fallbackProductId
+  ) {
     return null;
   }
 
@@ -108,6 +116,22 @@ export async function getProductsContext(
 
       take: 50,
     });
+
+  const fallbackProduct =
+    options.fallbackProductId
+      ? products.find(
+          (product) =>
+            product.id ===
+            options.fallbackProductId
+        ) || null
+      : null;
+
+  if (
+    !words.length &&
+    !fallbackProduct
+  ) {
+    return null;
+  }
 
   // SCORE PRODUTOS
   const scoredProducts =
@@ -210,6 +234,21 @@ ${product.destaques}
           item.product
       );
 
+  const hasCurrentProductNameMatch =
+    strongTitleMatches.length > 0 ||
+    rankedProducts.some(
+      (item) =>
+        words.some((word) =>
+          normalizeText(
+            item.product.title
+          ).includes(word)
+        )
+    );
+
+  const shouldUseFallbackAsPrimary =
+    Boolean(fallbackProduct) &&
+    (!words.length || !hasCurrentProductNameMatch);
+
   // KITS RELACIONADOS
   const relatedKits =
     products.filter((product) => {
@@ -254,6 +293,9 @@ ${product.keywords}
   // REMOVE DUPLICADOS
   const finalProducts =
     [
+      ...(shouldUseFallbackAsPrimary && fallbackProduct
+        ? [fallbackProduct]
+        : []),
       ...matchedProducts,
       ...relatedKits,
     ]
@@ -298,6 +340,10 @@ ${product.keywords}
     {
       mensagem:
         message,
+      usou_produto_salvo:
+        shouldUseFallbackAsPrimary,
+      produto_salvo_id:
+        fallbackProduct?.id || null,
       palavras_consideradas:
         words,
       produtos:

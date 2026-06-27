@@ -62,7 +62,43 @@ function introFromSubtitle(
 
   return clean
     .replace(/^a rotina completa/i, "uma rotina completa")
+    .replace(/\s+com praticidade.*$/i, "")
     .replace(/\.$/, "");
+}
+
+function summarizeSkinFeeling(
+  feelings: string[]
+) {
+  const text =
+    normalizeText(
+      feelings.join(" ")
+    );
+
+  const selected: string[] = [];
+
+  if (text.includes("limpa")) {
+    selected.push("limpa");
+  }
+
+  if (
+    text.includes("frescor") ||
+    text.includes("fresca")
+  ) {
+    selected.push("fresca");
+  }
+
+  if (
+    text.includes("macia") ||
+    text.includes("suave")
+  ) {
+    selected.push("macia");
+  }
+
+  if (!selected.length) {
+    return "uma sensação gostosa de cuidado no dia a dia";
+  }
+
+  return `sensação de pele ${selected.join(", ").replace(/, ([^,]*)$/, " e $1")}`;
 }
 
 function isProductIntroRequest(
@@ -130,40 +166,37 @@ export async function buildProductIntroResponse({
     firstExpectedFeelings(
       context.expected_experience
     );
+  const feelingSummary =
+    summarizeSkinFeeling(
+      feelings
+    );
+  const kitItemsText =
+    context.kit_items.length
+      ? joinNaturalList(
+          context.kit_items
+        )
+      : "";
+  const subject =
+    context.is_kit
+      ? "Esse kit"
+      : "Esse produto";
 
   const lines = [
     `Olá! 😊 Que bom que você veio conhecer o ${displayName}.`,
-    "",
-    `Ele é ${intro}.`,
+    `${subject} costuma agradar bastante quem procura ${intro.toLowerCase()}.`,
   ];
 
-  if (context.is_kit) {
-    if (!context.kit_items.length) {
-      lines.push(
-        "",
-        "Vou verificar a composição exata desse kit para você."
-      );
-    } else {
-      lines.push(
-        "",
-        "O kit contém:",
-        ...context.kit_items.map((item) =>
-          `• ${item}`
-        )
-      );
-    }
-  }
-
-  if (feelings.length) {
+  if (
+    context.is_kit &&
+    kitItemsText
+  ) {
     lines.push(
-      "",
-      `Ele é ideal para quem busca ${joinNaturalList(feelings).toLowerCase()}.`
+      `Ele reúne ${kitItemsText}, deixando ${feelingSummary}.`
     );
   }
 
   lines.push(
-    "",
-    "Antes de eu te passar o valor e as opções de entrega, me conta uma coisa: você já tem uma rotina de skincare ou está começando agora?"
+    "Me conta: o que mais te incomoda na sua pele hoje?"
   );
 
   return lines.join("\n");

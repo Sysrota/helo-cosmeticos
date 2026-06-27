@@ -25,6 +25,18 @@ interface ChatMessage {
 export async function buildContext(
   conversationId: number
 ): Promise<ChatMessage[]> {
+  const conversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id:
+          conversationId,
+      },
+
+      select: {
+        last_product_id:
+          true,
+      },
+    });
 
   const dbMessages =
     await prisma.message.findMany({
@@ -94,7 +106,13 @@ export async function buildContext(
   // PRODUTOS
   const productsContext =
     await getProductsContext(
-      lastUserMessage.content
+      lastUserMessage.content,
+      {
+        fallbackProductId:
+          isGreeting
+            ? null
+            : conversation?.last_product_id,
+      }
     );
 
   // INFORMAÇÕES EMPRESA
