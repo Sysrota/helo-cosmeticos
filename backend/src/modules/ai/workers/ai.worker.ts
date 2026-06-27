@@ -182,6 +182,10 @@ export const aiWorker =
             conversationId
           );
 
+        console.log("\n========== [WORKER] CONTEXTO RETORNADO POR buildContext ==========\n");
+        console.log(JSON.stringify(messages, null, 2));
+        console.log("\n===================================================================\n");
+
         const response =
           await executeAiAgent({
 
