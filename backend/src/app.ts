@@ -4,6 +4,8 @@ import cors from "cors";
 
 import path from "path";
 
+import { fileURLToPath } from "url";
+
 import { productsRoutes } from "./modules/products/products.routes.js";
 
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -23,6 +25,15 @@ import { aiRoutes } from "./modules/ai/ai.routes.js";
 import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
 
 
+const __dirname =
+  path.dirname(
+    fileURLToPath(import.meta.url)
+  );
+
+// Sempre backend/uploads/, independente do CWD do processo
+const UPLOADS_DIR =
+  path.join(__dirname, "../uploads");
+
 const app = express();
 
 app.use(cors());
@@ -31,9 +42,7 @@ app.use(express.json());
 
 app.use(
   "/uploads",
-  express.static(
-    path.resolve("uploads")
-  )
+  express.static(UPLOADS_DIR)
 );
 
 app.get("/health", (_req, res) => {
@@ -77,9 +86,7 @@ contactRoutes.put("/:id",updateContactController);
 
 app.use(
   "/uploads",
-  express.static(
-    path.resolve("uploads")
-  )
+  express.static(UPLOADS_DIR)
 );
 
 app.use(errorHandler);

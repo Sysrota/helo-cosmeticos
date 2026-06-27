@@ -4,8 +4,16 @@ import path from "path";
 
 import fs from "fs";
 
+import { fileURLToPath } from "url";
+
+const __dirname =
+  path.dirname(
+    fileURLToPath(import.meta.url)
+  );
+
+// Sempre backend/uploads/, independente do CWD do processo
 const uploadPath =
-  path.resolve("uploads");
+  path.join(__dirname, "../../uploads");
 
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, {
