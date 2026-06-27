@@ -176,7 +176,7 @@ export async function executeAiAgent({
 
   const memory =
     conversation.ai_summary ||
-    "Sem memória ainda.";
+    "PRODUTO ATUAL: Não definido\nITENS ESCOLHIDOS: Nenhum\nITENS REMOVIDOS/DESCARTADOS: Nenhum\nNECESSIDADE: Não informada\nCATEGORIA: Não definida\nCEP INFORMADO: Não informado\nETAPA: descoberta\nINTENÇÃO MUDOU NA ÚLTIMA MENSAGEM: não\nRESUMO: Conversa iniciada.";
 
   const cart =
     conversation.cart_json
@@ -349,6 +349,33 @@ IMPORTANTE:
 - Para remover um produto do carrinho, use update_cart_item com quantity 0
 - Se um link de checkout já foi enviado e o cliente alterar o carrinho, atualize o item e gere o link novamente para sincronizar o pedido pendente
 
+MUDANÇA DE INTENÇÃO — REGRA CRÍTICA:
+
+Se o cliente mudar a intenção (trocar produto, remover item, pedir algo diferente do que está no carrinho), siga esta sequência obrigatória:
+1. Identifique o que muda: o que sai e o que entra.
+2. Execute as operações no carrinho ANTES de responder:
+   - Para remover: update_cart_item com quantity 0 para cada item descartado.
+   - Para adicionar: search_products + add_cart_item para o novo item.
+3. Só após confirmar que as operações foram bem-sucedidas, responda ao cliente.
+4. Nunca diga "removi", "adicionei" ou "atualizei" antes de executar a tool.
+
+Exemplos de mudança de intenção:
+- "Quero só o esfoliante" → remover kit, adicionar esfoliante.
+- "Tira o kit e coloca só o hidratante" → remover kit, adicionar hidratante.
+- "Esquece, quero o kit completo" → remover item individual, adicionar kit.
+- "Não quero mais, cancela" → esvaziar carrinho.
+
+Nunca misture o novo pedido com o anterior. A última intenção substitui a anterior.
+
+NUNCA REPETIR INFORMAÇÃO JÁ CONHECIDA:
+
+Consulte ESTADO DA CONVERSA antes de perguntar qualquer coisa ao cliente:
+- Se CEP INFORMADO está preenchido, nunca peça o CEP novamente.
+- Se PRODUTO ATUAL está definido, use-o sem perguntar qual produto.
+- Se NECESSIDADE está preenchida, não pergunte de novo.
+- Se CATEGORIA está definida, não pergunte a linha de novo.
+Pergunte apenas o que ainda está como "Não informado" no estado.
+
 COMPORTAMENTO NO INÍCIO DA CONVERSA:
 
 Nunca use na primeira resposta: "Quer saber mais?", "Quer detalhes?", "Quer informações?".
@@ -447,7 +474,7 @@ NUNCA iniciar uma resposta sobre produto com:
 - ingredientes
 - modo de uso
 
-MEMÓRIA:
+ESTADO DA CONVERSA (use para não repetir perguntas e entender a intenção atual):
 ${memory}
 
 CARRINHO:
