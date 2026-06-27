@@ -4,14 +4,8 @@ import path from "path";
 
 import fs from "fs";
 
-import { fileURLToPath } from "url";
-
-const __dirname =
-  path.dirname(
-    fileURLToPath(import.meta.url)
-  );
-
 // Sempre backend/uploads/, independente do CWD do processo
+// __dirname em dist/config/multer.js → ../../uploads = backend/uploads/
 const uploadPath =
   path.join(__dirname, "../../uploads");
 

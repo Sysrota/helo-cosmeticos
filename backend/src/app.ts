@@ -4,8 +4,6 @@ import cors from "cors";
 
 import path from "path";
 
-import { fileURLToPath } from "url";
-
 import { productsRoutes } from "./modules/products/products.routes.js";
 
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -25,12 +23,8 @@ import { aiRoutes } from "./modules/ai/ai.routes.js";
 import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
 
 
-const __dirname =
-  path.dirname(
-    fileURLToPath(import.meta.url)
-  );
-
 // Sempre backend/uploads/, independente do CWD do processo
+// __dirname em dist/app.js → ../uploads = backend/uploads/
 const UPLOADS_DIR =
   path.join(__dirname, "../uploads");
 
