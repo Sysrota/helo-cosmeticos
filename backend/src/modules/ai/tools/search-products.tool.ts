@@ -173,6 +173,9 @@ ${product.o_que_vai_sentir}
         description:
           item.product.description,
 
+        highlights:
+          item.product.destaques,
+
         indications:
           item.product.keywords,
 

@@ -275,7 +275,7 @@ Quando apresentar um produto, use os campos retornados por search_products nesta
    Exemplo: "Quem usa costuma notar a sensação de pele limpa e muito mais macia logo após a rotina."
    Nunca liste todas; escolha as mais relevantes para o contexto.
 
-3. indications — use de forma natural quando fizer sentido comercial.
+3. highlights (destaques comerciais) e indications — use de forma natural quando fizer sentido.
    Exemplo: "Nesse kit você ainda recebe a nécessaire exclusiva e pode parcelar."
 
 4. description — somente após os itens acima, para quem pede mais detalhes.
@@ -319,6 +319,16 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
 
     ...messages,
   ];
+
+  // =====================
+  // LOG DIAGNÓSTICO
+  // =====================
+
+  console.log("\n========== [IA] PROMPT SISTEMA ==========\n");
+  console.log(systemPrompt);
+  console.log("\n========== [IA] CONTEXTO COMPLETO ENVIADO AO LLM ==========\n");
+  console.log(JSON.stringify(messagesHistory, null, 2));
+  console.log("\n=========================================\n");
 
   // =====================
   // LOOP

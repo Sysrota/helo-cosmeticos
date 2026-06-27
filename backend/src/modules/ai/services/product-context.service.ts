@@ -287,14 +287,17 @@ ${getProductUrl(product.id)}
 Descrição:
 ${product.description}
 
+Destaques comerciais:
+${product.destaques || "Não informado"}
+
 Dicas de uso:
-${product.dicas_uso}
+${product.dicas_uso || "Não informado"}
 
 Indicado para / necessidades relacionadas:
 ${product.keywords || "Não informado"}
 
 O que vai sentir:
-${product.o_que_vai_sentir}
+${product.o_que_vai_sentir || "Não informado"}
 
 -------------------
 `;
@@ -331,8 +334,17 @@ ${getProductUrl(product.id)}
 Descrição:
 ${product.description}
 
+Destaques comerciais:
+${product.destaques || "Não informado"}
+
+Dicas de uso:
+${product.dicas_uso || "Não informado"}
+
 Indicado para / necessidades relacionadas:
 ${product.keywords || "Não informado"}
+
+O que vai sentir:
+${product.o_que_vai_sentir || "Não informado"}
 
 -------------------
 `;
