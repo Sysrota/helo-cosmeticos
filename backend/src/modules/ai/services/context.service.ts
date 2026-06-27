@@ -170,7 +170,9 @@ REGRAS:
 - Para kits, liste somente os itens em "Produtos/itens do kit cadastrados".
 - Se "Produtos/itens do kit cadastrados" estiver como "Não informado no banco", não tente deduzir a composição pelo nome, categoria, tags ou descrição.
 - Nunca use exemplos genéricos para composição de kit.
-- Não use expressões de suposição como "geralmente inclui", "normalmente vem" ou "pode conter".
+- Não use expressões de suposição ou venda fraca como "costuma agradar", "geralmente", "normalmente", "pode ajudar" ou "pode conter".
+- Prefira linguagem objetiva com base nos campos reais: "foi desenvolvido para", "reúne", "oferece", "proporciona" e "ajuda a".
+- Ao fazer diagnóstico, prefira opções curtas para a cliente escolher.
 `,
     });
   }

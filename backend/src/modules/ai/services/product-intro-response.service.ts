@@ -101,6 +101,64 @@ function summarizeSkinFeeling(
   return `sensação de pele ${selected.join(", ").replace(/, ([^,]*)$/, " e $1")}`;
 }
 
+function isSkinCareContext(
+  product: {
+    title: string;
+    category: string;
+    subtitle: string;
+    description: string;
+  }
+) {
+  const text =
+    normalizeText(
+      [
+        product.title,
+        product.category,
+        product.subtitle,
+        product.description,
+      ].join(" ")
+    );
+
+  return (
+    text.includes("skincare") ||
+    text.includes("facial") ||
+    text.includes("pele")
+  );
+}
+
+function buildNeedOptions(
+  product: {
+    title: string;
+    category: string;
+    subtitle: string;
+    description: string;
+  }
+) {
+  if (
+    isSkinCareContext(product)
+  ) {
+    return [
+      "Me conta uma coisa 😊",
+      "O que você mais gostaria de melhorar na sua pele hoje?",
+      "• Oleosidade",
+      "• Ressecamento",
+      "• Pele sem brilho",
+      "• Quero começar uma rotina",
+      "• Outro",
+    ];
+  }
+
+  return [
+    "Me conta uma coisa 😊",
+    "O que você mais gostaria de melhorar hoje?",
+    "• Hidratação",
+    "• Brilho",
+    "• Maciez",
+    "• Reparação",
+    "• Outro",
+  ];
+}
+
 function isProductIntroRequest(
   message: string
 ) {
@@ -183,7 +241,7 @@ export async function buildProductIntroResponse({
 
   const lines = [
     `Olá! 😊 Que bom que você veio conhecer o ${displayName}.`,
-    `${subject} costuma agradar bastante quem procura ${intro.toLowerCase()}.`,
+    `${subject} foi desenvolvido para quem procura ${intro.toLowerCase()}.`,
   ];
 
   if (
@@ -191,12 +249,13 @@ export async function buildProductIntroResponse({
     kitItemsText
   ) {
     lines.push(
-      `Ele reúne ${kitItemsText}, deixando ${feelingSummary}.`
+      `Ele reúne ${kitItemsText} para proporcionar ${feelingSummary}.`
     );
   }
 
   lines.push(
-    "Me conta: o que mais te incomoda na sua pele hoje?"
+    "",
+    ...buildNeedOptions(context)
   );
 
   return lines.join("\n");
