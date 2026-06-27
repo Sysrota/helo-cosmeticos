@@ -72,10 +72,10 @@ export async function melhorEnvioCallbackController(
         }
       );
 
-    // console.log(
-    //   "TOKEN:",
-    //   response.data
-    // );
+    console.log(
+      "TOKEN:",
+      response.data
+    );
 
     return res.send(
       "Melhor Envio conectado com sucesso"
