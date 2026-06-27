@@ -2,11 +2,13 @@ import { prisma }
   from "../../../config/prisma.js";
 
 import {
-  getPrimaryProductImage,
-} from "./product-image.service.js";
+  buildProductAiContext,
+  formatProductForPrompt,
+  isKitProduct,
+} from "./product-ai-context.service.js";
 import {
-  getProductUrl,
-} from "./public-url.service.js";
+  debugAiLog,
+} from "./debug-log.service.js";
 
 const ignoredWords = [
   "oi",
@@ -21,6 +23,23 @@ const ignoredWords = [
   "quero",
   "queria",
   "tem",
+  "vim",
+  "veio",
+  "vindo",
+  "pelo",
+  "pela",
+  "anuncio",
+  "anúncio",
+  "saber",
+  "sobre",
+  "esse",
+  "essa",
+  "este",
+  "esta",
+  "desse",
+  "dessa",
+  "deste",
+  "desta",
   "qual",
   "quanto",
   "custa",
@@ -39,6 +58,8 @@ const ignoredWords = [
   "com",
   "mais",
   "menos",
+  "produto",
+  "produtos",
 ];
 
 function normalizeText(value: string) {
@@ -77,10 +98,6 @@ export async function getProductsContext(
 
   const products =
     await prisma.product.findMany({
-      where: {
-        is_active: true,
-      },
-
       include: {
         images: {
           orderBy: {
@@ -99,11 +116,13 @@ export async function getProductsContext(
       const text = `
 ${product.title}
 ${product.subtitle}
+${product.meta_description}
 ${product.category}
 ${product.description}
 ${product.keywords}
 ${product.dicas_uso}
 ${product.o_que_vai_sentir}
+${product.destaques}
 `
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -160,7 +179,7 @@ ${product.o_que_vai_sentir}
     });
 
   // PRODUTOS RELEVANTES
-  const matchedProducts =
+  const rankedProducts =
     scoredProducts
       .filter(
         (item) =>
@@ -169,7 +188,23 @@ ${product.o_que_vai_sentir}
       .sort(
         (a, b) =>
           b.score - a.score
-      )
+      );
+
+  const strongTitleMatches =
+    words.length > 1
+      ? rankedProducts.filter((item) =>
+          words.every((word) =>
+            normalizeText(
+              item.product.title
+            ).includes(word)
+          )
+        )
+      : [];
+
+  const matchedProducts =
+    (strongTitleMatches.length
+      ? strongTitleMatches
+      : rankedProducts)
       .map(
         (item) =>
           item.product
@@ -180,9 +215,9 @@ ${product.o_que_vai_sentir}
     products.filter((product) => {
 
       const isKit =
-        product.category
-          .toLowerCase()
-          .includes("kit");
+        isKitProduct(
+          product
+        );
 
       if (!isKit) {
         return false;
@@ -236,24 +271,68 @@ ${product.keywords}
     return null;
   }
 
+  const primaryProduct =
+    finalProducts[0];
+  const secondaryProducts =
+    finalProducts.slice(1);
+
   // SEPARA KITS
   const individualProducts =
-    finalProducts.filter(
+    secondaryProducts.filter(
       (product) =>
-        !product.category
-          .toLowerCase()
-          .includes("kit")
+        !isKitProduct(
+          product
+        )
     );
 
   const kits =
-    finalProducts.filter(
+    secondaryProducts.filter(
       (product) =>
-        product.category
-          .toLowerCase()
-          .includes("kit")
+        isKitProduct(
+          product
+        )
     );
 
+  debugAiLog(
+    "Produto detectado",
+    {
+      mensagem:
+        message,
+      palavras_consideradas:
+        words,
+      produtos:
+        finalProducts.map((product) => ({
+          id:
+            product.id,
+          titulo:
+            product.title,
+          categoria:
+            product.category,
+          ativo:
+            product.is_active,
+          kit:
+            isKitProduct(product),
+        })),
+    }
+  );
+
+  debugAiLog(
+    "Produto retornado do banco",
+    finalProducts[0]
+      ? buildProductAiContext(
+          finalProducts[0]
+        )
+      : null
+  );
+
   let context = "";
+
+  context += `
+PRODUTO MAIS RELEVANTE:
+
+${formatProductForPrompt(primaryProduct)}
+-------------------
+`;
 
   // INDIVIDUAIS
   if (
@@ -267,38 +346,7 @@ PRODUTOS INDIVIDUAIS:
     for (const product of individualProducts) {
 
       context += `
-ID do produto: ${product.id}
-
-Produto: ${product.title}
-
-Subtítulo:
-${product.subtitle || "Não informado"}
-
-Preço: R$ ${product.price}
-
-Categoria: ${product.category}
-
-Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
-${getPrimaryProductImage(product) || "Nao informada"}
-
-Link oficial do produto:
-${getProductUrl(product.id)}
-
-Descrição:
-${product.description}
-
-Destaques comerciais:
-${product.destaques || "Não informado"}
-
-Dicas de uso:
-${product.dicas_uso || "Não informado"}
-
-Indicado para / necessidades relacionadas:
-${product.keywords || "Não informado"}
-
-O que vai sentir:
-${product.o_que_vai_sentir || "Não informado"}
-
+${formatProductForPrompt(product)}
 -------------------
 `;
     }
@@ -314,42 +362,16 @@ KITS RELACIONADOS:
     for (const product of kits) {
 
       context += `
-ID do produto: ${product.id}
-
-Produto: ${product.title}
-
-Subtítulo:
-${product.subtitle || "Não informado"}
-
-Preço: R$ ${product.price}
-
-Categoria: ${product.category}
-
-Foto cadastrada (uso interno; nunca envie esta URL como texto ao cliente):
-${getPrimaryProductImage(product) || "Nao informada"}
-
-Link oficial do produto:
-${getProductUrl(product.id)}
-
-Descrição:
-${product.description}
-
-Destaques comerciais:
-${product.destaques || "Não informado"}
-
-Dicas de uso:
-${product.dicas_uso || "Não informado"}
-
-Indicado para / necessidades relacionadas:
-${product.keywords || "Não informado"}
-
-O que vai sentir:
-${product.o_que_vai_sentir || "Não informado"}
-
+${formatProductForPrompt(product)}
 -------------------
 `;
     }
   }
+
+  debugAiLog(
+    "Campos enviados para o modelo",
+    context
+  );
 
   return context;
 }

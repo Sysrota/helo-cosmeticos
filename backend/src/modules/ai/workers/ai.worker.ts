@@ -26,6 +26,9 @@ import {
 import {
   findRequestedProductPrice,
 } from "../services/product-price.service.js";
+import {
+  debugAiLog,
+} from "../services/debug-log.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -182,9 +185,10 @@ export const aiWorker =
             conversationId
           );
 
-        console.log("\n========== [WORKER] CONTEXTO RETORNADO POR buildContext ==========\n");
-        console.log(JSON.stringify(messages, null, 2));
-        console.log("\n===================================================================\n");
+        debugAiLog(
+          "Contexto retornado por buildContext",
+          messages
+        );
 
         const response =
           await executeAiAgent({

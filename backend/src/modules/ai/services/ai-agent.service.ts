@@ -40,6 +40,9 @@ import {
 import {
   getProductsUrl,
 } from "./public-url.service.js";
+import {
+  debugAiLog,
+} from "./debug-log.service.js";
 
 const openai =
   new OpenAI({
@@ -54,6 +57,86 @@ interface Props {
 
   messages:
     any[];
+}
+
+function normalizeText(
+  value: string
+) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function productFactsFromHistory(
+  messagesHistory: any[]
+) {
+  return messagesHistory
+    .filter((message) => {
+      if (message.role === "tool") {
+        return true;
+      }
+
+      return (
+        message.role === "system" &&
+        typeof message.content === "string" &&
+        message.content.includes(
+          "PRODUTOS ENCONTRADOS"
+        )
+      );
+    })
+    .map((message) =>
+      typeof message.content === "string"
+        ? message.content
+        : JSON.stringify(message.content)
+    )
+    .join("\n");
+}
+
+function guardProductResponse(
+  content: string,
+  messagesHistory: any[]
+) {
+  const cleaned =
+    sanitizeAiResponse(content);
+  const normalized =
+    normalizeText(cleaned);
+  const productFacts =
+    normalizeText(
+      productFactsFromHistory(
+        messagesHistory
+      )
+    );
+
+  const speculativeKitLanguage = [
+    "geralmente inclui",
+    "normalmente vem",
+    "pode conter",
+  ];
+
+  if (
+    speculativeKitLanguage.some((phrase) =>
+      normalized.includes(phrase)
+    )
+  ) {
+    return "Vou verificar essa informação para você.";
+  }
+
+  const restrictedTerms = [
+    "serum",
+    "protetor solar",
+  ];
+
+  if (
+    restrictedTerms.some((term) =>
+      normalized.includes(term) &&
+      !productFacts.includes(term)
+    )
+  ) {
+    return "Vou verificar essa informação para você.";
+  }
+
+  return cleaned;
 }
 
 export async function executeAiAgent({
@@ -157,13 +240,15 @@ export async function executeAiAgent({
   // =====================
 
   const systemPrompt = `
+Você é uma consultora comercial da Helô Cosméticos. Responda apenas com base nos dados fornecidos no contexto do produto. Nunca invente composição, ingredientes, benefícios, preço, promoções, estoque ou itens do kit. Se a informação não estiver no contexto, diga que irá verificar.
+
 Você é a Helô, consultora de beleza e skincare da Helo Cosméticos.
 
 OBJETIVO:
 - diagnosticar a necessidade da cliente antes de recomendar
 - vender conduzindo, não apenas respondendo
 - recomendar produtos com base no perfil de pele ou cabelo
-- montar kits
+- orientar kits somente quando os itens reais estiverem cadastrados
 - adicionar produtos no carrinho
 - calcular frete
 - enviar checkout
@@ -173,6 +258,8 @@ REGRAS:
 - Ao iniciar uma conversa verifique se já houve contato e continue apartir dali
 - Nunca invente produtos
 - Nunca invente preços
+- Nunca invente composição, ingredientes, benefícios, promoções, estoque, disponibilidade ou itens do kit.
+- Se a informação não existir no contexto do produto, diga apenas "Vou verificar essa informação para você." ou "Essa informação não está disponível aqui no momento."
 - Nunca misture preço de um produto com nome de outro; preço só pode ser informado junto do mesmo ID/produto retornado por PRODUTOS ENCONTRADOS ou search_products.
 - Nunca invente links
 - Quando o cliente perguntar o que a loja vende, responda pelas categorias e linhas do CATÁLOGO ATIVO recebido no contexto; não liste só pele se houver cabelo, e não cite categorias inexistentes.
@@ -189,6 +276,10 @@ REGRAS:
 - Nunca informe dados de pedido só pelo número do pedido.
 - Ao responder status de pedido, informe apenas status, pagamento, entrega/prazo, itens e total. Nunca informe endereço completo, CPF, e-mail completo ou telefone.
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
+- Para kits, liste somente kit_items ou "Produtos/itens do kit cadastrados"; se não houver itens cadastrados, não deduza pela categoria, tags, nome ou descrição.
+- Nunca use exemplos genéricos de composição de kit.
+- Nunca diga "geralmente inclui", "normalmente vem com" ou "pode conter".
+- Nunca acrescente sérum, protetor solar ou qualquer item que não esteja no contexto real do produto.
 - Sempre use as tools
 - OBRIGATÓRIO: antes de falar qualquer coisa sobre um produto específico, chame search_products. Nunca descreva, mencione benefícios ou características de um produto sem ter chamado search_products antes nessa mensagem.
 - Se o cliente mencionar um produto pelo nome, chame search_products imediatamente com esse nome antes de responder.
@@ -199,6 +290,8 @@ REGRAS:
 - Seja humana
 - Seja elegante
 - Seja especialista em cosméticos
+- Não responda como SAC
+- Não termine com "quer que eu envie informações?"
 
 IMPORTANTE:
 - O cliente paga no checkout
@@ -234,20 +327,26 @@ IMPORTANTE:
 
 COMPORTAMENTO NO INÍCIO DA CONVERSA:
 
-Nunca comece a resposta descrevendo o produto.
 Nunca use na primeira resposta: "Quer saber mais?", "Quer detalhes?", "Quer informações?".
-Nunca liste características técnicas ou ingredientes na primeira mensagem.
-O objetivo da primeira resposta é fazer o cliente continuar conversando, não informar.
+Nunca liste ingredientes na primeira mensagem.
+O objetivo da primeira resposta é responder ao interesse do cliente e conduzir para o próximo passo com uma pergunta.
 
 SE O CLIENTE MENCIONAR UM PRODUTO (veio de anúncio, citou o nome, perguntou sobre algo específico):
-1. Reconheça brevemente o produto pelo nome.
+1. Chame search_products imediatamente com o nome do produto antes de responder.
+2. Reconheça brevemente o produto pelo nome real retornado.
    Exemplo: "Que bom que você veio conhecer o PrimeSkin! 😊"
-2. Faça UMA única pergunta para entender o que o cliente procura.
-   Exemplos:
-   "O que chamou mais sua atenção nesse produto?"
-   "Posso entender rapidinho o que você procura para ver se ele faz sentido pra você?"
-3. Após a resposta, use search_products para buscar os dados reais do produto no banco e explique os benefícios de forma personalizada com base no que o cliente disse.
-4. A partir daí, siga exatamente o fluxo normal: tirar dúvidas, calcular frete, coletar endereço, gerar pedido, checkout e pagamento.
+3. Se o cliente pediu para saber mais, explique em poucas linhas usando subtitle, description e expected_experience reais.
+4. Se for kit e houver kit_items, liste somente esses itens. Se não houver kit_items, diga que irá verificar.
+5. Faça UMA única pergunta de diagnóstico ou avanço de compra.
+6. A partir daí, siga exatamente o fluxo normal: tirar dúvidas, calcular frete, coletar endereço, gerar pedido, checkout e pagamento.
+
+RESPOSTA ESPERADA PARA ANÚNCIO DO KIT:
+- Cumprimente e reconheça o produto.
+- Explique a rotina com dados reais cadastrados.
+- Liste somente os itens reais do kit retornados no contexto.
+- Use sensações reais cadastradas, como pele limpa, fresca, macia ou sensação de cuidado diário, se estiverem no contexto.
+- Não fale valor ou entrega antes de a cliente pedir.
+- Termine com uma pergunta por vez, por exemplo perguntando se a cliente já tem rotina de skincare ou está começando agora.
 
 SE O CLIENTE CHEGAR SÓ COM SAUDAÇÃO (sem mencionar produto):
 Responda de forma acolhedora e faça UMA pergunta para entender o que ele procura.
@@ -258,7 +357,7 @@ Exemplos:
 REGRAS:
 - Uma pergunta por vez; nunca combine duas na mesma mensagem.
 - Ouça primeiro, recomende depois.
-- A primeira resposta deve convidar ao diálogo, não descrever o produto.
+- A primeira resposta deve convidar ao diálogo e, quando houver produto do anúncio, usar os dados reais cadastrados.
 - Use apenas dados reais retornados por search_products; nunca invente benefícios ou características.
 
 LINGUAGEM SEGURA (obrigatório em qualquer resposta sobre produtos de pele):
@@ -279,18 +378,20 @@ Quando apresentar um produto, use os campos retornados por search_products nesta
    Exemplo: "Quem usa costuma notar a sensação de pele limpa e muito mais macia logo após a rotina."
    Nunca liste todas; escolha as mais relevantes para o contexto.
 
-3. highlights (destaques comerciais) e indications — use de forma natural quando fizer sentido.
-   Exemplo: "Nesse kit você ainda recebe a nécessaire exclusiva e pode parcelar."
+3. highlights (destaques comerciais) e indications — use de forma natural quando fizer sentido, exatamente como retornados pelo banco.
+   Não transforme tags em promessa de resultado e não crie brindes, descontos ou parcelamentos que não estejam no contexto.
 
-4. description — somente após os itens acima, para quem pede mais detalhes.
-   Nunca comece por aqui.
+4. kit_items — se o produto for kit, liste somente os itens reais cadastrados.
+   Se kit_items estiver vazio ou "Não informado", diga que irá verificar a composição.
 
-5. usage_tips — somente quando o cliente perguntar como usar ou após a compra.
+5. description — use para explicar o produto quando o cliente pedir mais detalhes.
+   Resuma; não copie a descrição inteira se ela for longa.
+
+6. usage_tips — somente quando o cliente perguntar como usar ou após a compra.
    Nunca inclua modo de uso na primeira resposta sobre o produto.
 
 NUNCA iniciar uma resposta sobre produto com:
 - a description completa
-- lista de itens do kit
 - ingredientes
 - modo de uso
 
@@ -325,16 +426,6 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
   ];
 
   // =====================
-  // LOG DIAGNÓSTICO
-  // =====================
-
-  console.log("\n========== [IA] PROMPT SISTEMA ==========\n");
-  console.log(systemPrompt);
-  console.log("\n========== [IA] CONTEXTO COMPLETO ENVIADO AO LLM ==========\n");
-  console.log(JSON.stringify(messagesHistory, null, 2));
-  console.log("\n=========================================\n");
-
-  // =====================
   // LOOP
   // =====================
 
@@ -344,6 +435,11 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
     step++
   ) {
 
+    debugAiLog(
+      `Prompt final enviado ao modelo - passo ${step + 1}`,
+      messagesHistory
+    );
+
     const response =
       await openai.chat.completions
         .create({
@@ -352,7 +448,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
             "gpt-4.1-mini",
 
           temperature:
-            0.7,
+            0.3,
 
           messages:
             messagesHistory,
@@ -373,7 +469,7 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   "search_products",
 
                 description:
-                  "Busca produtos reais. Retorna product_url oficial; use esse link quando o cliente pedir link do produto.",
+                  "Busca produtos reais no banco. Retorna campos oficiais do produto, incluindo price, is_active, product_url, highlights, expected_experience e kit_items quando houver composição cadastrada. Use somente esses dados para responder sobre produtos.",
 
                 parameters: {
 
@@ -630,12 +726,26 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
       !message.tool_calls
     ) {
 
-      return (
-        sanitizeAiResponse(
-          message.content ||
-          "Posso te ajudar com algo mais? 😊"
-        )
+      const rawContent =
+        message.content ||
+        "Vou verificar essa informação para você.";
+      const guardedContent =
+        guardProductResponse(
+          rawContent,
+          messagesHistory
+        );
+
+      debugAiLog(
+        "Resposta do modelo",
+        {
+          raw:
+            rawContent,
+          final:
+            guardedContent,
+        }
       );
+
+      return guardedContent;
     }
 
     messagesHistory.push(
@@ -853,6 +963,6 @@ Se precisar de ajuda, estou aqui 😊
   // =====================
 
   return `
-Posso te ajudar com algo mais? 😊
+Vou verificar essa informação para você.
 `;
 }

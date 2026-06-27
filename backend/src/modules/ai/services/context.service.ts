@@ -146,11 +146,13 @@ PRODUTOS ENCONTRADOS:
 ${productsContext}
 
 REGRAS:
-- Use apenas os produtos acima.
-- Não invente produtos.
-- Não invente preços.
-- Não invente promoções.
-- Não invente kits.
+- Use exclusivamente os campos reais acima para falar de produto.
+- Não invente composição, ingredientes, benefícios, preço, promoções, estoque, disponibilidade ou itens de kit.
+- Se um campo estiver como "Não informado no banco", diga apenas "Vou verificar essa informação para você." ou "Essa informação não está disponível aqui no momento."
+- Para kits, liste somente os itens em "Produtos/itens do kit cadastrados".
+- Se "Produtos/itens do kit cadastrados" estiver como "Não informado no banco", não tente deduzir a composição pelo nome, categoria, tags ou descrição.
+- Nunca use exemplos genéricos para composição de kit.
+- Não use expressões de suposição como "geralmente inclui", "normalmente vem" ou "pode conter".
 `,
     });
   }

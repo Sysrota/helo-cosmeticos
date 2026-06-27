@@ -2,11 +2,11 @@ import { prisma }
   from "../../../config/prisma.js";
 
 import {
-  getPrimaryProductImage,
-} from "../services/product-image.service.js";
+  buildProductAiContext,
+} from "../services/product-ai-context.service.js";
 import {
-  getProductUrl,
-} from "../services/public-url.service.js";
+  debugAiLog,
+} from "../services/debug-log.service.js";
 
 interface Props {
   query: string;
@@ -14,6 +14,15 @@ interface Props {
 }
 
 const ignoredWords = [
+  "oi",
+  "oie",
+  "ola",
+  "olá",
+  "bom",
+  "boa",
+  "dia",
+  "tarde",
+  "noite",
   "qual",
   "quanto",
   "custa",
@@ -23,6 +32,24 @@ const ignoredWords = [
   "quero",
   "queria",
   "tem",
+  "vim",
+  "veio",
+  "vindo",
+  "pelo",
+  "pela",
+  "anuncio",
+  "anúncio",
+  "saber",
+  "sobre",
+  "esse",
+  "essa",
+  "este",
+  "esta",
+  "desse",
+  "dessa",
+  "deste",
+  "desta",
+  "mais",
   "produto",
   "produtos",
   "do",
@@ -67,10 +94,6 @@ export async function searchProductsTool({
 
   const products =
     await prisma.product.findMany({
-      where: {
-        is_active: true,
-      },
-
       include: {
         images: {
           orderBy: {
@@ -88,11 +111,13 @@ export async function searchProductsTool({
       const text = `
 ${product.title}
 ${product.subtitle}
+${product.meta_description}
 ${product.description}
 ${product.category}
 ${product.keywords}
 ${product.dicas_uso}
 ${product.o_que_vai_sentir}
+${product.destaques}
 `
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -142,63 +167,73 @@ ${product.o_que_vai_sentir}
       };
     });
 
-  const results =
+  const rankedProducts =
     scoredProducts
-    .filter(
-      (item) =>
-        item.score > 0
-    )
-    .sort(
-      (a, b) =>
-        b.score - a.score
-    )
+      .filter(
+        (item) =>
+          item.score > 0
+      )
+      .sort(
+        (a, b) =>
+          b.score - a.score
+      );
+
+  const strongTitleMatches =
+    words.length > 1
+      ? rankedProducts.filter((item) =>
+          words.every((word) =>
+            normalizeText(
+              item.product.title
+            ).includes(word)
+          )
+        )
+      : [];
+
+  const results =
+    (strongTitleMatches.length
+      ? strongTitleMatches
+      : rankedProducts)
     .slice(0, 6)
     .map(
       (item) => ({
-        id:
-          item.product.id,
-
-        title:
-          item.product.title,
-
-        subtitle:
-          item.product.subtitle,
-
-        price:
-          item.product.price,
-
-        category:
-          item.product.category,
-
-        description:
-          item.product.description,
-
-        highlights:
-          item.product.destaques,
-
-        indications:
-          item.product.keywords,
-
-        usage_tips:
-          item.product.dicas_uso,
-
-        expected_experience:
-          item.product.o_que_vai_sentir,
-
-        image:
-          getPrimaryProductImage(
-            item.product
-          ),
-
-        product_url:
-          getProductUrl(
-            item.product.id
-          ),
+        ...buildProductAiContext(
+          item.product
+        ),
 
         score:
           item.score,
       })
     );
+
+  debugAiLog(
+    "Produto detectado",
+    {
+      query,
+      palavras_consideradas:
+        words,
+      melhor_resultado:
+        results[0]
+          ? {
+              id:
+                results[0].id,
+              titulo:
+                results[0].title,
+              score:
+                results[0].score,
+            }
+          : null,
+    }
+  );
+
+  debugAiLog(
+    "Produto retornado do banco",
+    results[0] || null
+  );
+
+  debugAiLog(
+    "Campos enviados para o modelo",
+    results
+  );
 
   if (
     conversationId &&
