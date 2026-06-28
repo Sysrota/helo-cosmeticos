@@ -34,9 +34,11 @@ interface ShippingPackage {
 
 const MOTO_UBER_CITIES = new Set([
   "aparecida de goiania",
+  "aragoiania",
   "goiania",
-  "senador canedo",
+  "goianira",
   "hidrolandia",
+  "senador canedo",
   "trindade",
 ]);
 
@@ -94,10 +96,7 @@ export function getLocalShippingOptions(
     fixedMotoUberPrice
   );
 
-  return [
-    LOCAL_PICKUP_OPTION,
-    ...(motoUberOption ? [motoUberOption] : []),
-  ];
+  return [LOCAL_PICKUP_OPTION, ...(motoUberOption ? [motoUberOption] : [])];
 }
 
 function applyFreeShipping(
@@ -120,17 +119,9 @@ function isSedexOption(option: ShippingOption) {
 }
 
 function shippingPriority(option: ShippingOption) {
-  if (option.name === "Retirar em mãos") {
-    return 0;
-  }
-
-  if (option.name === "Moto Uber") {
-    return 1;
-  }
-
-  if (isSedexOption(option)) {
-    return 2;
-  }
+  if (option.name === "Retirar em mãos") return 0;
+  if (option.name === "Moto Uber") return 1;
+  if (isSedexOption(option)) return 2;
 
   return 3;
 }
@@ -176,6 +167,13 @@ export async function requestShippingOptions({
   insuranceValue,
   freeShipping = false,
 }: ShippingPackage): Promise<ShippingOption[]> {
+  const packageData = {
+    width: Math.max(Number(maxWidth || 0), 11),
+    height: Math.max(Number(maxHeight || 0), 2),
+    length: Math.max(Number(totalLength || 0), 6),
+    weight: Math.max(Number(totalWeight || 0), 0.3),
+  };
+
   const payload = {
     from: {
       postal_code: "74976040",
@@ -185,19 +183,10 @@ export async function requestShippingOptions({
       postal_code: cleanCep,
     },
 
-    products: [
-      {
-        id: "1",
-        width: Math.max(Number(maxWidth || 0), 11),
-        height: Math.max(Number(maxHeight || 0), 2),
-        length: Math.max(Number(totalLength || 0), 16),
-        weight: Math.max(Number(totalWeight || 0), 0.3),
-        insurance_value: Math.max(Number(insuranceValue || 0), 1),
-        quantity: 1,
-      },
-    ],
+    package: packageData,
 
     options: {
+      insurance_value: Math.max(Number(insuranceValue || 0), 0),
       receipt: false,
       own_hand: false,
     },
@@ -267,9 +256,7 @@ export async function requestShippingOptions({
         name: service.company?.name
           ? `${service.company.name} - ${service.name}`
           : service.name,
-
         price: Number(service.price),
-
         deadline: `${service.delivery_time} dias úteis`,
       })
     )
@@ -354,7 +341,6 @@ export async function calculateShipping({
     where: {
       id: order_id,
     },
-
     include: {
       items: {
         include: {
