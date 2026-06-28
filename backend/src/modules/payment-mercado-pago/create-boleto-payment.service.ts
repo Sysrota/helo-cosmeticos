@@ -97,6 +97,15 @@ export async function createBoletoPaymentService({ order_id }: Props) {
 
   console.log("[Boleto] Resposta MP:", JSON.stringify(payment, null, 2));
 
+  const paymentStatus = (payment as any).status;
+  if (paymentStatus === "rejected") {
+    const detail = (payment as any).status_detail || "sem detalhe";
+    console.error(`[Boleto] Pagamento rejeitado pelo Mercado Pago: ${detail}`);
+    throw new Error(
+      `Não foi possível gerar o boleto. Verifique se o CPF está correto e tente novamente. (${detail})`
+    );
+  }
+
   const boletoUrl =
     (payment as any).transaction_details?.external_resource_url ||
     (payment as any).transaction_details?.ticket_url ||

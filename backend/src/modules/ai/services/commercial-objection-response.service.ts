@@ -467,7 +467,7 @@ function buildValueResponse({
   const hlText = highlightsSentence(
     context.highlights,
     policy.show_secure_purchase,
-    reachesFreeShipping(price, policy.free_shipping_minimum)
+    false
   );
   if (hlText) perks.push(hlText);
 
@@ -478,12 +478,10 @@ function buildValueResponse({
     ? cardLine(policy.card_interest_free_installments, context.highlights)
     : "";
   const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
-  const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (pix) perks.push(pix);
   if (card) perks.push(card);
   if (shippingByCep) perks.push(shippingByCep);
-  if (motoUber) perks.push(motoUber);
 
   return [
     "Entendo você 😊",
@@ -528,15 +526,13 @@ function buildDiscountResponse({
   const hlText = highlightsSentence(
     context.highlights,
     policy.show_secure_purchase,
-    reachesFreeShipping(price, policy.free_shipping_minimum)
+    false
   );
   const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
-  const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (pixDiscount > 0 && card) perks.push(card);
   if (hlText) perks.push(hlText);
   if (shippingByCep) perks.push(shippingByCep);
-  if (motoUber) perks.push(motoUber);
 
   return [
     priceLine,
@@ -566,14 +562,12 @@ function buildPriceResponse({
   const hlText = highlightsSentence(
     context.highlights,
     policy.show_secure_purchase,
-    reachesFreeShipping(price, policy.free_shipping_minimum)
+    false
   );
   const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
-  const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (hlText) perks.push(hlText);
   if (shippingByCep) perks.push(shippingByCep);
-  if (motoUber) perks.push(motoUber);
 
   const priceBase = `Hoje o ${displayName} está por ${formatBRL(price)}${pix ? ` — ou ${formatBRL(pixDiscountedPrice(price, policy.pix_discount_percent))} no PIX` : ""}.`;
 
