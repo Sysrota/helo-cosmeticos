@@ -99,7 +99,7 @@ export async function calculateShippingTool({
       policy:
         "zipcode_required",
       message:
-        "Ainda não há CEP salvo para este cliente. Solicite um CEP válido com 8 números para calcular o frete.",
+        "Ainda não há CEP salvo para este cliente. Solicite um CEP válido com 8 números para montar o pedido e verificar a entrega.",
     };
   }
 
@@ -149,7 +149,7 @@ export async function calculateShippingTool({
       policy:
         "cart_required",
       message:
-        "Antes de calcular o frete, confirme qual produto deve entrar no pedido.",
+        "Antes de verificar a entrega, confirme qual produto deve entrar no pedido.",
     };
   }
 
@@ -301,7 +301,7 @@ export async function calculateShippingTool({
       policy:
         "address_unavailable",
       message:
-        "A consulta do CEP não está disponível no momento. Solicite ao cliente que tente novamente em instantes ou calcule o frete no checkout.",
+        "A consulta do CEP não está disponível no momento. Solicite ao cliente que tente novamente em instantes ou confira a entrega na hora do pagamento.",
     };
   }
 
@@ -513,7 +513,7 @@ export async function calculateShippingTool({
       destination:
         `${address.city}/${address.state}`,
       message:
-        "Não foi possível consultar o frete agora. O cliente pode continuar para o checkout e tentar o cálculo novamente na etapa de entrega.",
+        "Não foi possível consultar a entrega agora. O cliente pode continuar para o pagamento e tentar novamente na etapa de entrega.",
     };
   }
 }

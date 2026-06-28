@@ -58,7 +58,8 @@ function lowerFirst(
 
 function commercialHighlightsText(
   highlights: string,
-  showSecurePurchase = true
+  showSecurePurchase = true,
+  hideShippingHighlights = false
 ) {
   const items =
     highlights
@@ -69,6 +70,10 @@ function commercialHighlightsText(
         (
           showSecurePurchase ||
           !normalizeText(item).includes("compra segura")
+        ) &&
+        (
+          !hideShippingHighlights ||
+          !normalizeText(item).includes("frete")
         )
       )
       .slice(0, 4)
@@ -109,6 +114,16 @@ function productOrderReference(
   }
 
   return displayName;
+}
+
+function reachesFreeShipping(
+  price: number,
+  freeShippingMinimum: number
+) {
+  return (
+    Number(freeShippingMinimum) > 0 &&
+    Number(price) >= Number(freeShippingMinimum)
+  );
 }
 
 function itemDisplayName(
@@ -326,7 +341,11 @@ export async function buildProductNeedResponse({
   const highlightsText =
     commercialHighlightsText(
       context.highlights,
-      commercialPolicy.show_secure_purchase
+      commercialPolicy.show_secure_purchase,
+      reachesFreeShipping(
+        context.price,
+        commercialPolicy.free_shipping_minimum
+      )
     );
 
   if (highlightsText) {
@@ -343,8 +362,16 @@ export async function buildProductNeedResponse({
       1,
   });
 
+  const cepReason =
+    reachesFreeShipping(
+      context.price,
+      commercialPolicy.free_shipping_minimum
+    )
+      ? "para eu montar seu pedido certinho"
+      : "que já calculo a entrega certinho";
+
   lines.push(
-    `Vou deixar ${productOrderReference(displayName)} separado para você 😊\n\n${priceSubject} está ${formatBRL(context.price)}. Me passa seu CEP que já calculo a entrega certinho?`
+    `Vou deixar ${productOrderReference(displayName)} separado para você 😊\n\n${priceSubject} está ${formatBRL(context.price)}. Me passa seu CEP ${cepReason}?`
   );
 
   return lines.join("\n\n");

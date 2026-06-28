@@ -221,10 +221,11 @@ REGRAS:
 - Não use expressões de suposição ou venda fraca como "costuma agradar", "geralmente", "normalmente", "pode ajudar" ou "pode conter".
 - Prefira linguagem objetiva com base nos campos reais: "foi desenvolvido para", "reúne", "oferece", "proporciona" e "ajuda a".
 - Ao fazer diagnóstico, prefira opções curtas para a cliente escolher.
-- Depois que a cliente informar uma necessidade, recomende o produto para aquela necessidade antes de apresentar preço, frete ou pedido.
+- Depois que a cliente informar uma necessidade, recomende o produto para aquela necessidade antes de apresentar preço, entrega ou pedido.
 - Use "Destaques comerciais" do produto antes do preço quando esse campo estiver preenchido.
 - Se "Destaques comerciais" estiver vazio ou "Não informado no banco", não invente diferenciais comerciais.
 - Quando usar "Destaques comerciais", envie como lista vertical: "Além disso, tem:" e depois um destaque por linha com "•". Nunca coloque vários destaques na mesma frase.
+- Se um destaque comercial falar de entrega grátis e o pedido já atingir a condição de entrega grátis, não transforme isso em chamada para cotação; peça o CEP para montar o pedido.
 - Não responda necessidades diferentes com o mesmo texto.
 `,
     });

@@ -174,8 +174,8 @@ export async function getStoreContext() {
         method.enabled
     ) &&
     Number(policy.pix_discount_percent) > 0
-      ? "PIX tem desconto exclusivo no checkout."
-      : "PIX disponível no checkout.";
+      ? "PIX tem desconto exclusivo na hora do pagamento."
+      : "PIX disponível na hora do pagamento.";
 
   const paymentMethods =
     policy.payment_methods
@@ -199,8 +199,8 @@ export async function getStoreContext() {
     ].filter(Boolean);
   const boletoCondition =
     fasterPaymentMethods.length
-      ? `Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo do que ${joinNaturalList(fasterPaymentMethods, "ou")}. O pedido é separado somente após confirmação do pagamento. Para liberação mais rápida, recomende ${joinNaturalList(fasterPaymentMethods, "ou")}. Não afirme prazo exato de compensação.`
-      : "Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo e o pedido é separado somente após confirmação do pagamento. Não afirme prazo exato de compensação.";
+      ? `Boleto bancário: disponível na hora do pagamento. A confirmação pode levar mais tempo do que ${joinNaturalList(fasterPaymentMethods, "ou")}. O pedido é separado somente após confirmação do pagamento. Para liberação mais rápida, recomende ${joinNaturalList(fasterPaymentMethods, "ou")}. Não afirme prazo exato de compensação.`
+      : "Boleto bancário: disponível na hora do pagamento. A confirmação pode levar mais tempo e o pedido é separado somente após confirmação do pagamento. Não afirme prazo exato de compensação.";
   const paymentMethodsText =
     paymentMethods.length
       ? `Aceitamos ${joinNaturalList(
@@ -222,9 +222,10 @@ export async function getStoreContext() {
     policy.show_secure_purchase
       ? "Compra segura: habilitada para comunicação comercial."
       : "",
-    `Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis.`,
+    `Condição de entrega: pedidos acima de ${shippingMinimum} entram nas opções grátis elegíveis; nesses casos, peça o CEP para montar o pedido e verificar prazo/opções.`,
     `Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra.` : "indisponíveis no momento."}`,
-    "O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.",
+    "Se o pedido atingir a condição de entrega grátis, peça o CEP para montar o pedido e verificar prazo/opções; não diga que vai calcular entrega.",
+    "Fale em consultar valor de entrega somente quando o valor do pedido ficar abaixo da condição de entrega grátis ou quando o cliente perguntar diretamente sobre entrega.",
   ].filter(Boolean);
   const activeProducts =
     await prisma.product.findMany({
@@ -275,7 +276,9 @@ REGRAS DE PAGAMENTO:
 - Só mencione "Compra segura" quando CONDIÇÕES COMERCIAIS VIGENTES indicar compra segura habilitada.
 
 INFORMAÇÕES DE ENTREGA:
-Valor e prazo finais devem ser informados somente após o cálculo pelo CEP.
+- Valor e prazo finais devem ser informados somente após consulta pelo CEP.
+- Se a compra já atingir a condição de entrega grátis, peça o CEP para montar o pedido e verificar prazo/opções. Não diga que vai calcular entrega nesse caso.
+- Fale em consultar valor de entrega somente quando o valor do pedido ficar abaixo da condição de entrega grátis ou quando o cliente perguntar diretamente sobre entrega.
 
 CONDIÇÕES COMERCIAIS VIGENTES:
 ${commercialConditions.map((line) => `- ${line}`).join("\n")}

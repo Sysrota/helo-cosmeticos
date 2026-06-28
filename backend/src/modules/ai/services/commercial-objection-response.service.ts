@@ -171,13 +171,20 @@ function paymentEnabled(
 
 function highlightsSentence(
   highlights: string,
-  showSecurePurchase = true
+  showSecurePurchase = true,
+  hideShippingHighlights = false
 ) {
   const items =
     highlightItems(highlights)
       .filter((item) =>
-        showSecurePurchase ||
-        !normalizeText(item).includes("compra segura")
+        (
+          showSecurePurchase ||
+          !normalizeText(item).includes("compra segura")
+        ) &&
+        (
+          !hideShippingHighlights ||
+          !normalizeText(item).includes("frete")
+        )
       )
       .map(lowerFirst);
 
@@ -208,11 +215,16 @@ function cardLine(interestFreeInstallments: number, highlights = "") {
   return `No cartão pode parcelar em até ${interestFreeInstallments}x sem juros.`;
 }
 
-function freeShippingLine(price: number, freeShippingMinimum: number, highlights = "") {
+function reachesFreeShipping(price: number, freeShippingMinimum: number) {
+  return Number(freeShippingMinimum) > 0 &&
+    Number(price) >= Number(freeShippingMinimum);
+}
+
+function shippingByCepLine(price: number, freeShippingMinimum: number, highlights = "") {
   const normalized = normalizeText(highlights);
   if (normalized.includes("frete")) return "";
-  if (Number(price) < Number(freeShippingMinimum)) return "";
-  return `Esse valor já entra na faixa de frete grátis acima de ${formatBRL(freeShippingMinimum)} nas opções elegíveis.`;
+  if (reachesFreeShipping(price, freeShippingMinimum)) return "";
+  return "A entrega eu vejo pelo CEP para te passar o valor certinho.";
 }
 
 function motoUberLine(motoUberEnabled: boolean) {
@@ -221,11 +233,23 @@ function motoUberLine(motoUberEnabled: boolean) {
 }
 
 function checkoutClose() {
-  return "Se fizer sentido para você, já posso enviar o link para finalizar.";
+  return "Se fizer sentido para você, já posso enviar o link de pagamento para finalizar.";
 }
 
-function deliveryClose(displayName: string) {
-  return `Vou deixar o ${displayName} separado para você 😊\n\nMe passa seu CEP que calculo a entrega certinho.`;
+function deliveryClose(
+  displayName: string,
+  price: number,
+  policy: Awaited<ReturnType<typeof getCommercialPolicy>>
+) {
+  const cepReason =
+    reachesFreeShipping(
+      price,
+      policy.free_shipping_minimum
+    )
+      ? "para eu montar o pedido e verificar o prazo certinho"
+      : "que calculo a entrega certinho";
+
+  return `Vou deixar o ${displayName} separado para você 😊\n\nMe passa seu CEP ${cepReason}.`;
 }
 
 function shippingQuoteText(cart: any) {
@@ -442,7 +466,8 @@ function buildValueResponse({
   const perks: string[] = [];
   const hlText = highlightsSentence(
     context.highlights,
-    policy.show_secure_purchase
+    policy.show_secure_purchase,
+    reachesFreeShipping(price, policy.free_shipping_minimum)
   );
   if (hlText) perks.push(hlText);
 
@@ -452,12 +477,12 @@ function buildValueResponse({
   const card = paymentEnabled(policy, "credit_card")
     ? cardLine(policy.card_interest_free_installments, context.highlights)
     : "";
-  const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
+  const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (pix) perks.push(pix);
   if (card) perks.push(card);
-  if (freeShip) perks.push(freeShip);
+  if (shippingByCep) perks.push(shippingByCep);
   if (motoUber) perks.push(motoUber);
 
   return [
@@ -502,14 +527,15 @@ function buildDiscountResponse({
     : "";
   const hlText = highlightsSentence(
     context.highlights,
-    policy.show_secure_purchase
+    policy.show_secure_purchase,
+    reachesFreeShipping(price, policy.free_shipping_minimum)
   );
-  const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
+  const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (pixDiscount > 0 && card) perks.push(card);
   if (hlText) perks.push(hlText);
-  if (freeShip) perks.push(freeShip);
+  if (shippingByCep) perks.push(shippingByCep);
   if (motoUber) perks.push(motoUber);
 
   return [
@@ -539,13 +565,14 @@ function buildPriceResponse({
   const perks: string[] = [];
   const hlText = highlightsSentence(
     context.highlights,
-    policy.show_secure_purchase
+    policy.show_secure_purchase,
+    reachesFreeShipping(price, policy.free_shipping_minimum)
   );
-  const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
+  const shippingByCep = shippingByCepLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
   if (hlText) perks.push(hlText);
-  if (freeShip) perks.push(freeShip);
+  if (shippingByCep) perks.push(shippingByCep);
   if (motoUber) perks.push(motoUber);
 
   const priceBase = `Hoje o ${displayName} está por ${formatBRL(price)}${pix ? ` — ou ${formatBRL(pixDiscountedPrice(price, policy.pix_discount_percent))} no PIX` : ""}.`;
@@ -564,9 +591,9 @@ function buildOriginalResponse(
 ) {
   return [
     policy.show_secure_purchase
-      ? `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos, com produto cadastrado no catálogo e checkout seguro.`
+      ? `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos, com produto cadastrado no catálogo e pagamento seguro.`
       : `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos e está cadastrado no nosso catálogo.`,
-    "Você finaliza pelo link oficial da loja — a compra fica registrada certinho.",
+    "Você finaliza pelo link oficial de pagamento — a compra fica registrada certinho.",
     checkoutClose(),
   ].join("\n\n");
 }
@@ -605,7 +632,7 @@ function buildGuaranteeResponse({
   exchangePolicy: string;
 }) {
   return [
-    `Tem sim 😊 A compra do ${displayName} é feita pelo checkout oficial da Helô Cosméticos.`,
+    `Tem sim 😊 A compra do ${displayName} é feita pelo link oficial de pagamento da Helô Cosméticos.`,
     exchangePolicy
       ? `A política cadastrada aqui é: ${exchangePolicy}.`
       : "Essa informação de troca não está disponível aqui no momento, mas posso verificar para você.",
@@ -616,9 +643,13 @@ function buildGuaranteeResponse({
 function buildDeliveryTimeResponse({
   displayName,
   cart,
+  context,
+  policy,
 }: {
   displayName: string;
   cart: any;
+  context: ReturnType<typeof buildProductAiContext>;
+  policy: Awaited<ReturnType<typeof getCommercialPolicy>>;
 }) {
   const quoteText = shippingQuoteText(cart);
 
@@ -628,7 +659,7 @@ function buildDeliveryTimeResponse({
 
   return [
     "O prazo certinho depende do CEP, porque muda conforme a região e a opção de entrega.",
-    deliveryClose(displayName),
+    deliveryClose(displayName, context.price, policy),
   ].join("\n\n");
 }
 
@@ -652,7 +683,8 @@ function buildComparisonResponse({
   const sub = cleanText(context.subtitle) || cleanText(context.meta_description);
   const hlText = highlightsSentence(
     context.highlights,
-    policy.show_secure_purchase
+    policy.show_secure_purchase,
+    reachesFreeShipping(context.price, policy.free_shipping_minimum)
   );
 
   const mainLine = sub
@@ -889,7 +921,12 @@ export async function buildCommercialObjectionResponse({
   }
 
   if (objection === "delivery_time") {
-    return buildDeliveryTimeResponse({ displayName, cart: productRef.cart });
+    return buildDeliveryTimeResponse({
+      displayName,
+      cart: productRef.cart,
+      context,
+      policy,
+    });
   }
 
   if (objection === "comparison") {
