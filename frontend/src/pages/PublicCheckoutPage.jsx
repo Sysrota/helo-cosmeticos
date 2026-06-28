@@ -947,12 +947,13 @@ export default function PublicCheckoutPage() {
     }
   }
 
-  async function generateBoleto() {
+  async function generateBoleto(cpf) {
     try {
       setLoadingBoleto(true);
       setNotice("");
       const { data } = await api.post("/payment/boleto", {
         order_id: order.id,
+        cpf: cpf || undefined,
       });
       setBoletoData(data);
       trackCheckoutEvent(
@@ -1419,6 +1420,7 @@ export default function PublicCheckoutPage() {
                       boletoData={boletoData}
                       order={order}
                       total={paymentTotal}
+                      initialCpf={customer.cpf}
                     />
                   )}
                 </div>

@@ -1,4 +1,13 @@
 import { ExternalLink } from "lucide-react";
+import { useState } from "react";
+
+function formatCpf(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
 
 export function OrderBoletoCard({
   generateBoleto,
@@ -6,10 +15,28 @@ export function OrderBoletoCard({
   boletoData,
   order,
   total,
+  initialCpf = "",
 }) {
+  const [cpf, setCpf] = useState(
+    initialCpf
+      ? formatCpf(initialCpf)
+      : ""
+  );
+  const [cpfError, setCpfError] = useState("");
+
   const isPaid =
     order.payment_status === "paid" ||
     order.payment_status === "approved";
+
+  function handleGenerate() {
+    const digits = cpf.replace(/\D/g, "");
+    if (digits.length !== 11) {
+      setCpfError("Informe os 11 dígitos do CPF.");
+      return;
+    }
+    setCpfError("");
+    generateBoleto(digits);
+  }
 
   return (
     <div className="bg-white border border-[#eee2e6] rounded-[22px] p-5">
@@ -33,6 +60,33 @@ export function OrderBoletoCard({
         </p>
       </div>
 
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-[#705763] mb-1">
+          CPF do titular
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={cpf}
+          onChange={(e) => {
+            setCpf(formatCpf(e.target.value));
+            setCpfError("");
+          }}
+          placeholder="000.000.000-00"
+          className={`h-12 w-full rounded-xl border px-4 text-sm outline-none focus:ring-4 focus:ring-[#fff0f4] ${
+            cpfError
+              ? "border-red-400 focus:border-red-400"
+              : "border-[#ecdce2] focus:border-[#d9536f]"
+          }`}
+        />
+        {cpfError && (
+          <p className="mt-1 text-xs text-red-600">{cpfError}</p>
+        )}
+        <p className="mt-1 text-xs text-zinc-400">
+          O CPF é obrigatório para emissão do boleto bancário.
+        </p>
+      </div>
+
       <div className={`mb-5 rounded-2xl p-4 border ${
         isPaid
           ? "bg-green-50 border-green-200"
@@ -50,9 +104,9 @@ export function OrderBoletoCard({
       </div>
 
       <button
-        onClick={generateBoleto}
+        onClick={handleGenerate}
         disabled={loadingBoleto}
-        className="w-full bg-[#d85c7a] hover:bg-[#c9506d] text-white h-14 rounded-2xl font-bold transition-all"
+        className="w-full bg-[#d85c7a] hover:bg-[#c9506d] text-white h-14 rounded-2xl font-bold transition-all disabled:opacity-60"
       >
         {loadingBoleto
           ? "Gerando boleto..."

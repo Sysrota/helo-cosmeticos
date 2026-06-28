@@ -7,6 +7,7 @@ import { notifyManagersAboutOrder } from "../manager/manager-notification.servic
 
 interface Props {
   order_id: number;
+  cpf_override?: string;
 }
 
 function splitName(fullName: string) {
@@ -22,7 +23,7 @@ function boletoExpiration() {
   return date.toISOString();
 }
 
-export async function createBoletoPaymentService({ order_id }: Props) {
+export async function createBoletoPaymentService({ order_id, cpf_override }: Props) {
   const order = await prisma.order.findUnique({
     where: { id: order_id },
     include: {
@@ -47,9 +48,23 @@ export async function createBoletoPaymentService({ order_id }: Props) {
     );
   }
 
-  const cpf = (order.contact?.cpf || "").replace(/\D/g, "");
-  if (!cpf || cpf.length !== 11) {
-    throw new Error("CPF inválido. Preencha o CPF corretamente para gerar o boleto.");
+  // Accept CPF from request body to allow updating it if missing/invalid
+  const rawCpf = cpf_override
+    ? cpf_override.replace(/\D/g, "")
+    : (order.contact?.cpf || "").replace(/\D/g, "");
+
+  if (!rawCpf || rawCpf.length !== 11) {
+    throw new Error("CPF inválido. Informe os 11 dígitos do CPF para gerar o boleto.");
+  }
+
+  const cpf = rawCpf;
+
+  // Persist CPF to contact if it was overridden or missing
+  if (order.contact?.id && cpf_override) {
+    await prisma.contact.update({
+      where: { id: order.contact.id },
+      data: { cpf },
+    });
   }
 
   const total = Number(

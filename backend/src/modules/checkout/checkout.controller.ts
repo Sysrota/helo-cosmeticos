@@ -693,6 +693,12 @@ export async function trackOrderController(
       order.pix_code,
     pix_qrcode:
       order.pix_qrcode,
+    boleto_url:
+      order.boleto_url,
+    boleto_barcode:
+      order.boleto_barcode,
+    contact_cpf:
+      order.contact.cpf,
     shipping_method:
       order.shipping_method,
     shipping_deadline:

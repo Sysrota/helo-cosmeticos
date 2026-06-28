@@ -483,12 +483,15 @@ export default function OrderTrackingPage() {
     }
   }
 
-  async function generateBoleto() {
+  async function generateBoleto(cpf) {
     if (!order) return;
     try {
       setLoadingBoleto(true);
       setPaymentError("");
-      const { data } = await api.post("/payment/boleto", { order_id: order.id });
+      const { data } = await api.post("/payment/boleto", {
+        order_id: order.id,
+        cpf: cpf || undefined,
+      });
       setBoletoData(data);
       setOrder((previous) => ({
         ...previous,
@@ -998,6 +1001,7 @@ export default function OrderTrackingPage() {
                       boletoData={boletoData}
                       order={order}
                       total={regularTotal}
+                      initialCpf={order.contact_cpf || ""}
                     />
                   )}
                 </div>

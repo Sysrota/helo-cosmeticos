@@ -65,6 +65,7 @@ export async function createBoletoPaymentController(
   try {
     const payment = await createBoletoPaymentService({
       order_id: Number(req.body.order_id),
+      cpf_override: req.body.cpf || undefined,
     });
     return res.json(payment);
   } catch (error) {
