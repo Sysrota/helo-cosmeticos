@@ -76,7 +76,7 @@ function commercialHighlightsText(
           !normalizeText(item).includes("frete")
         )
       )
-      .slice(0, 4)
+      .slice(0, 6)
       .map(lowerFirst);
 
   if (!items.length) {

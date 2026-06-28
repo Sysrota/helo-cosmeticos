@@ -370,15 +370,16 @@ async function buildIntroFromContext(
 
   const lines = [
     greeting,
+    "",
     buildProductPresentation(displayContext, displayName, intro, feelingSummary),
   ];
 
   if (
     context.is_kit &&
     kitItemsText &&
-    !lines[1].includes(kitItemsText)
+    !lines[2].includes(kitItemsText)
   ) {
-    lines[1] += ` Ele contém ${kitItemsText}.`;
+    lines[2] += ` Ele contém ${kitItemsText}.`;
   }
 
   lines.push(...buildNeedOptions(context));

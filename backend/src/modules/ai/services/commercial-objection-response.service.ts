@@ -133,7 +133,7 @@ function highlightItems(highlights: string) {
     .split(/\r?\n|;/)
     .map(cleanListItem)
     .filter(Boolean)
-    .slice(0, 4);
+    .slice(0, 6);
 }
 
 function fieldItems(value: string) {
