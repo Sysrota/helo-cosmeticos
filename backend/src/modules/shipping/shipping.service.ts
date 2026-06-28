@@ -389,8 +389,20 @@ export async function requestShippingOptions({
     throw error;
   }
 
+  const rawServices: any[] = melhorEnvioResponse.data;
+  console.log(
+    "[ME] Serviços retornados pela API:",
+    rawServices.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      price: s.price,
+      delivery_time: s.delivery_time,
+      error: s.error ?? null,
+    }))
+  );
+
   const shippingOptions =
-    melhorEnvioResponse.data
+    rawServices
 
       .filter(
         (service: any) =>
