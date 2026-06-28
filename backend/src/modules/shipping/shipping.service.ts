@@ -36,7 +36,6 @@ const MOTO_UBER_CITIES = new Set([
   "aparecida de goiania",
   "aragoiania",
   "goiania",
-  "goianira",
   "hidrolandia",
   "senador canedo",
   "trindade",
@@ -77,7 +76,7 @@ export function getMotoUberShippingOption(
   return {
     name: "Moto Uber",
     price: MOTO_UBER_PRICE,
-    deadline: "Grátis para Goiânia e Região Metropolitana",
+    deadline: "Entrega no mesmo dia em horário comercial",
   };
 }
 
@@ -108,30 +107,50 @@ function applyFreeShipping(
 
   return {
     ...option,
+    name: freeShipping ? "Frete grátis" : option.name,
     price,
     original_price: originalPrice,
     discount: freeShipping ? originalPrice : 0,
   };
 }
 
-function isSedexOption(option: ShippingOption) {
-  return option.name.toLowerCase().includes("sedex");
+function getShippingPriority(option: ShippingOption) {
+  if (option.name === "Moto Uber") return 0;
+  if (option.name === "Retirar em mãos") return 1;
+
+  return 2;
 }
 
-function shippingPriority(option: ShippingOption) {
+function getDeadlineDays(option: ShippingOption) {
+  if (option.name === "Moto Uber") return 0;
   if (option.name === "Retirar em mãos") return 0;
-  if (option.name === "Moto Uber") return 1;
-  if (isSedexOption(option)) return 2;
 
-  return 3;
+  const match = option.deadline.match(/\d+/);
+
+  return match ? Number(match[0]) : 999;
 }
 
 function sortShippingOptions(options: ShippingOption[]) {
-  return [...options].sort(
-    (first, second) =>
-      shippingPriority(first) - shippingPriority(second) ||
-      first.price - second.price
-  );
+  return [...options].sort((first, second) => {
+    const priorityDiff =
+      getShippingPriority(first) - getShippingPriority(second);
+
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const deadlineDiff = getDeadlineDays(first) - getDeadlineDays(second);
+
+    if (deadlineDiff !== 0) {
+      return deadlineDiff;
+    }
+
+    return first.price - second.price;
+  });
+}
+
+function getBestShippingOption(options: ShippingOption[]) {
+  return sortShippingOptions(options).slice(0, 1);
 }
 
 export async function findAddressByCep(cep: string) {
@@ -229,20 +248,6 @@ export async function requestShippingOptions({
 
   console.log("[ME] Resposta completa:", JSON.stringify(rawServices, null, 2));
 
-  const invalidServices = rawServices.filter((service: any) => service.error);
-
-  if (invalidServices.length) {
-    console.log(
-      "[ME] Serviços ignorados com erro:",
-      invalidServices.map((service: any) => ({
-        id: service.id,
-        name: service.name,
-        company: service.company?.name,
-        error: service.error,
-      }))
-    );
-  }
-
   const validServices = rawServices.filter((service: any) => {
     const price = Number(service.price);
     const deliveryTime = Number(service.delivery_time);
@@ -250,26 +255,19 @@ export async function requestShippingOptions({
     return !service.error && price > 0 && deliveryTime > 0;
   });
 
-  const shippingOptions = validServices
-    .map((service: any) =>
-      applyFreeShipping(freeShipping, {
-        name: service.company?.name
-          ? `${service.company.name} - ${service.name}`
-          : service.name,
-        price: Number(service.price),
-        deadline: `${service.delivery_time} dias úteis`,
-      })
-    )
-    .sort(
-      (first: ShippingOption, second: ShippingOption) =>
-        first.price - second.price
-    );
+  const shippingOptions = validServices.map((service: any) =>
+    applyFreeShipping(freeShipping, {
+      name: freeShipping ? "Frete grátis" : "Entrega",
+      price: Number(service.price),
+      deadline: `${service.delivery_time} dias úteis`,
+    })
+  );
 
   if (!shippingOptions.length) {
     throw new Error("Nenhuma transportadora disponível");
   }
 
-  return sortShippingOptions(shippingOptions);
+  return getBestShippingOption(shippingOptions);
 }
 
 export async function calculateProductShipping({
@@ -319,10 +317,10 @@ export async function calculateProductShipping({
       freeShipping: hasFreeShipping,
     });
 
-    return sortShippingOptions([...localOptions, ...carrierOptions]);
+    return getBestShippingOption([...localOptions, ...carrierOptions]);
   } catch (error) {
     if (localOptions.length) {
-      return localOptions;
+      return getBestShippingOption(localOptions);
     }
 
     throw error;
@@ -341,6 +339,7 @@ export async function calculateShipping({
     where: {
       id: order_id,
     },
+
     include: {
       items: {
         include: {
@@ -399,10 +398,10 @@ export async function calculateShipping({
       freeShipping: hasFreeShipping,
     });
 
-    return sortShippingOptions([...localOptions, ...carrierOptions]);
+    return getBestShippingOption([...localOptions, ...carrierOptions]);
   } catch (error) {
     if (localOptions.length) {
-      return localOptions;
+      return getBestShippingOption(localOptions);
     }
 
     throw error;
