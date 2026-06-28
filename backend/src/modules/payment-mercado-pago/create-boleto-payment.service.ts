@@ -78,7 +78,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     transaction_amount: total,
     description: buildPaymentDescription(order.order_number || order.id, order.items),
     external_reference: String(order.order_number || order.id),
-    payment_method_id: "pec",
+    payment_method_id: "bolbradesco",
     date_of_expiration: boletoExpiration(),
     payer: {
       email: order.contact?.email || `cliente${order.id}@helocosmeticos.com`,
