@@ -109,7 +109,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
       requestBody,
       {
         headers: {
-          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_TOKEN}`,
           "Content-Type": "application/json",
           "X-Idempotency-Key": `boleto-${order.id}-${Date.now()}`,
         },
