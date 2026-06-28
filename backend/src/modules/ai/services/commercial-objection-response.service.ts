@@ -229,6 +229,25 @@ function shippingQuoteText(cart: any) {
 function detectObjection(message: string): ObjectionType | null {
   const normalized = normalizeText(message);
 
+  // Guidance — customer is insecure or starting from zero.
+  if (
+    /^nao sei[\s.!?]*$/.test(normalized) ||
+    normalized.includes("nao sei bem") ||
+    normalized.includes("nao tenho certeza") ||
+    normalized.includes("nunca fiz skincare") ||
+    normalized.includes("nunca usei skincare") ||
+    normalized.includes("nunca cuidei da pele") ||
+    normalized.includes("estou comecando") ||
+    normalized.includes("to comecando") ||
+    normalized.includes("sou iniciante") ||
+    normalized.includes("nao entendo muito") ||
+    normalized.includes("entendo pouco") ||
+    normalized.includes("pode me ajudar") ||
+    normalized.includes("me ajuda a escolher")
+  ) {
+    return "necessity";
+  }
+
   // Hesitation — "vou pensar", "depois eu vejo" etc.
   if (
     normalized.includes("vou pensar") ||
@@ -585,6 +604,66 @@ function buildComparisonResponse({
   ].filter(Boolean).join("\n\n");
 }
 
+function isSkinCareContext(
+  context: ReturnType<typeof buildProductAiContext>
+) {
+  const text = normalizeText([
+    context.title,
+    context.category,
+    context.subtitle,
+    context.meta_description,
+    context.description,
+    context.expected_experience,
+    context.kit_items.join(" "),
+  ].join(" "));
+
+  return (
+    text.includes("skincare") ||
+    text.includes("pele") ||
+    text.includes("facial") ||
+    text.includes("hidratante") ||
+    text.includes("limpeza")
+  );
+}
+
+function careStepsText(
+  context: ReturnType<typeof buildProductAiContext>
+) {
+  const text = normalizeText([
+    context.subtitle,
+    context.description,
+    context.expected_experience,
+    context.kit_items.join(" "),
+  ].join(" "));
+  const steps: string[] = [];
+
+  if (
+    text.includes("limpeza") ||
+    text.includes("limpar") ||
+    text.includes("gel")
+  ) {
+    steps.push("limpeza");
+  }
+
+  if (
+    text.includes("renovacao") ||
+    text.includes("renovar") ||
+    text.includes("esfoliante")
+  ) {
+    steps.push("renovação");
+  }
+
+  if (
+    text.includes("hidratacao") ||
+    text.includes("hidratar") ||
+    text.includes("hidratante")
+  ) {
+    steps.push("hidratação");
+  }
+
+  return joinNaturalList(steps);
+}
+
 function buildNecessityResponse({
   displayName,
   context,
@@ -593,17 +672,35 @@ function buildNecessityResponse({
   context: ReturnType<typeof buildProductAiContext>;
 }) {
   const isSkinCare =
-    normalizeText(context.category).includes("skincare") ||
-    normalizeText(context.category).includes("pele");
-
-  const questionLine = isSkinCare
-    ? "O que você mais quer melhorar na sua pele hoje?\n• Oleosidade\n• Ressecamento\n• Pele sem brilho\n• Quero começar uma rotina"
-    : "O que você quer melhorar hoje?\n• Hidratação\n• Maciez\n• Brilho\n• Reparação";
+    isSkinCareContext(context);
+  const steps =
+    careStepsText(context);
+  const subtitle =
+    cleanText(context.subtitle) ||
+    cleanText(context.meta_description);
+  const recommendation =
+    isSkinCare && steps
+      ? `Se você está começando, o ${displayName} faz sentido porque reúne ${steps} em uma rotina simples.`
+      : subtitle
+        ? `Para começar, o ${displayName} faz sentido porque foi desenvolvido para ${benefitPhrase(subtitle)}.`
+        : `Para começar, o ${displayName} ajuda a organizar um cuidado simples no dia a dia.`;
+  const questionLine =
+    isSkinCare
+      ? "Só me diz uma coisa: sua pele é mais oleosa ou mais seca?"
+      : "Só me diz uma coisa: você busca mais hidratação ou controle de frizz/volume?";
 
   return [
-    `Boa pergunta 😊 O ${displayName} foi pensado para quem quer um cuidado prático e bem direcionado.`,
-    "Me conta um pouco mais sobre o que você busca:",
+    "Sem problema 😊 Muitas pessoas começam assim.",
+    recommendation,
     questionLine,
+  ].join("\n\n");
+}
+
+function buildGeneralNecessityResponse() {
+  return [
+    "Sem problema 😊 Muitas pessoas começam assim.",
+    "Eu te ajudo a escolher sem complicar.",
+    "Só me diz uma coisa: você quer cuidar mais da pele ou do cabelo?",
   ].join("\n\n");
 }
 
@@ -677,7 +774,13 @@ export async function buildCommercialObjectionResponse({
 
   const productRef = await findProduct({ conversationId, message });
 
-  if (!productRef) return null;
+  if (!productRef) {
+    if (objection === "necessity") {
+      return buildGeneralNecessityResponse();
+    }
+
+    return null;
+  }
 
   const product = await prisma.product.findFirst({
     where: { id: productRef.productId, is_active: true },
