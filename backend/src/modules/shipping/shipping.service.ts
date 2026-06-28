@@ -20,6 +20,8 @@ export interface ShippingOption {
   deadline: string;
   original_price?: number;
   discount?: number;
+  min_days?: number;
+  max_days?: number;
 }
 
 interface ShippingPackage {
@@ -34,8 +36,8 @@ interface ShippingPackage {
 
 const MOTO_UBER_CITIES = new Set([
   "aparecida de goiania",
-  "aragoiania",
   "goiania",
+  "goianira",
   "hidrolandia",
   "senador canedo",
   "trindade",
@@ -47,6 +49,8 @@ const LOCAL_PICKUP_OPTION: ShippingOption = {
   name: "Retirar em mãos",
   price: 0,
   deadline: "Combinar retirada",
+  min_days: 0,
+  max_days: 0,
 };
 
 function normalizeLocation(value: string) {
@@ -77,6 +81,8 @@ export function getMotoUberShippingOption(
     name: "Moto Uber",
     price: MOTO_UBER_PRICE,
     deadline: "Entrega no mesmo dia em horário comercial",
+    min_days: 0,
+    max_days: 0,
   };
 }
 
@@ -121,13 +127,12 @@ function getShippingPriority(option: ShippingOption) {
   return 2;
 }
 
-function getDeadlineDays(option: ShippingOption) {
-  if (option.name === "Moto Uber") return 0;
-  if (option.name === "Retirar em mãos") return 0;
+function getDeadlineMin(option: ShippingOption) {
+  return Number.isFinite(option.min_days) ? Number(option.min_days) : 999;
+}
 
-  const match = option.deadline.match(/\d+/);
-
-  return match ? Number(match[0]) : 999;
+function getDeadlineMax(option: ShippingOption) {
+  return Number.isFinite(option.max_days) ? Number(option.max_days) : 999;
 }
 
 function sortShippingOptions(options: ShippingOption[]) {
@@ -135,22 +140,54 @@ function sortShippingOptions(options: ShippingOption[]) {
     const priorityDiff =
       getShippingPriority(first) - getShippingPriority(second);
 
-    if (priorityDiff !== 0) {
-      return priorityDiff;
-    }
+    if (priorityDiff !== 0) return priorityDiff;
 
-    const deadlineDiff = getDeadlineDays(first) - getDeadlineDays(second);
+    const minDiff = getDeadlineMin(first) - getDeadlineMin(second);
 
-    if (deadlineDiff !== 0) {
-      return deadlineDiff;
-    }
+    if (minDiff !== 0) return minDiff;
 
-    return first.price - second.price;
+    const maxDiff = getDeadlineMax(first) - getDeadlineMax(second);
+
+    if (maxDiff !== 0) return maxDiff;
+
+    const originalPriceFirst = Number(first.original_price ?? first.price);
+    const originalPriceSecond = Number(second.original_price ?? second.price);
+
+    return originalPriceFirst - originalPriceSecond;
   });
 }
 
 function getBestShippingOption(options: ShippingOption[]) {
   return sortShippingOptions(options).slice(0, 1);
+}
+
+function formatDeadline(minDays: number, maxDays: number) {
+  if (minDays === maxDays) {
+    return `Entregue em ${maxDays} dias úteis`;
+  }
+
+  return `Entregue em ${minDays} a ${maxDays} dias úteis`;
+}
+
+function getDeliveryRange(service: any) {
+  const min =
+    Number(service.custom_delivery_range?.min) ||
+    Number(service.delivery_range?.min) ||
+    Number(service.custom_delivery_time) ||
+    Number(service.delivery_time) ||
+    999;
+
+  const max =
+    Number(service.custom_delivery_range?.max) ||
+    Number(service.delivery_range?.max) ||
+    Number(service.custom_delivery_time) ||
+    Number(service.delivery_time) ||
+    min;
+
+  return {
+    min,
+    max,
+  };
 }
 
 export async function findAddressByCep(cep: string) {
@@ -250,18 +287,22 @@ export async function requestShippingOptions({
 
   const validServices = rawServices.filter((service: any) => {
     const price = Number(service.price);
-    const deliveryTime = Number(service.delivery_time);
+    const range = getDeliveryRange(service);
 
-    return !service.error && price > 0 && deliveryTime > 0;
+    return !service.error && price > 0 && range.min > 0 && range.max > 0;
   });
 
-  const shippingOptions = validServices.map((service: any) =>
-    applyFreeShipping(freeShipping, {
+  const shippingOptions = validServices.map((service: any) => {
+    const range = getDeliveryRange(service);
+
+    return applyFreeShipping(freeShipping, {
       name: freeShipping ? "Frete grátis" : "Entrega",
       price: Number(service.price),
-      deadline: `${service.delivery_time} dias úteis`,
-    })
-  );
+      deadline: formatDeadline(range.min, range.max),
+      min_days: range.min,
+      max_days: range.max,
+    });
+  });
 
   if (!shippingOptions.length) {
     throw new Error("Nenhuma transportadora disponível");
