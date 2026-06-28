@@ -5,18 +5,20 @@ import {
 import { prisma }
   from "../../../config/prisma.js";
 
-const GENERIC_GREETING_NO_CONTEXT = [
-  "Olá! 😊 Seja bem-vinda à Helô Cosméticos.",
-  "Posso ajudar você a conhecer nossos produtos para pele ou cabelo.",
-  "Sobre qual produto você gostaria de saber mais?",
-].join("\n");
+import {
+  buildProductAiContext,
+} from "./product-ai-context.service.js";
+
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 function normalizeText(
   value: string
 ) {
   return value
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
 
@@ -315,6 +317,70 @@ function isProductIntroRequest(
   );
 }
 
+async function getProdutosEmDivulgacao() {
+  return prisma.product.findMany({
+    where: { em_divulgacao: true, is_active: true },
+    orderBy: { sort_order: "asc" },
+    include: { images: { orderBy: { sort_order: "asc" } } },
+  });
+}
+
+type ProductContext = ReturnType<typeof buildProductAiContext>;
+
+async function buildIntroFromContext(
+  context: ProductContext,
+  conversationId: number
+) {
+  await prisma.conversation.updateMany({
+    where: { id: conversationId },
+    data: { last_product_id: context.id },
+  });
+
+  const displayName =
+    productDisplayName(context.title);
+  const intro =
+    introFromSubtitle(context.subtitle) ||
+    "uma opção da Helô Cosméticos para cuidado diário";
+  const feelings =
+    firstExpectedFeelings(context.expected_experience);
+  const feelingSummary =
+    summarizeSkinFeeling(feelings);
+  const kitItemsText =
+    context.kit_items.length
+      ? joinNaturalList(context.kit_items.map(itemDisplayName))
+      : "";
+  const displayContext = {
+    ...context,
+    kit_items: context.kit_items.map(itemDisplayName),
+  };
+
+  const greetingOptions = [
+    `Que bom que você veio conhecer o ${displayName}! 😊`,
+    `Seja bem-vinda! 😊 Vi que você se interessou pelo ${displayName}.`,
+    `Olá! 😊 Fico feliz que tenha vindo conhecer o ${displayName}.`,
+    `Oi! 😊 Que ótimo saber que você veio conhecer o ${displayName}.`,
+  ];
+  const greeting =
+    greetingOptions[Math.floor(Math.random() * greetingOptions.length)];
+
+  const lines = [
+    greeting,
+    buildProductPresentation(displayContext, displayName, intro, feelingSummary),
+  ];
+
+  if (
+    context.is_kit &&
+    kitItemsText &&
+    !lines[1].includes(kitItemsText)
+  ) {
+    lines[1] += ` Ele contém ${kitItemsText}.`;
+  }
+
+  lines.push(...buildNeedOptions(context));
+
+  return lines.join("\n");
+}
+
 export async function buildProductIntroResponse({
   message,
   conversationId,
@@ -330,94 +396,44 @@ export async function buildProductIntroResponse({
   }
 
   if (isGeneric) {
-    const conv = await prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { last_product_id: true },
-    });
-    if (!conv?.last_product_id) {
-      return GENERIC_GREETING_NO_CONTEXT;
+    const divulgacao = await getProdutosEmDivulgacao();
+
+    if (divulgacao.length === 0) {
+      return [
+        "Olá! 😊 Seja bem-vinda à Helô Cosméticos.",
+        "Você procura cuidados para pele ou cabelo?",
+      ].join("\n");
     }
-    // Tem contexto salvo — deixa o AI agent responder com o produto correto
-    return null;
+
+    if (divulgacao.length === 1) {
+      const commercialPolicy = await getCommercialPolicy();
+      const context = buildProductAiContext(divulgacao[0] as any, commercialPolicy);
+      return buildIntroFromContext(context, conversationId);
+    }
+
+    // Scenario 2: multiple products in divulgação — ask which one
+    const productList = divulgacao
+      .map((p) => `• ${productDisplayName(p.title)}`)
+      .join("\n");
+    return [
+      "Olá! 😊 Vi que você veio pelo anúncio.",
+      "Qual produto apareceu para você?",
+      productList,
+    ].join("\n");
   }
 
+  // Explicit product request
   const products =
     await searchProductsTool({
-      query:
-        message,
+      query: message,
       conversationId,
     });
 
-  const product =
-    products[0];
+  const product = products[0];
 
   if (!product) {
     return "Essa informação não está disponível aqui no momento.";
   }
 
-  const context =
-    product;
-  const displayName =
-    productDisplayName(context.title);
-  const intro =
-    introFromSubtitle(context.subtitle) ||
-    "uma opção da Helô Cosméticos para cuidado diário";
-  const feelings =
-    firstExpectedFeelings(
-      context.expected_experience
-    );
-  const feelingSummary =
-    summarizeSkinFeeling(
-      feelings
-    );
-  const kitItemsText =
-    context.kit_items.length
-      ? joinNaturalList(
-          context.kit_items.map(
-            itemDisplayName
-          )
-        )
-      : "";
-  const displayContext = {
-    ...context,
-    kit_items:
-      context.kit_items.map(
-        itemDisplayName
-      ),
-  };
-
-  const greetingOptions = [
-    `Que bom que você veio conhecer o ${displayName}! 😊`,
-    `Seja bem-vinda! 😊 Vi que você se interessou pelo ${displayName}.`,
-    `Olá! 😊 Fico feliz que tenha vindo conhecer o ${displayName}.`,
-    `Oi! 😊 Que ótimo saber que você veio conhecer o ${displayName}.`,
-  ];
-  const greeting =
-    greetingOptions[
-      Math.floor(Math.random() * greetingOptions.length)
-    ];
-
-  const lines = [
-    greeting,
-    buildProductPresentation(
-      displayContext,
-      displayName,
-      intro,
-      feelingSummary
-    ),
-  ];
-
-  if (
-    context.is_kit &&
-    kitItemsText &&
-    !lines[1].includes(kitItemsText)
-  ) {
-    lines[1] += ` Ele contém ${kitItemsText}.`;
-  }
-
-  lines.push(
-    ...buildNeedOptions(context)
-  );
-
-  return lines.join("\n");
+  return buildIntroFromContext(product as unknown as ProductContext, conversationId);
 }

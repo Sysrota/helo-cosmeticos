@@ -33,6 +33,7 @@ model Product {
 
   is_active         Boolean  @default(true)
   is_featured       Boolean  @default(false)
+  em_divulgacao     Boolean  @default(false)
   sort_order        Int      @default(0)
 
 

@@ -30,6 +30,8 @@ export const createProductSchema = z.object({
 
   is_featured: z.boolean().optional().default(false),
 
+  em_divulgacao: z.boolean().optional().default(false),
+
   sort_order: z.number().int().optional(),
 
   keywords: z.string().optional().default(""),

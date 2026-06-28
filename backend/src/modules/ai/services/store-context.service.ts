@@ -211,6 +211,7 @@ Valor e prazo finais devem ser informados somente após o cálculo pelo CEP.
 CONDIÇÕES COMERCIAIS VIGENTES:
 - ${pixCondition}
 - Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.
+- Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo do que PIX ou cartão. O pedido é separado somente após confirmação do pagamento. Para liberação mais rápida, recomende PIX ou cartão. Não afirme prazo exato de compensação.
 - Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis.
 - Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra.` : "indisponíveis no momento."}
 - O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.

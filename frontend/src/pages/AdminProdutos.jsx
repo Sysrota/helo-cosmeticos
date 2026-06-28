@@ -80,6 +80,7 @@ export default function AdminProdutos() {
   const [formCategory, setFormCategory] = useState("Selecione");
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [emDivulgacao, setEmDivulgacao] = useState(false);
 
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
@@ -323,6 +324,7 @@ export default function AdminProdutos() {
     setFormCategory("");
     setIsActive(true);
     setIsFeatured(false);
+    setEmDivulgacao(false);
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
@@ -351,6 +353,7 @@ export default function AdminProdutos() {
     setFormCategory(p.category || "");
     setIsActive(Boolean(p.is_active));
     setIsFeatured(Boolean(p.is_featured));
+    setEmDivulgacao(Boolean(p.em_divulgacao));
     setTagsIA(p.keywords || "");
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
@@ -401,6 +404,7 @@ export default function AdminProdutos() {
     category: formCategory,
     is_active: isActive,
     is_featured: isFeatured,
+    em_divulgacao: emDivulgacao,
     dicas_uso: dicasUso,
     o_que_vai_sentir: oQueVaiSentir,
     destaques,
@@ -1101,6 +1105,27 @@ export default function AdminProdutos() {
             </span>
             <span className="mt-0.5 block text-xs text-zinc-500">
               Substitui o produto principal atual.
+            </span>
+          </span>
+        </label>
+
+        <label
+          htmlFor="em_divulgacao"
+          className="flex items-start gap-3 rounded-xl border border-[#efd8de] bg-[#fff7f9] px-4 py-3 text-sm text-zinc-700"
+        >
+          <input
+            id="em_divulgacao"
+            type="checkbox"
+            className="mt-0.5 h-5 w-5"
+            checked={emDivulgacao}
+            onChange={(e) => setEmDivulgacao(e.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold text-helo-dark">
+              Em divulgação
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500">
+              A IA apresenta este produto para clientes vindos de anúncios.
             </span>
           </span>
         </label>

@@ -115,6 +115,7 @@ interface CreateProductDTO {
   faq?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  em_divulgacao?: boolean;
   sort_order?: number;
   keywords?: string;
   weight?: number;
@@ -172,6 +173,7 @@ export async function createProduct(
         faq: data.faq ?? "",
         is_active: data.is_active ?? true,
         is_featured: data.is_featured ?? false,
+        em_divulgacao: data.em_divulgacao ?? false,
         sort_order:
           data.sort_order ??
           ((lastProduct?.sort_order ?? -1) + 1),
@@ -212,6 +214,7 @@ interface UpdateProductDTO {
   faq?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  em_divulgacao?: boolean;
   sort_order?: number;
   keywords?: string;
   weight?: number;
