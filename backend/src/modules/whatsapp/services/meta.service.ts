@@ -8,7 +8,11 @@ export function normalizeWhatsAppMessage(
   message: string
 ) {
   return String(message || "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\u2028\u2029]/g, "\n")
     .replace(/\r\n?/g, "\n")
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]+$/gm, "")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n[ \t]+/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

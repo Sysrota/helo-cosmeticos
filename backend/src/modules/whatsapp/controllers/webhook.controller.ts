@@ -4,6 +4,7 @@ import { prisma } from "../../../config/prisma.js";
 
 import {
   downloadWhatsAppMedia,
+  normalizeWhatsAppMessage,
   sendWhatsAppMessage,
 } from "../services/meta.service.js";
 import { createMessage } from "../../attendance/attendance.service.js";
@@ -354,22 +355,27 @@ async function handleManagerMessage({
 
   if (!response) return;
 
+  const normalizedResponse =
+    normalizeWhatsAppMessage(
+      response
+    );
+
   // Envia resposta via WhatsApp
-  await sendWhatsAppMessage(phone, response);
+  await sendWhatsAppMessage(phone, normalizedResponse);
 
   // Salva resposta da IA
   await prisma.message.create({
     data: {
       conversation_id: conversation.id,
       sender_type: "agent",
-      content: response,
+      content: normalizedResponse,
       type: "text",
     },
   });
 
   await prisma.conversation.update({
     where: { id: conversation.id },
-    data: { last_message: response, last_message_at: new Date() },
+    data: { last_message: normalizedResponse, last_message_at: new Date() },
   });
 
   console.log(`✅ Resposta admin enviada para ${phone}`);
