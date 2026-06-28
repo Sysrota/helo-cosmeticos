@@ -1,166 +1,102 @@
 import axios from "axios";
 
-import { prisma }
-  from "../../config/prisma.js";
-import {
-  getCommercialPolicy,
-} from "../store-config/store-config.service.js";
+import { prisma } from "../../config/prisma.js";
+import { getCommercialPolicy } from "../store-config/store-config.service.js";
 
 interface Props {
   cep: string;
-
   order_id: number;
 }
 
 interface ProductShippingProps {
   cep: string;
-
   product_id: number;
-
   quantity: number;
 }
 
 export interface ShippingOption {
   name: string;
-
   price: number;
-
   deadline: string;
-
   original_price?: number;
-
   discount?: number;
 }
 
 interface ShippingPackage {
   cleanCep: string;
-
   totalWeight: number;
-
   maxHeight: number;
-
   maxWidth: number;
-
   totalLength: number;
-
   insuranceValue: number;
-
   freeShipping?: boolean;
 }
 
 const MOTO_UBER_CITIES = new Set([
-  "abadia de goias",
   "aparecida de goiania",
-  "aragoiania",
-  "bela vista de goias",
-  "bonfinopolis",
-  "brazabrantes",
-  "caldazinha",
-  "caturai",
-  "goianapolis",
   "goiania",
-  "goianira",
-  "guapo",
-  "hidrolandia",
-  "inhumas",
-  "neropolis",
-  "nova veneza",
-  "santa barbara de goias",
-  "santo antonio de goias",
   "senador canedo",
-  "terezopolis de goias",
+  "hidrolandia",
   "trindade",
 ]);
 
 const MOTO_UBER_PRICE = 0;
+
 const LOCAL_PICKUP_OPTION: ShippingOption = {
-  name:
-    "Retirar em mãos",
-  price:
-    0,
-  deadline:
-      "Combinar retirada",
+  name: "Retirar em mãos",
+  price: 0,
+  deadline: "Combinar retirada",
 };
 
-function normalizeLocation(
-  value: string
-) {
+function normalizeLocation(value: string) {
   return value
     .normalize("NFD")
-    .replace(
-      /[\u0300-\u036f]/g,
-      ""
-    )
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
 }
 
-function isLocalDeliveryCovered(
-  address: {
-    city: string;
-    state: string;
-  }
-) {
+function isLocalDeliveryCovered(address: { city: string; state: string }) {
   return (
     normalizeLocation(address.state) === "go" &&
-    MOTO_UBER_CITIES.has(
-      normalizeLocation(address.city)
-    )
+    MOTO_UBER_CITIES.has(normalizeLocation(address.city))
   );
 }
 
 export function getMotoUberShippingOption(
-  address: {
-    city: string;
-    state: string;
-  },
+  address: { city: string; state: string },
   enabled: boolean,
   fixedPrice: boolean
 ): ShippingOption | null {
-  if (
-    !enabled ||
-    !isLocalDeliveryCovered(address)
-  ) {
+  if (!enabled || !isLocalDeliveryCovered(address)) {
     return null;
   }
 
   return {
-    name:
-      "Moto Uber",
-    price:
-      MOTO_UBER_PRICE,
-    deadline:
-      "Grátis para Goiânia e Região Metropolitana",
+    name: "Moto Uber",
+    price: MOTO_UBER_PRICE,
+    deadline: "Grátis para Goiânia e Região Metropolitana",
   };
 }
 
 export function getLocalShippingOptions(
-  address: {
-    city: string;
-    state: string;
-  },
+  address: { city: string; state: string },
   enabled: boolean,
   fixedMotoUberPrice: boolean
 ): ShippingOption[] {
-  if (
-    !enabled ||
-    !isLocalDeliveryCovered(address)
-  ) {
+  if (!enabled || !isLocalDeliveryCovered(address)) {
     return [];
   }
 
-  const motoUberOption =
-    getMotoUberShippingOption(
-      address,
-      enabled,
-      fixedMotoUberPrice
-    );
+  const motoUberOption = getMotoUberShippingOption(
+    address,
+    enabled,
+    fixedMotoUberPrice
+  );
 
   return [
     LOCAL_PICKUP_OPTION,
-    ...(motoUberOption
-      ? [motoUberOption]
-      : []),
+    ...(motoUberOption ? [motoUberOption] : []),
   ];
 }
 
@@ -168,115 +104,66 @@ function applyFreeShipping(
   freeShipping: boolean,
   option: ShippingOption
 ): ShippingOption {
-  const originalPrice =
-    Number(
-      option.price
-    );
-  const price =
-    freeShipping
-      ? 0
-      : originalPrice;
+  const originalPrice = Number(option.price);
+  const price = freeShipping ? 0 : originalPrice;
 
   return {
     ...option,
     price,
-    original_price:
-      originalPrice,
-    discount:
-      freeShipping
-        ? originalPrice
-        : 0,
+    original_price: originalPrice,
+    discount: freeShipping ? originalPrice : 0,
   };
 }
 
-function isSedexOption(
-  option: ShippingOption
-) {
-  return option.name
-    .toLowerCase()
-    .includes("sedex");
+function isSedexOption(option: ShippingOption) {
+  return option.name.toLowerCase().includes("sedex");
 }
 
-function shippingPriority(
-  option: ShippingOption
-) {
-  if (
-    option.name ===
-    "Retirar em mãos"
-  ) {
+function shippingPriority(option: ShippingOption) {
+  if (option.name === "Retirar em mãos") {
     return 0;
   }
 
-  if (
-    option.name ===
-    "Moto Uber"
-  ) {
+  if (option.name === "Moto Uber") {
     return 1;
   }
 
-  if (
-    isSedexOption(option)
-  ) {
+  if (isSedexOption(option)) {
     return 2;
   }
 
   return 3;
 }
 
-function sortShippingOptions(
-  options: ShippingOption[]
-) {
+function sortShippingOptions(options: ShippingOption[]) {
   return [...options].sort(
-    (
-      first,
-      second
-    ) =>
-      shippingPriority(first) -
-        shippingPriority(second) ||
-      first.price -
-        second.price
+    (first, second) =>
+      shippingPriority(first) - shippingPriority(second) ||
+      first.price - second.price
   );
 }
 
-export async function findAddressByCep(
-  cep: string
-) {
+export async function findAddressByCep(cep: string) {
+  const cleanCep = cep.replace(/\D/g, "");
 
-  const cleanCep =
-    cep.replace(/\D/g, "");
-
-  if (
-    cleanCep.length !== 8
-  ) {
-
-    throw new Error(
-      "CEP inválido"
-    );
+  if (cleanCep.length !== 8) {
+    throw new Error("CEP inválido");
   }
 
-  const { data } =
-    await axios.get(
-      `https://viacep.com.br/ws/${cleanCep}/json/`
-    );
+  const { data } = await axios.get(
+    `https://viacep.com.br/ws/${cleanCep}/json/`
+  );
 
   if (data.erro) {
-
-    throw new Error(
-      "CEP não encontrado"
-    );
+    throw new Error("CEP não encontrado");
   }
 
   return {
-    zipcode:
-      data.cep || cep,
-    street:
-      data.logradouro || "",
-    district:
-      data.bairro || "",
-    city:
-      data.localidade || "",
-    state:
-      data.uf || "",
+    zipcode: data.cep || cep,
+    street: data.logradouro || "",
+    district: data.bairro || "",
+    city: data.localidade || "",
+    state: data.uf || "",
   };
 }
 
@@ -288,258 +175,164 @@ export async function requestShippingOptions({
   totalLength,
   insuranceValue,
   freeShipping = false,
-}: ShippingPackage): Promise<
-  ShippingOption[]
-> {
+}: ShippingPackage): Promise<ShippingOption[]> {
+  const payload = {
+    from: {
+      postal_code: "74976040",
+    },
+
+    to: {
+      postal_code: cleanCep,
+    },
+
+    products: [
+      {
+        id: "1",
+        width: Math.max(Number(maxWidth || 0), 11),
+        height: Math.max(Number(maxHeight || 0), 2),
+        length: Math.max(Number(totalLength || 0), 16),
+        weight: Math.max(Number(totalWeight || 0), 0.3),
+        insurance_value: Math.max(Number(insuranceValue || 0), 1),
+        quantity: 1,
+      },
+    ],
+
+    options: {
+      receipt: false,
+      own_hand: false,
+    },
+  };
 
   let melhorEnvioResponse;
 
   try {
-    melhorEnvioResponse =
-      await axios.post(
+    console.log("[ME] Payload enviado:", JSON.stringify(payload, null, 2));
+
+    melhorEnvioResponse = await axios.post(
       "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
-      {
-        from: {
-          postal_code:
-            "74976040",
-        },
-
-        to: {
-          postal_code:
-            cleanCep,
-        },
-
-        products: [
-          {
-            id: "1",
-
-            width:
-              Math.max(
-                maxWidth,
-                11
-              ),
-
-            height:
-              Math.max(
-                maxHeight,
-                2
-              ),
-
-            length:
-              Math.max(
-                totalLength,
-                16
-              ),
-
-            weight:
-              Math.max(
-                totalWeight,
-                0.3
-              ),
-
-            insurance_value:
-              insuranceValue,
-
-            quantity: 1,
-          },
-        ],
-
-        services: [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 15, 17, 18, 19, 20, 21, 22, 23],
-
-        options: {
-          receipt: false,
-
-          own_hand: false,
-        },
-
-      },
+      payload,
       {
         headers: {
-          Authorization:
-            `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-
-          Accept:
-            "application/json",
-
-          "Content-Type":
-            "application/json",
-
-          "User-Agent":
-            "HeloCosmeticos",
+          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "HeloCosmeticos",
         },
-        }
-      );
+      }
+    );
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error(
-        "Melhor Envio recusou o cálculo de frete:",
-        {
-          status:
-            error.response?.status,
-          destination:
-            cleanCep,
-          response:
-            error.response?.data,
-        }
-      );
+      console.error("[ME] Erro no cálculo:", {
+        status: error.response?.status,
+        destination: cleanCep,
+        response: error.response?.data,
+      });
 
-      throw new Error(
-        "Não foi possível consultar o frete no Melhor Envio."
-      );
+      throw new Error("Não foi possível consultar o frete no Melhor Envio.");
     }
 
     throw error;
   }
 
-  const rawServices: any[] = melhorEnvioResponse.data;
-  console.log(
-    "[ME] Serviços retornados pela API:",
-    rawServices.map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      price: s.price,
-      delivery_time: s.delivery_time,
-      error: s.error ?? null,
-    }))
-  );
+  const rawServices: any[] = Array.isArray(melhorEnvioResponse.data)
+    ? melhorEnvioResponse.data
+    : [];
 
-  const shippingOptions =
-    rawServices
+  console.log("[ME] Resposta completa:", JSON.stringify(rawServices, null, 2));
 
-      .filter(
-        (service: any) =>
-          !service.error
-      )
+  const invalidServices = rawServices.filter((service: any) => service.error);
 
-      .map(
-        (service: any) =>
-          applyFreeShipping(freeShipping, {
-            name:
-              service.name,
-
-            price:
-              Number(
-                service.price
-              ),
-
-            deadline:
-              `${service.delivery_time} dias úteis`,
-          })
-      )
-
-      .sort(
-        (
-          first: ShippingOption,
-          second: ShippingOption
-        ) =>
-          first.price -
-            second.price
-      );
-
-  if (
-    !shippingOptions.length
-  ) {
-
-    throw new Error(
-      "Nenhuma transportadora disponível"
+  if (invalidServices.length) {
+    console.log(
+      "[ME] Serviços ignorados com erro:",
+      invalidServices.map((service: any) => ({
+        id: service.id,
+        name: service.name,
+        company: service.company?.name,
+        error: service.error,
+      }))
     );
   }
 
-  return sortShippingOptions(
-    shippingOptions
-  );
+  const validServices = rawServices.filter((service: any) => {
+    const price = Number(service.price);
+    const deliveryTime = Number(service.delivery_time);
+
+    return !service.error && price > 0 && deliveryTime > 0;
+  });
+
+  const shippingOptions = validServices
+    .map((service: any) =>
+      applyFreeShipping(freeShipping, {
+        name: service.company?.name
+          ? `${service.company.name} - ${service.name}`
+          : service.name,
+
+        price: Number(service.price),
+
+        deadline: `${service.delivery_time} dias úteis`,
+      })
+    )
+    .sort(
+      (first: ShippingOption, second: ShippingOption) =>
+        first.price - second.price
+    );
+
+  if (!shippingOptions.length) {
+    throw new Error("Nenhuma transportadora disponível");
+  }
+
+  return sortShippingOptions(shippingOptions);
 }
 
 export async function calculateProductShipping({
   cep,
   product_id,
   quantity,
-}: ProductShippingProps): Promise<
-  ShippingOption[]
-> {
+}: ProductShippingProps): Promise<ShippingOption[]> {
+  const cleanCep = cep.replace(/\D/g, "");
 
-  const cleanCep =
-    cep.replace(/\D/g, "");
+  const address = await findAddressByCep(cleanCep);
 
-  const address =
-    await findAddressByCep(
-    cleanCep
-  );
+  const product = await prisma.product.findUnique({
+    where: {
+      id: product_id,
+    },
+  });
 
-  const product =
-    await prisma.product.findUnique({
-      where: {
-        id: product_id,
-      },
-    });
-
-  if (
-    !product ||
-    product.is_active === false
-  ) {
-
-    throw new Error(
-      "Produto indisponível"
-    );
+  if (!product || product.is_active === false) {
+    throw new Error("Produto indisponível");
   }
 
-  const safeQuantity =
-    Math.min(
-      99,
-      Math.max(
-        1,
-        Math.floor(
-          Number(quantity) || 1
-        )
-      )
-    );
+  const safeQuantity = Math.min(
+    99,
+    Math.max(1, Math.floor(Number(quantity) || 1))
+  );
 
-  const policy =
-    await getCommercialPolicy();
-  const subtotal =
-    Number(product.price || 0) *
-    safeQuantity;
-  const hasFreeShipping =
-    subtotal >
-    policy.free_shipping_minimum;
+  const policy = await getCommercialPolicy();
 
-  const localOptions =
-    getLocalShippingOptions(
-      address,
-      policy.moto_uber_enabled,
-      hasFreeShipping
-    );
+  const subtotal = Number(product.price || 0) * safeQuantity;
+
+  const hasFreeShipping = subtotal > policy.free_shipping_minimum;
+
+  const localOptions = getLocalShippingOptions(
+    address,
+    policy.moto_uber_enabled,
+    hasFreeShipping
+  );
 
   try {
-    const carrierOptions =
-      await requestShippingOptions({
-        cleanCep,
-        totalWeight:
-          Number(
-            product.weight || 0
-          ) * safeQuantity,
-        maxHeight:
-          Number(
-            product.height || 1
-          ),
-        maxWidth:
-          Number(
-            product.width || 1
-          ),
-        totalLength:
-          Number(
-            product.length || 1
-          ) * safeQuantity,
-        insuranceValue:
-          subtotal,
-        freeShipping:
-          hasFreeShipping,
-      });
+    const carrierOptions = await requestShippingOptions({
+      cleanCep,
+      totalWeight: Number(product.weight || 0) * safeQuantity,
+      maxHeight: Number(product.height || 1),
+      maxWidth: Number(product.width || 1),
+      totalLength: Number(product.length || 1) * safeQuantity,
+      insuranceValue: subtotal,
+      freeShipping: hasFreeShipping,
+    });
 
-    return sortShippingOptions([
-      ...localOptions,
-      ...carrierOptions,
-    ]);
+    return sortShippingOptions([...localOptions, ...carrierOptions]);
   } catch (error) {
     if (localOptions.length) {
       return localOptions;
@@ -552,158 +345,75 @@ export async function calculateProductShipping({
 export async function calculateShipping({
   cep,
   order_id,
-}: Props): Promise<
-  ShippingOption[]
-> {
+}: Props): Promise<ShippingOption[]> {
+  const cleanCep = cep.replace(/\D/g, "");
 
-  const cleanCep =
-    cep.replace(/\D/g, "");
+  const address = await findAddressByCep(cleanCep);
 
-  const address =
-    await findAddressByCep(
-    cleanCep
-  );
+  const order = await prisma.order.findUnique({
+    where: {
+      id: order_id,
+    },
 
-  // BUSCA PEDIDO
-  const order =
-    await prisma.order.findUnique({
-      where: {
-        id: order_id,
-      },
-
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
+    include: {
+      items: {
+        include: {
+          product: true,
         },
       },
-    });
-
+    },
+  });
 
   if (!order) {
-
-    throw new Error(
-      "Pedido não encontrado"
-    );
+    throw new Error("Pedido não encontrado");
   }
 
-  // SEM PRODUTOS
-  if (
-    !order.items.length
-  ) {
-
+  if (!order.items.length) {
     throw new Error(
       "Por favor, informe pelo menos um produto para calcular o frete"
     );
   }
 
-  const policy =
-    await getCommercialPolicy();
-  const subtotal =
-    Number(order.subtotal || 0);
-  const hasFreeShipping =
-    subtotal >
-    policy.free_shipping_minimum;
-  const localOptions =
-    getLocalShippingOptions(
-      address,
-      policy.moto_uber_enabled,
-      hasFreeShipping
-    );
+  const policy = await getCommercialPolicy();
 
+  const subtotal = Number(order.subtotal || 0);
 
-  // PESO TOTAL
-  const totalWeight =
-    order.items.reduce(
-      (total, item) => {
+  const hasFreeShipping = subtotal > policy.free_shipping_minimum;
 
-        return (
-          total +
-          (
-            Number(
-              item.product
-                ?.weight || 0
-            ) *
-            item.quantity
-          )
-        );
+  const localOptions = getLocalShippingOptions(
+    address,
+    policy.moto_uber_enabled,
+    hasFreeShipping
+  );
 
-      },
-      0
-    );
+  const totalWeight = order.items.reduce((total, item) => {
+    return total + Number(item.product?.weight || 0) * item.quantity;
+  }, 0);
 
-    // console.log("Peso total:", totalWeight);
-  // ALTURA
-  const maxHeight =
-    Math.max(
-      ...order.items.map(
-        (item) =>
-          Number(
-            item.product
-              ?.height || 1
-          )
-      )
-    );
+  const maxHeight = Math.max(
+    ...order.items.map((item) => Number(item.product?.height || 1))
+  );
 
-    // console.log("Altura máxima:", maxHeight);
+  const maxWidth = Math.max(
+    ...order.items.map((item) => Number(item.product?.width || 1))
+  );
 
-  // LARGURA
-  const maxWidth =
-    Math.max(
-      ...order.items.map(
-        (item) =>
-          Number(
-            item.product
-              ?.width || 1
-          )
-      )
-    );
-
-    // console.log("Largura máxima:", maxWidth);
-  // COMPRIMENTO
-  const totalLength =
-    order.items.reduce(
-      (total, item) => {
-
-        return (
-          total +
-          Number(
-            item.product
-              ?.length || 1
-          )
-        );
-
-      },
-      0
-    );
-
-  // console.log({
-  //   totalWeight,
-  //   maxHeight,
-  //   maxWidth,
-  //   totalLength,
-  // });
-
+  const totalLength = order.items.reduce((total, item) => {
+    return total + Number(item.product?.length || 1) * item.quantity;
+  }, 0);
 
   try {
-    const carrierOptions =
-      await requestShippingOptions({
-        cleanCep,
-        totalWeight,
-        maxHeight,
-        maxWidth,
-        totalLength,
-        insuranceValue:
-          subtotal,
-        freeShipping:
-          hasFreeShipping,
-      });
+    const carrierOptions = await requestShippingOptions({
+      cleanCep,
+      totalWeight,
+      maxHeight,
+      maxWidth,
+      totalLength,
+      insuranceValue: subtotal,
+      freeShipping: hasFreeShipping,
+    });
 
-    return sortShippingOptions([
-      ...localOptions,
-      ...carrierOptions,
-    ]);
+    return sortShippingOptions([...localOptions, ...carrierOptions]);
   } catch (error) {
     if (localOptions.length) {
       return localOptions;
