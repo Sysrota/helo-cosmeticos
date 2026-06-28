@@ -17,7 +17,7 @@ async function main() {
       payment_methods: [
         {
           id: "pix",
-          label: "Pix",
+          label: "PIX",
           enabled: true,
         },
 
@@ -28,21 +28,9 @@ async function main() {
         },
 
         {
-          id: "debit_card",
-          label: "Cartão de Débito",
-          enabled: true,      
-        },
-
-        {
           id: "boleto",
-          label: "Boleto",
+          label: "Boleto Bancário",
           enabled: false,
-        },
-
-        {
-          id: "dinheiro",
-          label: "Dinheiro",
-          enabled: true,
         },
       ],
 
@@ -75,6 +63,9 @@ async function main() {
 
       card_max_installments:
         12,
+
+      show_secure_purchase:
+        true,
 
       business_hours:
         "Segunda a sexta das 08h às 18h",

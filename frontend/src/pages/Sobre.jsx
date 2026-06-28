@@ -35,10 +35,14 @@ const values = [
 ];
 
 export default function Sobre() {
-  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
+  const {
+    paymentMethodsLabel,
+    freeShippingLabel,
+    show_secure_purchase: showSecurePurchase,
+  } = useCommercialPolicy();
   const [featuredProduct, setFeaturedProduct] = useState(null);
   const trustItems = [
-    {
+    showSecurePurchase && {
       icon: ShieldCheck,
       title: "Compra protegida",
       text: "Pagamento seguro pelo Mercado Pago.",
@@ -48,12 +52,12 @@ export default function Sobre() {
       title: "Frete promocional",
       text: `${freeShippingLabel} nas opções elegíveis.`,
     },
-    {
+    paymentMethodsLabel && {
       icon: CreditCard,
-      title: "PIX ou cartão",
-      text: `${pixLabel}, ${cardLabel}.`,
+      title: "Pagamento",
+      text: paymentMethodsLabel,
     },
-  ];
+  ].filter(Boolean);
 
   useEffect(() => {
     let active = true;

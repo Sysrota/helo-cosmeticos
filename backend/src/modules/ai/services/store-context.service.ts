@@ -17,6 +17,23 @@ const categoryLabels: Record<string, string> = {
   kit: "Kits",
 };
 
+function joinNaturalList(
+  values: string[],
+  connector = "e"
+) {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} ${connector} ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")} ${connector} ${
+    values[values.length - 1]
+  }`;
+}
+
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
@@ -151,17 +168,64 @@ export async function getStoreContext() {
         currency: "BRL",
       });
   const pixCondition =
+    policy.payment_methods.some(
+      (method) =>
+        method.id === "pix" &&
+        method.enabled
+    ) &&
     Number(policy.pix_discount_percent) > 0
       ? "PIX tem desconto exclusivo no checkout."
       : "PIX disponível no checkout.";
 
   const paymentMethods =
-    Array.isArray(config.payment_methods)
-      ? config.payment_methods
-        .filter((method: any) => method.enabled)
-        .map((method: any) => method.label)
-        .join(", ")
-      : "Consulte no checkout";
+    policy.payment_methods
+      .filter((method) =>
+        method.enabled
+      );
+  const paymentMethodIds =
+    new Set(
+      paymentMethods.map((method) =>
+        method.id
+      )
+    );
+  const fasterPaymentMethods =
+    [
+      paymentMethodIds.has("pix")
+        ? "PIX"
+        : "",
+      paymentMethodIds.has("credit_card")
+        ? "cartão"
+        : "",
+    ].filter(Boolean);
+  const boletoCondition =
+    fasterPaymentMethods.length
+      ? `Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo do que ${joinNaturalList(fasterPaymentMethods, "ou")}. O pedido é separado somente após confirmação do pagamento. Para liberação mais rápida, recomende ${joinNaturalList(fasterPaymentMethods, "ou")}. Não afirme prazo exato de compensação.`
+      : "Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo e o pedido é separado somente após confirmação do pagamento. Não afirme prazo exato de compensação.";
+  const paymentMethodsText =
+    paymentMethods.length
+      ? `Aceitamos ${joinNaturalList(
+          paymentMethods.map((method) =>
+            method.label
+          )
+        )}.`
+      : "Nenhuma forma de pagamento está marcada como disponível no momento.";
+  const commercialConditions = [
+    paymentMethodIds.has("pix")
+      ? pixCondition
+      : "",
+    paymentMethodIds.has("credit_card")
+      ? `Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.`
+      : "",
+    paymentMethodIds.has("boleto")
+      ? boletoCondition
+      : "",
+    policy.show_secure_purchase
+      ? "Compra segura: habilitada para comunicação comercial."
+      : "",
+    `Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis.`,
+    `Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra.` : "indisponíveis no momento."}`,
+    "O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.",
+  ].filter(Boolean);
   const activeProducts =
     await prisma.product.findMany({
       where: {
@@ -203,18 +267,18 @@ REGRAS PARA PERGUNTAS SOBRE O QUE A LOJA VENDE:
 - Não empurre o link em toda mensagem; use quando for útil para o cliente ver mais opções.
 
 FORMAS DE PAGAMENTO:
-${paymentMethods}
+${paymentMethodsText}
+
+REGRAS DE PAGAMENTO:
+- Use somente as formas marcadas acima como disponíveis.
+- Nunca mencione PIX, Cartão de Crédito ou Boleto Bancário se a forma não estiver marcada como disponível.
+- Só mencione "Compra segura" quando CONDIÇÕES COMERCIAIS VIGENTES indicar compra segura habilitada.
 
 INFORMAÇÕES DE ENTREGA:
 Valor e prazo finais devem ser informados somente após o cálculo pelo CEP.
 
 CONDIÇÕES COMERCIAIS VIGENTES:
-- ${pixCondition}
-- Cartão: até ${policy.card_interest_free_installments}x sem juros ou até ${policy.card_max_installments}x com juros.
-- Boleto bancário: disponível no checkout. A confirmação pode levar mais tempo do que PIX ou cartão. O pedido é separado somente após confirmação do pagamento. Para liberação mais rápida, recomende PIX ou cartão. Não afirme prazo exato de compensação.
-- Entrega: frete grátis em compras acima de ${shippingMinimum} nas opções elegíveis.
-- Retirada e Moto Uber: ${policy.moto_uber_enabled ? `Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra.` : "indisponíveis no momento."}
-- O cálculo retornado pelo sistema já apresenta o valor final de frete para informar ao cliente.
+${commercialConditions.map((line) => `- ${line}`).join("\n")}
 
 HORÁRIO DE ATENDIMENTO:
 ${config.business_hours}

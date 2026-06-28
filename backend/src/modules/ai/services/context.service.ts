@@ -217,6 +217,7 @@ REGRAS:
 - Depois que a cliente informar uma necessidade, recomende o produto para aquela necessidade antes de apresentar preço, frete ou pedido.
 - Use "Destaques comerciais" do produto antes do preço quando esse campo estiver preenchido.
 - Se "Destaques comerciais" estiver vazio ou "Não informado no banco", não invente diferenciais comerciais.
+- Quando usar "Destaques comerciais", envie como lista vertical: "Além disso, tem:" e depois um destaque por linha com "•". Nunca coloque vários destaques na mesma frase.
 - Não responda necessidades diferentes com o mesmo texto.
 `,
     });

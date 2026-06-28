@@ -7,6 +7,9 @@ import {
 import {
   ensureCartItemTool,
 } from "../tools/add-cart-item.tool.js";
+import {
+  getCommercialPolicy,
+} from "../../store-config/store-config.service.js";
 
 function normalizeText(
   value: string
@@ -37,22 +40,6 @@ function cleanListItem(
     .trim();
 }
 
-function joinNaturalList(
-  values: string[]
-) {
-  if (values.length <= 1) {
-    return values[0] || "";
-  }
-
-  if (values.length === 2) {
-    return `${values[0]} e ${values[1]}`;
-  }
-
-  return `${values.slice(0, -1).join(", ")} e ${
-    values[values.length - 1]
-  }`;
-}
-
 function lowerFirst(
   value: string
 ) {
@@ -70,13 +57,20 @@ function lowerFirst(
 }
 
 function commercialHighlightsText(
-  highlights: string
+  highlights: string,
+  showSecurePurchase = true
 ) {
   const items =
     highlights
       .split(/\r?\n|;/)
       .map(cleanListItem)
-      .filter(Boolean)
+      .filter((item) =>
+        Boolean(item) &&
+        (
+          showSecurePurchase ||
+          !normalizeText(item).includes("compra segura")
+        )
+      )
       .slice(0, 4)
       .map(lowerFirst);
 
@@ -84,7 +78,12 @@ function commercialHighlightsText(
     return "";
   }
 
-  return `Além disso, tem ${joinNaturalList(items)}.`;
+  return [
+    "Além disso, tem:",
+    ...items.map((item) =>
+      `• ${item}`
+    ),
+  ].join("\n");
 }
 
 function productDisplayName(
@@ -309,6 +308,8 @@ export async function buildProductNeedResponse({
 
   const context =
     buildProductAiContext(product);
+  const commercialPolicy =
+    await getCommercialPolicy();
   const displayName =
     productDisplayName(context.title);
   const priceSubject =
@@ -324,7 +325,8 @@ export async function buildProductNeedResponse({
     });
   const highlightsText =
     commercialHighlightsText(
-      context.highlights
+      context.highlights,
+      commercialPolicy.show_secure_purchase
     );
 
   if (highlightsText) {

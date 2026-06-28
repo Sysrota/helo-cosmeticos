@@ -24,6 +24,8 @@ export default function ProductCard({
   const navigate = useNavigate();
   const {
     pix_discount_percent: pixDiscountPercent,
+    pixEnabled,
+    creditCardEnabled,
     pixLabel,
     cardLabel,
   } = useCommercialPolicy();
@@ -32,6 +34,8 @@ export default function ProductCard({
       ? price
       : Number(String(price || "").replace(/[^\d,.-]/g, "").replace(",", "."));
   const pixPrice = numericPrice * (1 - pixDiscountPercent / 100);
+  const hasPixDiscount =
+    pixEnabled && Number(pixDiscountPercent) > 0;
 
   function handleBuyNow() {
     trackMetaCustomEvent(
@@ -72,16 +76,20 @@ export default function ProductCard({
         to={`/produto/${id}`}
         className="group relative block aspect-square overflow-hidden bg-[#fffafb]"
       >
-        <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
-          {isFeatured && (
-            <span className="rounded-full bg-[#d9536f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
-              Escolha Helô
-            </span>
-          )}
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#b74662] shadow-sm">
-            {pixLabel}
-          </span>
-        </div>
+        {(isFeatured || hasPixDiscount) && (
+          <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+            {isFeatured && (
+              <span className="rounded-full bg-[#d9536f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                Escolha Helô
+              </span>
+            )}
+            {hasPixDiscount && (
+              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#b74662] shadow-sm">
+                {pixLabel}
+              </span>
+            )}
+          </div>
+        )}
         {image ? (
           <img
             src={image}
@@ -116,10 +124,14 @@ export default function ProductCard({
           <p className="text-xl font-semibold tracking-tight text-[#43232d]">
             {formatBRL(numericPrice)}
           </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            ou <strong className="text-[#b74662]">{formatBRL(pixPrice)}</strong> no PIX
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">{cardLabel}</p>
+          {hasPixDiscount && (
+            <p className="mt-1 text-sm text-zinc-500">
+              ou <strong className="text-[#b74662]">{formatBRL(pixPrice)}</strong> no PIX
+            </p>
+          )}
+          {creditCardEnabled && (
+            <p className="mt-1 text-xs text-zinc-500">{cardLabel}</p>
+          )}
         </div>
 
         <div className="mt-6 grid gap-2">

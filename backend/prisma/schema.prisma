@@ -222,6 +222,8 @@ model StoreConfig {
 
   card_max_installments Int @default(12)
 
+  show_secure_purchase Boolean @default(true)
+
   business_hours String @default("")
 
   exchange_policy String @default("")

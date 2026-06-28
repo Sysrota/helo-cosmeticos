@@ -26,13 +26,23 @@ function normalizeSearch(value) {
 }
 
 export default function Produtos() {
-  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
+  const {
+    pix_discount_percent: pixDiscountPercent,
+    pixEnabled,
+    creditCardEnabled,
+    pixLabel,
+    cardLabel,
+    freeShippingLabel,
+    show_secure_purchase: showSecurePurchase,
+  } = useCommercialPolicy();
+  const hasPixDiscount =
+    pixEnabled && Number(pixDiscountPercent) > 0;
   const benefits = [
-    { icon: Tag, text: pixLabel },
-    { icon: CreditCard, text: cardLabel },
+    hasPixDiscount && { icon: Tag, text: pixLabel },
+    creditCardEnabled && { icon: CreditCard, text: cardLabel },
     { icon: Truck, text: freeShippingLabel },
-    { icon: ShieldCheck, text: "Compra segura" },
-  ];
+    showSecurePurchase && { icon: ShieldCheck, text: "Compra segura" },
+  ].filter(Boolean);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -139,7 +149,7 @@ export default function Produtos() {
             Produtos Helô
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-            Cuidados para pele e cabelos com compra segura e condições especiais.
+            Cuidados para pele e cabelos com condições especiais.
           </p>
           <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-2 text-xs text-zinc-600">
             {benefits.map(({ icon, text }) => (

@@ -83,8 +83,12 @@ export default function Produto() {
   const { addToCart } = useCart();
   const {
     pix_discount_percent: pixDiscountPercent,
+    pixEnabled,
+    creditCardEnabled,
     cardLabel,
     freeShippingLabel,
+    paymentMethodsLabel,
+    show_secure_purchase: showSecurePurchase,
   } = useCommercialPolicy();
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState(null);
@@ -221,6 +225,12 @@ export default function Produto() {
     (productTotal * (1 - pixDiscountPercent / 100)).toFixed(2)
   );
   const pixSavings = Number((productTotal - pixTotal).toFixed(2));
+  const hasPixDiscount =
+    pixEnabled && Number(pixDiscountPercent) > 0;
+  const paymentDetails =
+    creditCardEnabled
+      ? `${paymentMethodsLabel}. ${cardLabel}.`
+      : paymentMethodsLabel;
 
   const goToImage = useCallback((direction) => {
     if (images.length <= 1) return;
@@ -612,7 +622,7 @@ export default function Produto() {
                 </div>
 
                 {/* Linha 2: PIX em destaque + economia */}
-                {pixDiscountPercent > 0 && (
+                {hasPixDiscount && (
                   <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <span className="text-base font-bold text-[#b74662]">
                       PIX {formatBRL(pixTotal)}
@@ -626,9 +636,11 @@ export default function Produto() {
                 )}
 
                 {/* Linha 3: Cartão (secundário) */}
-                <p className="mt-1 text-xs text-zinc-500">
-                  Cartão: {cardLabel}
-                </p>
+                {creditCardEnabled && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Cartão: {cardLabel}
+                  </p>
+                )}
 
                 {unavailable ? (
                   <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
@@ -663,18 +675,22 @@ export default function Produto() {
 
                     {/* Selos compactos */}
                     <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-[#f4e1e7] pt-3">
-                      <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <ShieldCheck size={13} className="text-[#d85c7a]" />
-                        Compra protegida
-                      </span>
+                      {showSecurePurchase && (
+                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                          <ShieldCheck size={13} className="text-[#d85c7a]" />
+                          Compra protegida
+                        </span>
+                      )}
                       <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                         <Truck size={13} className="text-[#d85c7a]" />
                         Entrega por CEP
                       </span>
-                      <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <CreditCard size={13} className="text-[#d85c7a]" />
-                        PIX ou cartão
-                      </span>
+                      {paymentMethodsLabel && (
+                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                          <CreditCard size={13} className="text-[#d85c7a]" />
+                          {paymentMethodsLabel}
+                        </span>
+                      )}
                     </div>
                   </>
                 )}
@@ -800,15 +816,17 @@ export default function Produto() {
           )}
         </article>
 
-        {/* 10. Compra segura / Entrega / PIX / Parcelamento */}
+        {/* 10. Compra segura / Entrega / Pagamento */}
         <section className="product-sale-trust mt-6 grid gap-4 bg-white p-5 sm:p-7">
-          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
-            <ShieldCheck size={25} className="shrink-0 text-[#d85c7a]" />
-            <div>
-              <p className="text-base font-semibold text-[#43232d]">Compra protegida</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">Pagamento seguro pelo Mercado Pago.</p>
+          {showSecurePurchase && (
+            <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+              <ShieldCheck size={25} className="shrink-0 text-[#d85c7a]" />
+              <div>
+                <p className="text-base font-semibold text-[#43232d]">Compra protegida</p>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">Pagamento seguro pelo Mercado Pago.</p>
+              </div>
             </div>
-          </div>
+          )}
           <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
             <Truck size={25} className="shrink-0 text-[#d85c7a]" />
             <div>
@@ -816,13 +834,15 @@ export default function Produto() {
               <p className="mt-1 text-sm leading-6 text-zinc-600">Opções exibidas antes do pagamento.</p>
             </div>
           </div>
-          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
-            <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
-            <div>
-              <p className="text-base font-semibold text-[#43232d]">PIX ou cartão</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">{cardLabel}.</p>
+          {paymentMethodsLabel && (
+            <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+              <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
+              <div>
+                <p className="text-base font-semibold text-[#43232d]">Pagamento</p>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">{paymentDetails}</p>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* 11. Como usar — dúvida de quem já está interessado */}

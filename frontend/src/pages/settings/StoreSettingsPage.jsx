@@ -8,6 +8,38 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   "/api";
 
+const PAYMENT_METHODS = [
+  {
+    id: "pix",
+    label: "PIX",
+  },
+  {
+    id: "credit_card",
+    label: "Cartão de Crédito",
+  },
+  {
+    id: "boleto",
+    label: "Boleto Bancário",
+  },
+];
+
+function normalizePaymentMethods(methods = []) {
+  return PAYMENT_METHODS.map((method) => {
+    const current =
+      methods.find((item) =>
+        item.id === method.id
+      );
+
+    return {
+      ...method,
+      enabled:
+        current
+          ? current.enabled !== false
+          : method.id !== "boleto",
+    };
+  });
+}
+
 export default function StoreSettingsPage() {
 
   const [config, setConfig] =
@@ -26,7 +58,16 @@ export default function StoreSettingsPage() {
     const data =
       await res.json();
 
-    setConfig(data);
+    setConfig({
+      ...data,
+      payment_methods:
+        normalizePaymentMethods(
+          data.payment_methods
+        ),
+      show_secure_purchase:
+        data.show_secure_purchase !==
+        false,
+    });
   }
 
   useEffect(() => {
@@ -75,6 +116,26 @@ export default function StoreSettingsPage() {
 
       setSaving(false);
     }
+  }
+
+  function updatePaymentMethod(
+    methodId,
+    enabled
+  ) {
+    setConfig({
+      ...config,
+      payment_methods:
+        normalizePaymentMethods(
+          config.payment_methods
+        ).map((method) =>
+          method.id === methodId
+            ? {
+                ...method,
+                enabled,
+              }
+            : method
+        ),
+    });
   }
 
   if (!config) {
@@ -248,18 +309,63 @@ export default function StoreSettingsPage() {
               </label>
             </div>
 
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-sm font-semibold text-zinc-900">
+                Formas de pagamento
+              </p>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {normalizePaymentMethods(config.payment_methods).map((method) => (
+                  <label
+                    key={method.id}
+                    className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={method.enabled}
+                      onChange={(event) =>
+                        updatePaymentMethod(
+                          method.id,
+                          event.target.checked
+                        )
+                      }
+                      className="h-5 w-5"
+                    />
+                    {method.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <input
+                type="checkbox"
+                checked={config.show_secure_purchase !== false}
+                onChange={(event) =>
+                  setConfig({
+                    ...config,
+                    show_secure_purchase:
+                      event.target.checked,
+                  })
+                }
+                className="mt-1 h-5 w-5"
+              />
+              <span>
+                <span className="block font-medium text-zinc-900">
+                  Exibir "Compra segura"
+                </span>
+                <span className="mt-1 block text-sm leading-6 text-zinc-500">
+                  A IA e os textos comerciais só mencionam esse benefício quando
+                  esta opção estiver habilitada.
+                </span>
+              </span>
+            </label>
+
             <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
               As parcelas sem juros divulgadas no site devem estar habilitadas
               também na sua conta do Mercado Pago; é o Mercado Pago quem
               confirma a cobrança sem juros no cartão.
             </p>
-
-            {config.payment_methods?.length > 0 && (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-600">
-                Os métodos de pagamento cadastrados continuam salvos, mas o
-                checkout usa as opções reais configuradas no Mercado Pago.
-              </div>
-            )}
           </div>
         </div>
 

@@ -9,10 +9,16 @@ export interface CommercialPolicy {
   pix_discount_percent: number;
   card_interest_free_installments: number;
   card_max_installments: number;
+  payment_methods?: Array<{
+    id: string;
+    enabled: boolean;
+  }>;
 }
 
 export interface CommercialPriceResult {
   basePrice: number;
+  pixEnabled: boolean;
+  creditCardEnabled: boolean;
   pixPrice: number;
   pixDiscountPercent: number;
   pixSavings: number;
@@ -25,12 +31,34 @@ export interface CommercialPriceResult {
   installmentValue_formatted: string;
 }
 
+function paymentEnabled(
+  policy: CommercialPolicy,
+  methodId: string
+) {
+  if (!Array.isArray(policy.payment_methods)) {
+    return true;
+  }
+
+  return policy.payment_methods.some(
+    (method) =>
+      method.id === methodId &&
+      method.enabled !== false
+  );
+}
+
 export function computeCommercialPrice(
   basePrice: number,
   policy: CommercialPolicy
 ): CommercialPriceResult {
   const base = Number(basePrice || 0);
-  const pixDiscountPercent = Number(policy.pix_discount_percent || 0);
+  const pixEnabled =
+    paymentEnabled(policy, "pix");
+  const creditCardEnabled =
+    paymentEnabled(policy, "credit_card");
+  const pixDiscountPercent =
+    pixEnabled
+      ? Number(policy.pix_discount_percent || 0)
+      : 0;
   const pixPrice = Number(
     (base * (1 - pixDiscountPercent / 100)).toFixed(2)
   );
@@ -41,6 +69,8 @@ export function computeCommercialPrice(
 
   return {
     basePrice: base,
+    pixEnabled,
+    creditCardEnabled,
     pixPrice,
     pixDiscountPercent,
     pixSavings,
@@ -59,25 +89,29 @@ export function formatCommercialPriceForPrompt(
 ): string {
   const lines: string[] = [];
 
-  lines.push(`Preço no cartão: ${cp.basePrice_formatted}`);
+  lines.push(
+    cp.creditCardEnabled
+      ? `Preço no cartão: ${cp.basePrice_formatted}`
+      : `Preço: ${cp.basePrice_formatted}`
+  );
 
-  if (cp.pixDiscountPercent > 0) {
+  if (cp.pixEnabled && cp.pixDiscountPercent > 0) {
     lines.push(
       `Preço no PIX: ${cp.pixPrice_formatted}` +
       ` (${cp.pixDiscountPercent}% de desconto — economia de ${cp.pixSavings_formatted})`
     );
-  } else {
+  } else if (cp.pixEnabled) {
     lines.push(`Preço no PIX: ${cp.basePrice_formatted} (sem desconto adicional)`);
   }
 
-  if (cp.installmentsWithoutInterest > 1) {
+  if (cp.creditCardEnabled && cp.installmentsWithoutInterest > 1) {
     lines.push(
       `Parcelamento sem juros: até ${cp.installmentsWithoutInterest}x` +
       ` de ${cp.installmentValue_formatted}`
     );
   }
 
-  if (cp.maxInstallments > cp.installmentsWithoutInterest) {
+  if (cp.creditCardEnabled && cp.maxInstallments > cp.installmentsWithoutInterest) {
     lines.push(
       `Parcelamento máximo: até ${cp.maxInstallments}x` +
       ` (com juros a partir da ${cp.installmentsWithoutInterest + 1}ª parcela)`

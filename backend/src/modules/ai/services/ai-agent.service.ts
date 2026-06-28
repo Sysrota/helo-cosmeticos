@@ -50,6 +50,23 @@ const openai =
       process.env.OPENAI_API_KEY,
   });
 
+function joinNaturalList(
+  values: string[],
+  connector = "e"
+) {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} ${connector} ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")} ${connector} ${
+    values[values.length - 1]
+  }`;
+}
+
 interface Props {
 
   conversationId:
@@ -221,6 +238,31 @@ export async function executeAiAgent({
 
   const commercialPolicy =
     await getCommercialPolicy();
+  const enabledPaymentMethods =
+    commercialPolicy.payment_methods
+      .filter((method) =>
+        method.enabled
+      );
+  const paymentMethodIds =
+    new Set(
+      enabledPaymentMethods.map((method) =>
+        method.id
+      )
+    );
+  const pixEnabled =
+    paymentMethodIds.has("pix");
+  const creditCardEnabled =
+    paymentMethodIds.has("credit_card");
+  const boletoEnabled =
+    paymentMethodIds.has("boleto");
+  const paymentMethodsText =
+    enabledPaymentMethods.length
+      ? `Aceitamos ${joinNaturalList(
+          enabledPaymentMethods.map((method) =>
+            method.label
+          )
+        )}.`
+      : "Nenhuma forma de pagamento está marcada como disponível no momento.";
   const freeShippingMinimum =
     commercialPolicy.free_shipping_minimum
       .toLocaleString("pt-BR", {
@@ -228,15 +270,50 @@ export async function executeAiAgent({
         currency: "BRL",
       });
   const cardConditions =
-    `até ${commercialPolicy.card_interest_free_installments}x sem juros ou até ${commercialPolicy.card_max_installments}x com juros no cartão`;
+    creditCardEnabled
+      ? `até ${commercialPolicy.card_interest_free_installments}x sem juros ou até ${commercialPolicy.card_max_installments}x com juros no cartão`
+      : "";
   const pixCondition =
+    pixEnabled &&
     Number(commercialPolicy.pix_discount_percent) > 0
       ? "pagamento via PIX tem desconto exclusivo no checkout"
-      : "pagamento via PIX está disponível no checkout";
+      : pixEnabled
+        ? "pagamento via PIX está disponível no checkout"
+        : "";
   const pixCheckoutBullet =
+    pixEnabled &&
     Number(commercialPolicy.pix_discount_percent) > 0
       ? "pagar com desconto exclusivo no PIX"
-      : "pagar via PIX";
+      : pixEnabled
+        ? "pagar via PIX"
+        : "";
+  const commercialConditionLines = [
+    pixCondition,
+    creditCardEnabled
+      ? `cartão possui ${cardConditions}, sujeito às opções apresentadas no checkout`
+      : "",
+    boletoEnabled
+      ? "boleto bancário está disponível no checkout; a confirmação pode levar mais tempo e o pedido é separado após confirmação do pagamento"
+      : "",
+    commercialPolicy.show_secure_purchase
+      ? "compra segura está habilitada para comunicação comercial"
+      : "",
+    `o frete é grátis em compras acima de ${freeShippingMinimum} nas opções elegíveis`,
+    commercialPolicy.moto_uber_enabled
+      ? "Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra"
+      : "Retirar em mãos e Moto Uber não estão disponíveis no momento",
+  ].filter(Boolean);
+  const checkoutBullets = [
+    pixCheckoutBullet,
+    creditCardEnabled
+      ? `parcelar no cartão em ${cardConditions}`
+      : "",
+    boletoEnabled
+      ? "pagar com boleto bancário"
+      : "",
+    `calcular a entrega com frete grátis nas opções elegíveis acima de ${freeShippingMinimum}`,
+    "finalizar seu pedido",
+  ].filter(Boolean);
   const productsUrl =
     getProductsUrl();
 
@@ -332,14 +409,14 @@ ENTRADA VINDO DO SITE:
 IMPORTANTE:
 - O cliente paga no checkout
 - Nunca gere PIX diretamente
+- Formas de pagamento disponíveis: ${paymentMethodsText}
+- Use somente as formas de pagamento marcadas como disponíveis. Nunca mencione PIX, Cartão de Crédito ou Boleto Bancário quando estiverem desabilitados.
+- Só mencione "Compra segura" quando essa condição estiver habilitada nas configurações comerciais.
 - Nunca gere resposta vazia
 - Sempre responda o cliente
 - Sempre finalize naturalmente
-- Condições vigentes: ${pixCondition}
-- Condições vigentes: cartão possui ${cardConditions}, sujeito às opções apresentadas no checkout
-- Condições vigentes: o frete é grátis em compras acima de ${freeShippingMinimum} nas opções elegíveis
-- Condições vigentes: ${commercialPolicy.moto_uber_enabled ? "Retirar em mãos e Moto Uber são grátis para Goiânia e região metropolitana em qualquer valor de compra" : "Retirar em mãos e Moto Uber não estão disponíveis no momento"}
-- Ao falar de cartão, informe exatamente: "${cardConditions}"
+${commercialConditionLines.map((line) => `- Condições vigentes: ${line}`).join("\n")}
+${creditCardEnabled ? `- Ao falar de cartão, informe exatamente: "${cardConditions}"` : "- Não mencione cartão como forma de pagamento."}
 - Para prazo e valor final de entrega, calcule o frete pelo CEP usando a tool e informe somente os valores finais retornados em options.price
 - Se CARRINHO.shipping_quote.status for "current" e shipping_needs_recalculation não for true, use essa cotação para lembrar o frete já informado; recalcule apenas se o cliente pedir atualização ou se o carrinho tiver mudado
 - Se o cliente já informou CEP/endereço antes, use calculate_shipping sem pedir o CEP novamente; a tool consulta o último endereço salvo do contato
@@ -489,9 +566,10 @@ PERSONALIZAÇÃO APÓS A RESPOSTA DA CLIENTE:
 - Antes de apresentar preço, crie uma etapa obrigatória de recomendação personalizada: valide a necessidade, explique por que o produto atende essa necessidade e crie desejo com benefícios reais do banco.
 - Depois da recomendação, use os "Destaques comerciais" cadastrados do produto, se existirem, antes de apresentar preço e pedir CEP.
 - Se "Destaques comerciais" estiver vazio, siga sem mencionar diferenciais comerciais.
+- Quando usar "Destaques comerciais", envie como lista vertical: "Além disso, tem:" e depois um destaque por linha com "•". Nunca coloque vários destaques na mesma frase.
 - Só depois dessa explicação e dos destaques apresente preço e avance para frete.
 - Se a cliente responder "Oleosidade", "Ressecamento", "Pele sem brilho" ou "Quero começar uma rotina", nunca use o mesmo texto para todas.
-- Exemplo para pele oleosa, se o kit PrimeSkin estiver no contexto: "Entendi 😊 Para oleosidade, o PrimeSkin faz sentido porque reúne limpeza, renovação e hidratação em uma rotina só. O gel de limpeza ajuda a limpar as impurezas do dia a dia, o esfoliante auxilia na renovação e o hidratante fecha com sensação de conforto. A proposta é deixar a pele com sensação mais limpa e fresca. Além disso, tem [destaques comerciais cadastrados]. O kit está [preço real]. Me passa seu CEP para eu calcular o frete certinho?"
+- Exemplo para pele oleosa, se o kit PrimeSkin estiver no contexto: "Entendi 😊 Para oleosidade, o PrimeSkin faz sentido porque reúne limpeza, renovação e hidratação em uma rotina só. O gel de limpeza ajuda a limpar as impurezas do dia a dia, o esfoliante auxilia na renovação e o hidratante fecha com sensação de conforto. A proposta é deixar a pele com sensação mais limpa e fresca. Além disso, tem:\n• [destaque comercial cadastrado]\n• [destaque comercial cadastrado]\nO kit está [preço real]. Me passa seu CEP para eu calcular o frete certinho?"
 
 NUNCA iniciar uma resposta sobre produto com:
 - a description completa
@@ -1043,10 +1121,7 @@ Você pode finalizar sua compra com segurança pelo link abaixo:
 ${toolResult.url}
 
 Lá você poderá:
-• ${pixCheckoutBullet}
-• parcelar no cartão em ${cardConditions}
-• calcular a entrega com frete grátis nas opções elegíveis acima de ${freeShippingMinimum}
-• finalizar seu pedido
+${checkoutBullets.map((line) => `• ${line}`).join("\n")}
 
 Se precisar de ajuda, estou aqui 😊
 `;

@@ -48,6 +48,12 @@ export function CommercialPolicyProvider({ children }) {
             config.card_max_installments,
             defaultCommercialPolicy.card_max_installments
           ),
+          show_secure_purchase:
+            config.show_secure_purchase !== false,
+          payment_methods:
+            Array.isArray(config.payment_methods)
+              ? config.payment_methods
+              : defaultCommercialPolicy.payment_methods,
         });
       })
       .catch(() => {

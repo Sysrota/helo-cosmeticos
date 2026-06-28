@@ -26,6 +26,9 @@ export default function Hero({ featuredProduct }) {
     pix_discount_percent: pixDiscountPercent,
     card_interest_free_installments: interestFreeInstallments,
     freeShippingLabel,
+    pixEnabled,
+    creditCardEnabled,
+    show_secure_purchase: showSecurePurchase,
   } = useCommercialPolicy();
   const featuredImage = featuredProduct?.image_url
     ? `${API_URL}${featuredProduct.image_url}`
@@ -33,6 +36,8 @@ export default function Hero({ featuredProduct }) {
   const pixPrice =
     Number(featuredProduct?.price || 0) *
     (1 - pixDiscountPercent / 100);
+  const hasPixDiscount =
+    pixEnabled && Number(pixDiscountPercent) > 0;
 
   return (
     <section className="home-hero relative overflow-hidden">
@@ -88,18 +93,22 @@ export default function Hero({ featuredProduct }) {
           </div>
 
           <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-zinc-600 lg:justify-start">
-            <span className="inline-flex items-center gap-2">
-              <ShieldCheck size={17} className="text-[#d9536f]" />
-              Compra segura
-            </span>
+            {showSecurePurchase && (
+              <span className="inline-flex items-center gap-2">
+                <ShieldCheck size={17} className="text-[#d9536f]" />
+                Compra segura
+              </span>
+            )}
             <span className="inline-flex items-center gap-2">
               <Truck size={17} className="text-[#d9536f]" />
               {freeShippingLabel}
             </span>
-            <span className="inline-flex items-center gap-2">
-              <CreditCard size={17} className="text-[#d9536f]" />
-              {interestFreeInstallments}x sem juros
-            </span>
+            {creditCardEnabled && (
+              <span className="inline-flex items-center gap-2">
+                <CreditCard size={17} className="text-[#d9536f]" />
+                {interestFreeInstallments}x sem juros
+              </span>
+            )}
           </div>
         </div>
 
@@ -147,12 +156,14 @@ export default function Hero({ featuredProduct }) {
                           {featuredProduct.subtitle}
                         </p>
                       )}
-                      <p className="mt-1 text-sm text-zinc-500">
-                        No PIX por{" "}
-                        <strong className="text-[#b74662]">
-                          {formatBRL(pixPrice)}
-                        </strong>
-                      </p>
+                      {hasPixDiscount && (
+                        <p className="mt-1 text-sm text-zinc-500">
+                          No PIX por{" "}
+                          <strong className="text-[#b74662]">
+                            {formatBRL(pixPrice)}
+                          </strong>
+                        </p>
+                      )}
                     </div>
                     <p className="text-base font-semibold text-[#43232d]">
                       {formatBRL(featuredProduct.price)}

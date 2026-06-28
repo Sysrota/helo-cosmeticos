@@ -32,8 +32,21 @@ export default function Header() {
     freeShippingLabel,
     pix_discount_percent: pixDiscountPercent,
     card_interest_free_installments: interestFreeInstallments,
+    pixEnabled,
+    creditCardEnabled,
+    show_secure_purchase: showSecurePurchase,
   } = useCommercialPolicy();
-  const hasPixDiscount = Number(pixDiscountPercent) > 0;
+  const hasPixDiscount =
+    pixEnabled &&
+    Number(pixDiscountPercent) > 0;
+  const mobileBenefits = [
+    hasPixDiscount
+      ? pixLabel
+      : "",
+    creditCardEnabled
+      ? `${interestFreeInstallments}x sem juros`
+      : "",
+  ].filter(Boolean);
   const { pathname } = useLocation();
   const isProductPage = /^\/produto\//.test(pathname);
   const topBenefits = [
@@ -48,14 +61,18 @@ export default function Header() {
       icon: Truck,
       text: freeShippingLabel,
     },
-    {
+    creditCardEnabled
+      ? {
       icon: CreditCard,
       text: cardLabel,
-    },
-    {
+        }
+      : null,
+    showSecurePurchase
+      ? {
       icon: ShieldCheck,
       text: "Compra segura",
-    },
+        }
+      : null,
   ].filter(Boolean);
 
   useEffect(() => {
@@ -101,15 +118,16 @@ export default function Header() {
         overflow-hidden border-b border-[#f5e5ea] bg-[#fff8fa] text-center text-[#43232d] transition-all duration-300 sm:hidden
         ${compact || isProductPage ? "max-h-0 px-4 py-0 opacity-0" : "max-h-[58px] px-4 py-2.5 opacity-100"}
       `}>
-        <p className="flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.04em]">
-          {hasPixDiscount && (
-            <>
-              <span>{pixLabel}</span>
-              <span className="h-3 w-px bg-[#e7c6cf]" />
-            </>
-          )}
-          <span>{interestFreeInstallments}x sem juros</span>
-        </p>
+        {mobileBenefits.length > 0 && (
+          <p className="flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.04em]">
+            {mobileBenefits.map((benefit, index) => (
+              <span key={benefit} className="inline-flex items-center gap-2">
+                {index > 0 && <span className="h-3 w-px bg-[#e7c6cf]" />}
+                <span>{benefit}</span>
+              </span>
+            ))}
+          </p>
+        )}
         <p className="mt-1 text-[11px] font-medium tracking-[0.01em] text-[#874052]">
           {freeShippingLabel}
         </p>

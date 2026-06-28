@@ -35,16 +35,20 @@ const supportItems = [
   {
     icon: CreditCard,
     title: "Pagamento",
-    text: "Receba suporte para concluir sua compra com PIX ou cartão.",
+    text: "Receba suporte para concluir sua compra com as formas de pagamento disponíveis.",
     message:
       "Olá! Preciso de ajuda para finalizar o pagamento da minha compra.",
   },
 ];
 
 export default function Contato() {
-  const { pixLabel, cardLabel, freeShippingLabel } = useCommercialPolicy();
+  const {
+    paymentMethodsLabel,
+    freeShippingLabel,
+    show_secure_purchase: showSecurePurchase,
+  } = useCommercialPolicy();
   const benefits = [
-    {
+    showSecurePurchase && {
       icon: ShieldCheck,
       text: "Compra segura pelo Mercado Pago",
     },
@@ -52,11 +56,11 @@ export default function Contato() {
       icon: Truck,
       text: freeShippingLabel,
     },
-    {
+    paymentMethodsLabel && {
       icon: CreditCard,
-      text: `${pixLabel} e ${cardLabel}`,
+      text: `Pagamento por ${paymentMethodsLabel}`,
     },
-  ];
+  ].filter(Boolean);
   return (
     <div className="min-h-screen bg-[#fff8fa]">
       <section className="relative overflow-hidden border-b border-[#f0e2e7] bg-white">

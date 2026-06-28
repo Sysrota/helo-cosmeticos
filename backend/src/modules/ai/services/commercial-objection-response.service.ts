@@ -158,10 +158,36 @@ function benefitPhrase(value: string) {
   return lowerFirst(clean);
 }
 
-function highlightsSentence(highlights: string) {
-  const items = highlightItems(highlights).map(lowerFirst);
+function paymentEnabled(
+  policy: Awaited<ReturnType<typeof getCommercialPolicy>>,
+  methodId: string
+) {
+  return policy.payment_methods.some(
+    (method) =>
+      method.id === methodId &&
+      method.enabled
+  );
+}
+
+function highlightsSentence(
+  highlights: string,
+  showSecurePurchase = true
+) {
+  const items =
+    highlightItems(highlights)
+      .filter((item) =>
+        showSecurePurchase ||
+        !normalizeText(item).includes("compra segura")
+      )
+      .map(lowerFirst);
+
   if (!items.length) return "";
-  return `Além disso, tem ${joinNaturalList(items)}.`;
+  return [
+    "Além disso, tem:",
+    ...items.map((item) =>
+      `• ${item}`
+    ),
+  ].join("\n");
 }
 
 function pixDiscountedPrice(price: number, pixDiscountPercent: number) {
@@ -414,11 +440,18 @@ function buildValueResponse({
 
   // Diferenciais
   const perks: string[] = [];
-  const hlText = highlightsSentence(context.highlights);
+  const hlText = highlightsSentence(
+    context.highlights,
+    policy.show_secure_purchase
+  );
   if (hlText) perks.push(hlText);
 
-  const pix = pixLine(price, policy.pix_discount_percent);
-  const card = cardLine(policy.card_interest_free_installments, context.highlights);
+  const pix = paymentEnabled(policy, "pix")
+    ? pixLine(price, policy.pix_discount_percent)
+    : "";
+  const card = paymentEnabled(policy, "credit_card")
+    ? cardLine(policy.card_interest_free_installments, context.highlights)
+    : "";
   const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
@@ -430,7 +463,7 @@ function buildValueResponse({
   return [
     "Entendo você 😊",
     justification,
-    perks.length ? perks.join(" ") : "",
+    perks.length ? perks.join("\n\n") : "",
     checkoutClose(),
   ].filter(Boolean).join("\n\n");
 }
@@ -445,19 +478,32 @@ function buildDiscountResponse({
   policy: Awaited<ReturnType<typeof getCommercialPolicy>>;
 }) {
   const price = context.price;
-  const pixDiscount = Number(policy.pix_discount_percent);
+  const pixEnabled = paymentEnabled(policy, "pix");
+  const cardEnabled = paymentEnabled(policy, "credit_card");
+  const pixDiscount = pixEnabled
+    ? Number(policy.pix_discount_percent)
+    : 0;
 
   let priceLine = "";
   if (pixDiscount > 0) {
     const discounted = pixDiscountedPrice(price, pixDiscount);
-    priceLine = `Temos sim 😊 No PIX, o ${displayName} fica por ${formatBRL(discounted)} — no cartão, o valor cheio é ${formatBRL(price)}.`;
-  } else {
+    priceLine = cardEnabled
+      ? `Temos sim 😊 No PIX, o ${displayName} fica por ${formatBRL(discounted)} — no cartão, o valor cheio é ${formatBRL(price)}.`
+      : `Temos sim 😊 No PIX, o ${displayName} fica por ${formatBRL(discounted)}.`;
+  } else if (cardEnabled) {
     priceLine = `Desconto avulso não temos no momento, mas o ${displayName} pode ser parcelado em até ${policy.card_interest_free_installments}x sem juros no cartão.`;
+  } else {
+    priceLine = `Desconto avulso não temos no momento. O valor atual do ${displayName} é ${formatBRL(price)}.`;
   }
 
   const perks: string[] = [];
-  const card = cardLine(policy.card_interest_free_installments, context.highlights);
-  const hlText = highlightsSentence(context.highlights);
+  const card = cardEnabled
+    ? cardLine(policy.card_interest_free_installments, context.highlights)
+    : "";
+  const hlText = highlightsSentence(
+    context.highlights,
+    policy.show_secure_purchase
+  );
   const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
@@ -468,7 +514,7 @@ function buildDiscountResponse({
 
   return [
     priceLine,
-    perks.join(" "),
+    perks.join("\n\n"),
     checkoutClose(),
   ].filter(Boolean).join("\n\n");
 }
@@ -483,11 +529,18 @@ function buildPriceResponse({
   policy: Awaited<ReturnType<typeof getCommercialPolicy>>;
 }) {
   const price = context.price;
-  const pix = pixLine(price, policy.pix_discount_percent);
-  const card = cardLine(policy.card_interest_free_installments, context.highlights);
+  const pix = paymentEnabled(policy, "pix")
+    ? pixLine(price, policy.pix_discount_percent)
+    : "";
+  const card = paymentEnabled(policy, "credit_card")
+    ? cardLine(policy.card_interest_free_installments, context.highlights)
+    : "";
 
   const perks: string[] = [];
-  const hlText = highlightsSentence(context.highlights);
+  const hlText = highlightsSentence(
+    context.highlights,
+    policy.show_secure_purchase
+  );
   const freeShip = freeShippingLine(price, policy.free_shipping_minimum, context.highlights);
   const motoUber = motoUberLine(policy.moto_uber_enabled);
 
@@ -500,14 +553,19 @@ function buildPriceResponse({
   return [
     priceBase,
     card,
-    perks.join(" "),
+    perks.join("\n\n"),
     checkoutClose(),
   ].filter(Boolean).join("\n\n");
 }
 
-function buildOriginalResponse(displayName: string) {
+function buildOriginalResponse(
+  displayName: string,
+  policy: Awaited<ReturnType<typeof getCommercialPolicy>>
+) {
   return [
-    `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos, com produto cadastrado no catálogo e checkout seguro.`,
+    policy.show_secure_purchase
+      ? `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos, com produto cadastrado no catálogo e checkout seguro.`
+      : `Pode confiar 😊 O ${displayName} é vendido pelo canal oficial da Helô Cosméticos e está cadastrado no nosso catálogo.`,
     "Você finaliza pelo link oficial da loja — a compra fica registrada certinho.",
     checkoutClose(),
   ].join("\n\n");
@@ -585,12 +643,17 @@ function buildHesitationResponse(displayName?: string) {
 function buildComparisonResponse({
   displayName,
   context,
+  policy,
 }: {
   displayName: string;
   context: ReturnType<typeof buildProductAiContext>;
+  policy: Awaited<ReturnType<typeof getCommercialPolicy>>;
 }) {
   const sub = cleanText(context.subtitle) || cleanText(context.meta_description);
-  const hlText = highlightsSentence(context.highlights);
+  const hlText = highlightsSentence(
+    context.highlights,
+    policy.show_secure_purchase
+  );
 
   const mainLine = sub
     ? `O ${displayName} foi desenvolvido para ${benefitPhrase(sub)}.`
@@ -811,7 +874,7 @@ export async function buildCommercialObjectionResponse({
   }
 
   if (objection === "original") {
-    return buildOriginalResponse(displayName);
+    return buildOriginalResponse(displayName, policy);
   }
 
   if (objection === "effectiveness") {
@@ -830,7 +893,7 @@ export async function buildCommercialObjectionResponse({
   }
 
   if (objection === "comparison") {
-    return buildComparisonResponse({ displayName, context });
+    return buildComparisonResponse({ displayName, context, policy });
   }
 
   if (objection === "necessity") {

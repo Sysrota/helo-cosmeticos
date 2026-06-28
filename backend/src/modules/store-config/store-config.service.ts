@@ -7,7 +7,26 @@ export const DEFAULT_COMMERCIAL_POLICY = {
   pix_discount_percent: 10,
   card_interest_free_installments: 3,
   card_max_installments: 12,
+  show_secure_purchase: true,
 };
+
+export const PAYMENT_METHOD_OPTIONS = [
+  {
+    id: "pix",
+    label: "PIX",
+    defaultEnabled: true,
+  },
+  {
+    id: "credit_card",
+    label: "Cartão de Crédito",
+    defaultEnabled: true,
+  },
+  {
+    id: "boleto",
+    label: "Boleto Bancário",
+    defaultEnabled: false,
+  },
+];
 
 function positiveNumber(
   value: unknown,
@@ -22,9 +41,57 @@ function positiveNumber(
     : fallback;
 }
 
+export function normalizePaymentMethods(
+  value: unknown
+) {
+  const methods =
+    Array.isArray(value)
+      ? value
+      : [];
+  const enabledById =
+    new Map<string, boolean>();
+
+  for (const method of methods) {
+    const id =
+      String(method?.id || "");
+
+    if (!id) {
+      continue;
+    }
+
+    enabledById.set(
+      id,
+      method?.enabled !== false
+    );
+  }
+
+  return PAYMENT_METHOD_OPTIONS.map((method) => ({
+    id:
+      method.id,
+    label:
+      method.label,
+    enabled:
+      enabledById.has(method.id)
+        ? Boolean(
+            enabledById.get(method.id)
+          )
+        : method.defaultEnabled,
+  }));
+}
+
+export function activePaymentMethods(
+  value: unknown
+) {
+  return normalizePaymentMethods(value)
+    .filter((method) =>
+      method.enabled
+    );
+}
+
 export async function getStoreConfig() {
 
-  return prisma.storeConfig.upsert({
+  const config =
+    await prisma.storeConfig.upsert({
     where: {
       id: 1,
     },
@@ -32,8 +99,18 @@ export async function getStoreConfig() {
     create: {
       id: 1,
       ...DEFAULT_COMMERCIAL_POLICY,
+      payment_methods:
+        normalizePaymentMethods([]),
     },
   });
+
+  return {
+    ...config,
+    payment_methods:
+      normalizePaymentMethods(
+        config.payment_methods
+      ),
+  };
 }
 
 export async function getCommercialPolicy() {
@@ -81,6 +158,13 @@ export async function getCommercialPolicy() {
       interestFreeInstallments,
     card_max_installments:
       maxInstallments,
+    show_secure_purchase:
+      config.show_secure_purchase !==
+      false,
+    payment_methods:
+      normalizePaymentMethods(
+        config.payment_methods
+      ),
   };
 }
 
@@ -105,7 +189,9 @@ export async function updateStoreConfig(
 
     data: {
       payment_methods:
-        data.payment_methods,
+        normalizePaymentMethods(
+          data.payment_methods
+        ),
       shipping_methods:
         data.shipping_methods,
       shipping_info:
@@ -154,6 +240,9 @@ export async function updateStoreConfig(
             )
           )
         ),
+      show_secure_purchase:
+        data.show_secure_purchase !==
+        false,
       business_hours:
         String(data.business_hours || ""),
       exchange_policy:
