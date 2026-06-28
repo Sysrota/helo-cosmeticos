@@ -4,6 +4,9 @@ import {
 import {
   prisma,
 } from "../../../config/prisma.js";
+import {
+  getConversationCustomerFirstName,
+} from "./customer-name.service.js";
 
 function normalizeText(
   value: string
@@ -119,6 +122,14 @@ function naturalCartValue(
   );
 }
 
+function greeting(
+  firstName: string
+) {
+  return firstName
+    ? `Oi, ${firstName}! 😊`
+    : "Oi! 😊";
+}
+
 function isSiteEntryMessage(
   message: string
 ) {
@@ -139,7 +150,8 @@ function isSiteEntryMessage(
 }
 
 function categoryResponse(
-  category: string
+  category: string,
+  firstName: string
 ) {
   const normalized =
     normalizeText(category);
@@ -150,9 +162,8 @@ function categoryResponse(
     normalized.includes("facial")
   ) {
     return [
-      "Olá! 😊 Vi que você estava olhando nossa linha de cuidados com a pele.",
-      "Para eu indicar a melhor rotina para você 😊",
-      "O que você mais gostaria de melhorar hoje?",
+      `${greeting(firstName)} Vi que você estava olhando nossa linha de cuidados com a pele.`,
+      "Para eu indicar a rotina mais adequada, me conta o que você quer melhorar hoje:",
       "• Oleosidade",
       "• Ressecamento",
       "• Pele sem brilho",
@@ -169,9 +180,8 @@ function categoryResponse(
     normalized.includes("finalizador")
   ) {
     return [
-      "Olá! 😊 Vi que você estava olhando nossa linha de cuidados com o cabelo.",
-      "Para eu te indicar o cuidado mais adequado 😊",
-      "O que você quer melhorar hoje?",
+      `${greeting(firstName)} Vi que você estava olhando nossa linha de cuidados com o cabelo.`,
+      "Para eu te indicar o cuidado mais adequado, me conta o que você quer melhorar hoje:",
       "• Alinhamento e redução de volume",
       "• Hidratação",
       "• Reconstrução",
@@ -180,7 +190,7 @@ function categoryResponse(
   }
 
   return [
-    "Olá! 😊 Vi que você estava olhando nossos produtos.",
+    `${greeting(firstName)} Vi que você estava olhando nossos produtos.`,
     "O que você procura hoje?",
     "• Cuidados com a pele",
     "• Cuidados com o cabelo",
@@ -188,9 +198,11 @@ function categoryResponse(
   ].join("\n");
 }
 
-function homeResponse() {
+function homeResponse(
+  firstName: string
+) {
   return [
-    "Olá! 😊 Que bom receber você aqui na Helô Cosméticos.",
+    `${greeting(firstName)} Que bom receber você aqui na Helô Cosméticos.`,
     "O que você procura hoje?",
     "• Cuidados com a pele",
     "• Cuidados com o cabelo",
@@ -208,6 +220,11 @@ export async function buildSiteEntryResponse({
   if (!isSiteEntryMessage(message)) {
     return null;
   }
+
+  const customerFirstName =
+    await getConversationCustomerFirstName(
+      conversationId
+    );
 
   const origin =
     normalizeText(
@@ -239,7 +256,7 @@ export async function buildSiteEntryResponse({
     cartItems && !productName
   ) {
     return [
-      `Olá! 😊 Vi que você ${
+      `${greeting(customerFirstName)} Vi que você ${
         origin === "carrinho"
           ? "está com"
           : "adicionou"
@@ -304,7 +321,7 @@ export async function buildSiteEntryResponse({
       ) || "produto";
 
     return [
-      `Olá! 😊 Vi que você estava olhando o ${displayName}.`,
+      `${greeting(customerFirstName)} Vi que você estava olhando o ${displayName}.`,
       cartItems
         ? "Também vi que você já tem item no carrinho."
         : "",
@@ -318,7 +335,8 @@ export async function buildSiteEntryResponse({
     category
   ) {
     return categoryResponse(
-      category
+      category,
+      customerFirstName
     );
   }
 
@@ -327,7 +345,9 @@ export async function buildSiteEntryResponse({
     origin === "site" ||
     normalizeText(message).includes("pagina inicial")
   ) {
-    return homeResponse();
+    return homeResponse(
+      customerFirstName
+    );
   }
 
   return null;

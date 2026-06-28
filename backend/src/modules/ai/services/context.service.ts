@@ -15,6 +15,9 @@ import {
   classifyCustomerIntent,
   shouldUseSavedProductContext,
 } from "./customer-intent.service.js";
+import {
+  getConversationCustomerFirstName,
+} from "./customer-name.service.js";
 
 type Role =
   | "system"
@@ -159,6 +162,10 @@ export async function buildContext(
   // INFORMAÇÕES EMPRESA
   const storeContext =
     await getStoreContext();
+  const customerFirstName =
+    await getConversationCustomerFirstName(
+      conversationId
+    );
 
   const formattedMessages:
     ChatMessage[] = [
@@ -220,6 +227,14 @@ REGRAS:
 - Quando usar "Destaques comerciais", envie como lista vertical: "Além disso, tem:" e depois um destaque por linha com "•". Nunca coloque vários destaques na mesma frase.
 - Não responda necessidades diferentes com o mesmo texto.
 `,
+    });
+  }
+
+  if (customerFirstName) {
+    formattedMessages.push({
+      role: "system",
+      content:
+        `CLIENTE: o primeiro nome pessoal detectado no WhatsApp é "${customerFirstName}". Use esse nome no início da conversa ou em momentos pontuais, de forma natural. Não repita o nome em toda resposta.`,
     });
   }
 

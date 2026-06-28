@@ -12,6 +12,9 @@ import {
 import {
   getCommercialPolicy,
 } from "../../store-config/store-config.service.js";
+import {
+  getConversationCustomerFirstName,
+} from "./customer-name.service.js";
 
 function normalizeText(
   value: string
@@ -148,10 +151,10 @@ function summarizeSkinFeeling(
   }
 
   if (!selected.length) {
-    return "uma sensação gostosa de cuidado no dia a dia";
+    return "de cuidado no dia a dia";
   }
 
-  return `sensação de pele ${selected.join(", ").replace(/, ([^,]*)$/, " e $1")}`;
+  return `de pele ${selected.join(", ").replace(/, ([^,]*)$/, " e $1")}`;
 }
 
 function buildProductPresentation(
@@ -178,21 +181,25 @@ function buildProductPresentation(
       );
     const stepText =
       steps.length
-        ? `: ${joinNaturalList(steps)}`
+        ? joinNaturalList(steps)
         : "";
-    const countText =
+    const itemLine =
       product.kit_items.length
-        ? `${product.kit_items.length} passos`
-        : "passos";
-    const itemText =
-      product.kit_items.length
-        ? `${joinNaturalList(product.kit_items)} para uma rotina completa de skincare`
-        : `os ${countText} de uma rotina completa de skincare`;
+        ? `No kit vem: ${joinNaturalList(product.kit_items)}.`
+        : "";
+    const routineLine =
+      stepText
+        ? `Ele reúne ${stepText} em uma rotina simples de skincare.`
+        : `Ele reúne os passos essenciais de uma rotina de skincare.`;
 
-    return `O ${displayName} reúne ${itemText}${stepText}, proporcionando ${feelingSummary}.`;
+    return [
+      routineLine,
+      itemLine,
+      `A ideia é deixar a pele com sensação ${feelingSummary}.`,
+    ].filter(Boolean).join("\n");
   }
 
-  return `O ${displayName} oferece ${intro.toLowerCase()}, proporcionando ${feelingSummary}.`;
+  return `Ele oferece ${intro.toLowerCase()} e deixa sensação ${feelingSummary}.`;
 }
 
 function isSkinCareContext(
@@ -232,8 +239,7 @@ function buildNeedOptions(
     isSkinCareContext(product)
   ) {
     return [
-      "Para eu indicar a melhor rotina para você 😊",
-      "O que você mais gostaria de melhorar na sua pele hoje?",
+      "Para eu indicar a rotina mais adequada, me conta o que você quer melhorar hoje:",
       "• Oleosidade",
       "• Ressecamento",
       "• Pele sem brilho",
@@ -243,8 +249,7 @@ function buildNeedOptions(
   }
 
   return [
-    "Para eu te indicar o cuidado mais adequado 😊",
-    "O que você mais gostaria de melhorar hoje?",
+    "Para eu te indicar o cuidado mais adequado, me conta o que você quer melhorar hoje:",
     "• Hidratação",
     "• Brilho",
     "• Maciez",
@@ -353,15 +358,15 @@ async function buildIntroFromContext(
     ...context,
     kit_items: context.kit_items.map(itemDisplayName),
   };
+  const customerFirstName =
+    await getConversationCustomerFirstName(
+      conversationId
+    );
 
-  const greetingOptions = [
-    `Que bom que você veio conhecer o ${displayName}! 😊`,
-    `Seja bem-vinda! 😊 Vi que você se interessou pelo ${displayName}.`,
-    `Olá! 😊 Fico feliz que tenha vindo conhecer o ${displayName}.`,
-    `Oi! 😊 Que ótimo saber que você veio conhecer o ${displayName}.`,
-  ];
   const greeting =
-    greetingOptions[Math.floor(Math.random() * greetingOptions.length)];
+    customerFirstName
+      ? `Oi, ${customerFirstName}! 😊 Vi que você se interessou pelo ${displayName}.`
+      : `Oi! 😊 Vi que você se interessou pelo ${displayName}.`;
 
   const lines = [
     greeting,
@@ -378,7 +383,7 @@ async function buildIntroFromContext(
 
   lines.push(...buildNeedOptions(context));
 
-  return lines.join("\n");
+  return lines.join("\n").trim();
 }
 
 export async function buildProductIntroResponse({
@@ -399,10 +404,17 @@ export async function buildProductIntroResponse({
     const divulgacao = await getProdutosEmDivulgacao();
 
     if (divulgacao.length === 0) {
+      const customerFirstName =
+        await getConversationCustomerFirstName(
+          conversationId
+        );
+
       return [
-        "Olá! 😊 Seja bem-vinda à Helô Cosméticos.",
+        customerFirstName
+          ? `Oi, ${customerFirstName}! 😊 Que bom receber você na Helô Cosméticos.`
+          : "Oi! 😊 Que bom receber você na Helô Cosméticos.",
         "Você procura cuidados para pele ou cabelo?",
-      ].join("\n");
+      ].join("\n").trim();
     }
 
     if (divulgacao.length === 1) {
@@ -415,11 +427,18 @@ export async function buildProductIntroResponse({
     const productList = divulgacao
       .map((p) => `• ${productDisplayName(p.title)}`)
       .join("\n");
+    const customerFirstName =
+      await getConversationCustomerFirstName(
+        conversationId
+      );
+
     return [
-      "Olá! 😊 Vi que você veio pelo anúncio.",
+      customerFirstName
+        ? `Oi, ${customerFirstName}! 😊 Vi que você veio pelo anúncio.`
+        : "Oi! 😊 Vi que você veio pelo anúncio.",
       "Qual produto apareceu para você?",
       productList,
-    ].join("\n");
+    ].join("\n").trim();
   }
 
   // Explicit product request
