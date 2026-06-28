@@ -33,6 +33,7 @@ export type ProductForAiContext = {
   restricoes?: string | null;
   faq?: string | null;
   is_active: boolean;
+  free_shipping?: boolean | null;
   images?: ProductImageRef[];
 };
 
@@ -282,6 +283,16 @@ export function buildProductAiContext(
       ? computeCommercialPrice(basePrice, commercialPolicy)
       : null;
 
+  const hasFreeShipping =
+    Boolean(product.free_shipping);
+  const baseHighlights =
+    cleanText(product.destaques);
+  const highlightsWithShipping =
+    hasFreeShipping &&
+    !baseHighlights.toLowerCase().includes("frete")
+      ? ["🚚 Frete grátis", baseHighlights].filter(Boolean).join("\n")
+      : baseHighlights;
+
   return {
     id:
       product.id,
@@ -304,7 +315,9 @@ export function buildProductAiContext(
     usage_tips:
       cleanText(product.dicas_uso),
     highlights:
-      cleanText(product.destaques),
+      highlightsWithShipping,
+    free_shipping:
+      hasFreeShipping,
     expected_experience:
       cleanText(product.o_que_vai_sentir),
     composicao:
@@ -385,6 +398,7 @@ Perguntas frequentes (FAQ):
 ${optionalText(context.faq)}
 Tags para IA:
 ${optionalText(context.ai_tags)}
+Frete grátis: ${context.free_shipping ? "Sim — mencionar na apresentação e em objeções de preço" : "Não"}
 É kit: ${context.is_kit ? "Sim" : "Não"}
 Produtos/itens do kit cadastrados:
 ${kitItems}

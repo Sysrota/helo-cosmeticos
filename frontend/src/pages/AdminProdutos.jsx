@@ -81,6 +81,7 @@ export default function AdminProdutos() {
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
   const [emDivulgacao, setEmDivulgacao] = useState(false);
+  const [freeShipping, setFreeShipping] = useState(false);
 
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
@@ -325,6 +326,7 @@ export default function AdminProdutos() {
     setIsActive(true);
     setIsFeatured(false);
     setEmDivulgacao(false);
+    setFreeShipping(false);
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
@@ -354,6 +356,7 @@ export default function AdminProdutos() {
     setIsActive(Boolean(p.is_active));
     setIsFeatured(Boolean(p.is_featured));
     setEmDivulgacao(Boolean(p.em_divulgacao));
+    setFreeShipping(Boolean(p.free_shipping));
     setTagsIA(p.keywords || "");
     // se a listagem vier sem os campos, tentamos pelo menos popular com fallback
     setDicasUso(p.dicas_uso || "");
@@ -405,6 +408,7 @@ export default function AdminProdutos() {
     is_active: isActive,
     is_featured: isFeatured,
     em_divulgacao: emDivulgacao,
+    free_shipping: freeShipping,
     dicas_uso: dicasUso,
     o_que_vai_sentir: oQueVaiSentir,
     destaques,
@@ -1126,6 +1130,27 @@ export default function AdminProdutos() {
             </span>
             <span className="mt-0.5 block text-xs text-zinc-500">
               A IA apresenta este produto para clientes vindos de anúncios.
+            </span>
+          </span>
+        </label>
+
+        <label
+          htmlFor="free_shipping"
+          className="flex items-start gap-3 rounded-xl border border-[#efd8de] bg-[#fff7f9] px-4 py-3 text-sm text-zinc-700"
+        >
+          <input
+            id="free_shipping"
+            type="checkbox"
+            className="mt-0.5 h-5 w-5"
+            checked={freeShipping}
+            onChange={(e) => setFreeShipping(e.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold text-helo-dark">
+              Frete grátis
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500">
+              A IA menciona frete grátis na oferta e em objeções de preço.
             </span>
           </span>
         </label>
