@@ -23,6 +23,9 @@ import {
   api,
 } from "../services/api";
 import {
+  OrderBoletoCard,
+} from "../components/orders/OrderBoletoCard";
+import {
   OrderCreditCardCard,
 } from "../components/orders/OrderCreditCardCard";
 import {
@@ -265,6 +268,11 @@ export default function OrderTrackingPage() {
   const [loadingPix,
     setLoadingPix] =
     useState(false);
+  const [boletoData, setBoletoData] =
+    useState(null);
+  const [loadingBoleto,
+    setLoadingBoleto] =
+    useState(false);
   const [paymentError,
     setPaymentError] =
     useState("");
@@ -392,22 +400,28 @@ export default function OrderTrackingPage() {
 
       setOrder(data);
       setPaymentMethod(
-        data.payment_method ===
-          "credit_card"
+        data.payment_method === "credit_card"
           ? "credit_card"
-          : "pix"
+          : data.payment_method === "boleto"
+            ? "boleto"
+            : "pix"
       );
       setPixData(
         data.pix_code
           ? {
-            qr_code:
-              data.pix_code,
-            qr_code_base64:
-              data.pix_qrcode,
-            amount:
-              data.total,
-            discount:
-              data.discount,
+            qr_code: data.pix_code,
+            qr_code_base64: data.pix_qrcode,
+            amount: data.total,
+            discount: data.discount,
+          }
+          : null
+      );
+      setBoletoData(
+        data.boleto_url || data.boleto_barcode
+          ? {
+            boleto_url: data.boleto_url,
+            boleto_barcode: data.boleto_barcode,
+            amount: data.total,
           }
           : null
       );
@@ -466,6 +480,31 @@ export default function OrderTrackingPage() {
       );
     } finally {
       setLoadingPix(false);
+    }
+  }
+
+  async function generateBoleto() {
+    if (!order) return;
+    try {
+      setLoadingBoleto(true);
+      setPaymentError("");
+      const { data } = await api.post("/payment/boleto", { order_id: order.id });
+      setBoletoData(data);
+      setOrder((previous) => ({
+        ...previous,
+        payment_method: "boleto",
+        payment_status: "pending",
+        boleto_url: data.boleto_url,
+        boleto_barcode: data.boleto_barcode,
+        total: data.amount,
+      }));
+    } catch (requestError) {
+      setPaymentError(
+        requestError.response?.data?.error ||
+          "Não foi possível gerar o boleto. Verifique seus dados e tente novamente."
+      );
+    } finally {
+      setLoadingBoleto(false);
     }
   }
 
@@ -762,7 +801,9 @@ export default function OrderTrackingPage() {
                     ? "PIX"
                     : order.payment_method === "credit_card"
                       ? "Cartão de crédito"
-                      : "Aguardando escolha"}
+                      : order.payment_method === "boleto"
+                        ? "Boleto bancário"
+                        : "Aguardando escolha"}
                 </p>
                 {order.paid_at && (
                   <p className="mt-1 text-xs text-[#78636b]">
@@ -870,49 +911,45 @@ export default function OrderTrackingPage() {
                   Escolha como pagar
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[#78636b]">
-                  Seu pedido está reservado. Pague por PIX com desconto exclusivo ou cartão.
+                  Seu pedido está reservado. Pague por PIX com desconto exclusivo, cartão ou boleto bancário.
                 </p>
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="mt-5 grid grid-cols-3 gap-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "pix"
-                      )
-                    }
+                    onClick={() => setPaymentMethod("pix")}
                     className={`rounded-2xl border p-4 text-left transition ${
                       paymentMethod === "pix"
                         ? "border-[#d85c7a] bg-[#fff5f7]"
                         : "border-[#eee2e6]"
                     }`}
                   >
-                    <p className="text-sm font-semibold">
-                      PIX
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Desconto exclusivo no PIX
-                    </p>
+                    <p className="text-sm font-semibold">PIX</p>
+                    <p className="mt-1 text-xs text-zinc-500">Desconto exclusivo no PIX</p>
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      setPaymentMethod(
-                        "credit_card"
-                      )
-                    }
+                    onClick={() => setPaymentMethod("credit_card")}
                     className={`rounded-2xl border p-4 text-left transition ${
                       paymentMethod === "credit_card"
                         ? "border-[#d85c7a] bg-[#fff5f7]"
                         : "border-[#eee2e6]"
                     }`}
                   >
-                    <p className="text-sm font-semibold">
-                      Cartão
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {interestFreeInstallments}x sem juros
-                    </p>
+                    <p className="text-sm font-semibold">Cartão</p>
+                    <p className="mt-1 text-xs text-zinc-500">{interestFreeInstallments}x sem juros</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("boleto")}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      paymentMethod === "boleto"
+                        ? "border-[#d85c7a] bg-[#fff5f7]"
+                        : "border-[#eee2e6]"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">Boleto</p>
+                    <p className="mt-1 text-xs text-zinc-500">Vence em 3 dias úteis</p>
                   </button>
                 </div>
 
@@ -949,15 +986,18 @@ export default function OrderTrackingPage() {
                   {paymentMethod === "credit_card" && (
                     <OrderCreditCardCard
                       order={cardOrder}
-                      maxInstallments={
-                        maxInstallments
-                      }
-                      initialCustomer={{
-                        email,
-                      }}
-                      onPaymentApproved={
-                        trackPurchase
-                      }
+                      maxInstallments={maxInstallments}
+                      initialCustomer={{ email }}
+                      onPaymentApproved={trackPurchase}
+                    />
+                  )}
+                  {paymentMethod === "boleto" && (
+                    <OrderBoletoCard
+                      generateBoleto={generateBoleto}
+                      loadingBoleto={loadingBoleto}
+                      boletoData={boletoData}
+                      order={order}
+                      total={regularTotal}
                     />
                   )}
                 </div>
