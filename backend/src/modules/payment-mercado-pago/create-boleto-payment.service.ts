@@ -95,8 +95,19 @@ export async function createBoletoPaymentService({ order_id }: Props) {
     },
   });
 
-  const boletoUrl = (payment as any).transaction_details?.external_resource_url || null;
-  const boletoBarcode = (payment as any).barcode?.content || null;
+  console.log("[Boleto] Resposta MP:", JSON.stringify(payment, null, 2));
+
+  const boletoUrl =
+    (payment as any).transaction_details?.external_resource_url ||
+    (payment as any).transaction_details?.ticket_url ||
+    (payment as any).ticket_url ||
+    (payment as any).point_of_interaction?.transaction_data?.ticket_url ||
+    null;
+
+  const boletoBarcode =
+    (payment as any).barcode?.content ||
+    (payment as any).transaction_details?.barcode?.content ||
+    null;
 
   await prisma.order.update({
     where: { id: order.id },
