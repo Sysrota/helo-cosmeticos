@@ -4,10 +4,25 @@ import fs from "fs";
 
 import path from "path";
 
+export function normalizeWhatsAppMessage(
+  message: string
+) {
+  return String(message || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function sendWhatsAppMessage(
   to: string,
   message: string
 ) {
+  const normalizedMessage =
+    normalizeWhatsAppMessage(
+      message
+    );
 
   console.log("Enviando mensagem para:", to);
 
@@ -26,7 +41,8 @@ export async function sendWhatsAppMessage(
         type: "text",
 
         text: {
-          body: message,
+          body:
+            normalizedMessage,
         },
       },
       {
@@ -56,6 +72,16 @@ export async function sendWhatsAppTemplateMessage({
   bodyParams?: string[];
   buttonUrlParam?: string;
 }) {
+  const normalizedBodyParams =
+    bodyParams.map(
+      normalizeWhatsAppMessage
+    );
+  const normalizedButtonUrlParam =
+    buttonUrlParam
+      ? normalizeWhatsAppMessage(
+          buttonUrlParam
+        )
+      : undefined;
   const url =
     `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
@@ -65,14 +91,14 @@ export async function sendWhatsAppTemplateMessage({
     components.push({
       type: "body",
       parameters:
-        bodyParams.map((text) => ({
+        normalizedBodyParams.map((text) => ({
           type: "text",
           text,
         })),
     });
   }
 
-  if (buttonUrlParam) {
+  if (normalizedButtonUrlParam) {
     components.push({
       type: "button",
       sub_type: "url",
@@ -80,7 +106,8 @@ export async function sendWhatsAppTemplateMessage({
       parameters: [
         {
           type: "text",
-          text: buttonUrlParam,
+          text:
+            normalizedButtonUrlParam,
         },
       ],
     });
@@ -210,6 +237,12 @@ sendWhatsAppMediaMessage(
   type: string,
   caption?: string
 ) {
+  const normalizedCaption =
+    caption
+      ? normalizeWhatsAppMessage(
+          caption
+        )
+      : undefined;
 
   const url =
     `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
@@ -228,11 +261,11 @@ sendWhatsAppMediaMessage(
   };
 
   if (
-    caption &&
+    normalizedCaption &&
     type !== "audio"
   ) {
     payload[type].caption =
-      caption;
+      normalizedCaption;
   }
 
   const response =

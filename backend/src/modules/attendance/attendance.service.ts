@@ -3,6 +3,7 @@ import { prisma } from "../../config/prisma.js";
 import { io } from "../../websocket/socket.js";
 
 import {
+  normalizeWhatsAppMessage,
   sendWhatsAppMessage,
   sendWhatsAppMediaMessage,
 } from "../whatsapp/services/meta.service.js";
@@ -198,6 +199,13 @@ function getPublicMediaUrl(
 export async function createMessage(
   data: CreateMessageDTO
 ) {
+  const content =
+    data.sender_type === "agent"
+      ? normalizeWhatsAppMessage(
+          data.content
+        )
+      : data.content;
+
   const message =
     await prisma.message.create({
       data: {
@@ -207,7 +215,7 @@ export async function createMessage(
         sender_type:
           data.sender_type,
 
-        content: data.content,
+        content,
 
         type: data.type ?? "text",
 
@@ -222,7 +230,8 @@ export async function createMessage(
       },
 
       data: {
-        last_message: data.content,
+        last_message:
+          content,
 
         last_message_at:
           new Date(),
@@ -348,7 +357,7 @@ export async function createMessage(
 
       await sendWhatsAppMessage(
         conversation.contact.phone,
-        data.content.trim()
+        content
       );
     }
 
@@ -383,7 +392,7 @@ export async function createMessage(
         mediaType,
         data.send_caption === false
           ? undefined
-          : data.content
+          : content
       );
     }
   }
