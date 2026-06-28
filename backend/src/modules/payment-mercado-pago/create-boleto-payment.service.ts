@@ -1,6 +1,5 @@
-import { mercadoPagoClient } from "./mercado-pago.provider.js";
+import axios from "axios";
 import { prisma } from "../../config/prisma.js";
-import { Payment } from "mercadopago";
 import { buildPaymentDescription } from "./payment-description.js";
 import { getPaymentNotificationUrl } from "./payment-webhook-url.js";
 import { notifyManagersAboutOrder } from "../manager/manager-notification.service.js";
@@ -48,7 +47,6 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     );
   }
 
-  // Accept CPF from request body to allow updating it if missing/invalid
   const rawCpf = cpf_override
     ? cpf_override.replace(/\D/g, "")
     : (order.contact?.cpf || "").replace(/\D/g, "");
@@ -59,7 +57,6 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
 
   const cpf = rawCpf;
 
-  // Persist CPF to contact if it was overridden or missing
   if (order.contact?.id && cpf_override) {
     await prisma.contact.update({
       where: { id: order.contact.id },
@@ -77,44 +74,60 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
 
   const { firstName, lastName } = splitName(order.contact?.name || "");
 
-  const paymentClient = new Payment(mercadoPagoClient);
-
-  const payment = await paymentClient.create({
-    body: {
-      transaction_amount: total,
-      description: buildPaymentDescription(
-        order.order_number || order.id,
-        order.items
-      ),
-      external_reference: String(order.order_number || order.id),
-      payment_method_id: "bolbradesco",
-      date_of_expiration: boletoExpiration(),
-      payer: {
-        email: order.contact?.email || `cliente${order.id}@helo.com`,
-        first_name: firstName,
-        last_name: lastName,
-        identification: {
-          type: "CPF",
-          number: cpf,
-        },
-        address: {
-          zip_code: (address.cep || "").replace(/\D/g, ""),
-          street_name: address.street || "",
-          street_number: address.number || "s/n",
-          neighborhood: address.district || "",
-          city: address.city || "",
-          federal_unit: address.state || "",
-        },
+  const requestBody = {
+    transaction_amount: total,
+    description: buildPaymentDescription(order.order_number || order.id, order.items),
+    external_reference: String(order.order_number || order.id),
+    payment_method_id: "pec",
+    date_of_expiration: boletoExpiration(),
+    payer: {
+      email: order.contact?.email || `cliente${order.id}@helocosmeticos.com`,
+      first_name: firstName,
+      last_name: lastName,
+      identification: {
+        type: "CPF",
+        number: cpf,
       },
-      notification_url: getPaymentNotificationUrl(),
+      address: {
+        zip_code: (address.cep || "").replace(/\D/g, ""),
+        street_name: address.street || "",
+        street_number: address.number || "s/n",
+        neighborhood: address.district || "",
+        city: address.city || "",
+        federal_unit: address.state || "",
+      },
     },
-  });
+    notification_url: getPaymentNotificationUrl(),
+  };
 
+  console.log("[Boleto] Enviando para MP:", JSON.stringify(requestBody, null, 2));
+
+  let mpResponse;
+  try {
+    mpResponse = await axios.post(
+      "https://api.mercadopago.com/v1/payments",
+      requestBody,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": `boleto-${order.id}-${Date.now()}`,
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("[Boleto] Erro na chamada MP:", error?.response?.data || error?.message);
+    throw new Error(
+      error?.response?.data?.message ||
+        "Não foi possível conectar ao Mercado Pago. Tente novamente."
+    );
+  }
+
+  const payment = mpResponse.data;
   console.log("[Boleto] Resposta MP:", JSON.stringify(payment, null, 2));
 
-  const paymentStatus = (payment as any).status;
-  if (paymentStatus === "rejected") {
-    const detail = (payment as any).status_detail || "sem detalhe";
+  if (payment.status === "rejected") {
+    const detail = payment.status_detail || "sem detalhe";
     console.error(`[Boleto] Pagamento rejeitado pelo Mercado Pago: ${detail}`);
     throw new Error(
       `Não foi possível gerar o boleto. Verifique se o CPF está correto e tente novamente. (${detail})`
@@ -122,15 +135,16 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
   }
 
   const boletoUrl =
-    (payment as any).transaction_details?.external_resource_url ||
-    (payment as any).transaction_details?.ticket_url ||
-    (payment as any).ticket_url ||
-    (payment as any).point_of_interaction?.transaction_data?.ticket_url ||
+    payment.transaction_details?.external_resource_url ||
+    payment.transaction_details?.ticket_url ||
+    payment.ticket_url ||
+    payment.point_of_interaction?.transaction_data?.ticket_url ||
     null;
 
   const boletoBarcode =
-    (payment as any).barcode?.content ||
-    (payment as any).transaction_details?.barcode?.content ||
+    payment.barcode?.content ||
+    payment.transaction_details?.barcode?.content ||
+    payment.transaction_details?.digitable_line ||
     null;
 
   await prisma.order.update({
