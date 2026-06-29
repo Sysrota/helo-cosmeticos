@@ -81,7 +81,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     payment_method_id: "bolbradesco",
     date_of_expiration: boletoExpiration(),
     payer: {
-      email: order.contact?.email || `cliente${order.id}@helocosmeticos.com`,
+      email: `boleto-${order.id}@helocosmeticos.com`,
       first_name: firstName,
       last_name: lastName,
       identification: {
