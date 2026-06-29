@@ -213,7 +213,7 @@ export default function PublicCheckoutPage() {
   const [saving, setSaving] = useState(false);
   const [order, setOrder] = useState(null);
   const [paymentApproved, setPaymentApproved] = useState(false);
-  const [resumeOpen, setResumeOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(true);
   const [customer, setCustomer] = useState(emptyCustomer);
   const [errors, setErrors] = useState({});
   const [notice, setNotice] = useState("");
@@ -1758,7 +1758,7 @@ export default function PublicCheckoutPage() {
                           applyCoupon();
                         }
                       }}
-                      placeholder="EX: ANA10"
+                      placeholder="EX: HELO10"
                       className="h-12 min-w-0 flex-1 rounded-2xl border border-[#eee2e6] px-4 text-sm uppercase outline-none transition focus:border-[#d85c7a] focus:ring-4 focus:ring-[#fbe9ee]"
                     />
                     <button
