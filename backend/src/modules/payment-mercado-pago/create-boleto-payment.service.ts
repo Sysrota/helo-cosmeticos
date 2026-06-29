@@ -23,6 +23,16 @@ function boletoExpiration() {
   return date.toISOString();
 }
 
+function normalizeEmail(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function createBoletoPaymentService({ order_id, cpf_override }: Props) {
   const order = await prisma.order.findUnique({
     where: { id: order_id },
@@ -74,6 +84,13 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
   }
 
   const { firstName, lastName } = splitName(order.contact?.name || "");
+  const payerEmail = normalizeEmail(order.contact?.email);
+
+  if (!isValidEmail(payerEmail)) {
+    throw new Error(
+      "E-mail do cliente não encontrado ou inválido. Preencha o e-mail do cliente antes de gerar o boleto."
+    );
+  }
 
   const requestBody = {
     transaction_amount: total,
@@ -82,7 +99,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     payment_method_id: "bolbradesco",
     date_of_expiration: boletoExpiration(),
     payer: {
-      email: `boleto-${order.id}@helocosmeticos.com`,
+      email: payerEmail,
       first_name: firstName,
       last_name: lastName,
       identification: {
