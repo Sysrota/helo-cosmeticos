@@ -20,6 +20,46 @@ function titleCaseName(
   return `${lower.charAt(0).toLocaleUpperCase("pt-BR")}${lower.slice(1)}`;
 }
 
+const nonPersonalNameTerms = [
+  "aprenda",
+  "atendimento",
+  "beleza",
+  "cliente",
+  "cosmetico",
+  "cosmeticos",
+  "deus",
+  "empresa",
+  "estetica",
+  "helo",
+  "helô",
+  "jesus",
+  "loja",
+  "oficial",
+  "promo",
+  "promocao",
+  "promoção",
+  "salao",
+  "salão",
+  "site",
+  "studio",
+  "suporte",
+  "vendas",
+];
+
+const nonPersonalPhrasePatterns = [
+  "te ama",
+  "clique aqui",
+  "compre",
+  "curso",
+  "delivery",
+  "grupo",
+  "melhor",
+  "oracao",
+  "oração",
+  "siga",
+  "venda",
+];
+
 export function extractPersonalFirstName(
   rawName?: string | null
 ) {
@@ -36,19 +76,9 @@ export function extractPersonalFirstName(
   }
 
   if (
-    normalized.includes("te ama") ||
-    normalized.includes("jesus") ||
-    normalized.includes("deus") ||
-    normalized.includes("loja") ||
-    normalized.includes("empresa") ||
-    normalized.includes("atendimento") ||
-    normalized.includes("oficial") ||
-    normalized.includes("cliente") ||
-    normalized.includes("cosmetico") ||
-    normalized.includes("cosmeticos") ||
-    normalized.includes("studio") ||
-    normalized.includes("salao") ||
-    normalized.includes("estetica")
+    nonPersonalPhrasePatterns.some((pattern) =>
+      normalized.includes(pattern)
+    )
   ) {
     return "";
   }
@@ -68,10 +98,13 @@ export function extractPersonalFirstName(
 
   const firstName =
     parts[0];
+  const normalizedFirstName =
+    normalizeText(firstName);
 
   if (
     !/^\p{L}[\p{L}'-]*$/u.test(firstName) ||
-    normalizeText(firstName).length < 2
+    normalizedFirstName.length < 2 ||
+    nonPersonalNameTerms.includes(normalizedFirstName)
   ) {
     return "";
   }
