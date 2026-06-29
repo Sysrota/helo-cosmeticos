@@ -5,6 +5,7 @@ import {
   MessageSquareText,
   Settings,
   ShoppingBag,
+  TicketPercent,
   Users,
 } from "lucide-react";
 import {
@@ -52,6 +53,14 @@ const adminItems = [
       "Pedidos",
     icon:
       ShoppingBag,
+  },
+  {
+    to:
+      "/admin/coupons",
+    label:
+      "Cupons",
+    icon:
+      TicketPercent,
   },
   {
     to:

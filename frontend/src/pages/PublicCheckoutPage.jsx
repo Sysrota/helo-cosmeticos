@@ -15,8 +15,10 @@ import {
   Plus,
   ShieldCheck,
   Sparkles,
+  TicketPercent,
   Trash2,
   Truck,
+  X,
 } from "lucide-react";
 import {
   Link,
@@ -220,6 +222,8 @@ export default function PublicCheckoutPage() {
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
+  const [couponCode, setCouponCode] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
   const [boletoData, setBoletoData] = useState(null);
@@ -280,6 +284,9 @@ export default function PublicCheckoutPage() {
           data.contact?.addresses?.[0];
 
         setOrder(data);
+        setCouponCode(
+          data.coupon_code || ""
+        );
         setStep(
           data.shipping_method
             ? 3
@@ -416,10 +423,26 @@ export default function PublicCheckoutPage() {
     order?.shipping ??
     0
   );
-  const total = subtotal + shippingPrice;
+  const couponDiscount =
+    Number(
+      order?.coupon_discount || 0
+    );
+  const total =
+    Number(
+      Math.max(
+        0,
+        subtotal +
+        shippingPrice -
+        couponDiscount
+      ).toFixed(2)
+    );
+  const couponAllowsPixDiscount =
+    !order?.coupon ||
+    order.coupon.allow_pix_discount !== false;
   const pixDiscount =
     step === 3 &&
-    selectedPaymentMethod === "pix"
+    selectedPaymentMethod === "pix" &&
+    couponAllowsPixDiscount
       ? Number((total * (pixDiscountPercent / 100)).toFixed(2))
       : 0;
   const paymentTotal =
@@ -816,6 +839,77 @@ export default function PublicCheckoutPage() {
     }
   }
 
+  async function applyCoupon() {
+    const code =
+      couponCode.trim();
+
+    if (!order) {
+      setNotice("Preencha seus dados primeiro para aplicar o cupom ao pedido.");
+      return;
+    }
+
+    if (!code) {
+      setNotice("Informe o código do cupom.");
+      return;
+    }
+
+    try {
+      setApplyingCoupon(true);
+      setNotice("");
+
+      const { data } =
+        await api.post(
+          `/checkout/${order.id}/coupon`,
+          {
+            code,
+          }
+        );
+
+      setOrder(data.order);
+      setCouponCode(data.order.coupon_code || code.toUpperCase());
+      setPixData(null);
+      setBoletoData(null);
+      setNotice(data.message || "Cupom aplicado.");
+    } catch (error) {
+      setNotice(
+        error?.response?.data?.error ||
+          "Não foi possível aplicar este cupom."
+      );
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  async function removeCoupon() {
+    if (!order) {
+      setCouponCode("");
+      return;
+    }
+
+    try {
+      setApplyingCoupon(true);
+      setNotice("");
+
+      const { data } =
+        await api.delete(
+          `/checkout/${order.id}/coupon`
+        );
+
+      setOrder(data.order);
+      setCouponCode("");
+      setPixData(null);
+      setBoletoData(null);
+      setNotice(data.message || "Cupom removido.");
+    } catch (error) {
+      setNotice(
+        error?.response?.data?.error ||
+          "Não foi possível remover o cupom."
+      );
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
   async function calculateShipping() {
     if (!validateAddress() || !order) {
       setNotice("Preencha o endereço completo para consultar a entrega.");
@@ -924,6 +1018,27 @@ export default function PublicCheckoutPage() {
         order_id: order.id,
       });
       setPixData(data);
+      setOrder((previous) =>
+        previous
+          ? {
+              ...previous,
+              total:
+                data.amount,
+              discount:
+                data.discount,
+              coupon_discount:
+                data.coupon_discount ??
+                previous.coupon_discount,
+              payment_discount:
+                data.payment_discount ??
+                previous.payment_discount,
+              payment_method:
+                "pix",
+              payment_status:
+                "pending",
+            }
+          : previous
+      );
       trackCheckoutEvent(
         "AddPaymentInfo",
         {
@@ -956,6 +1071,19 @@ export default function PublicCheckoutPage() {
         cpf: cpf || undefined,
       });
       setBoletoData(data);
+      setOrder((previous) =>
+        previous
+          ? {
+              ...previous,
+              total:
+                data.amount,
+              payment_method:
+                "boleto",
+              payment_status:
+                "pending",
+            }
+          : previous
+      );
       trackCheckoutEvent(
         "AddPaymentInfo",
         {
@@ -1542,6 +1670,62 @@ export default function PublicCheckoutPage() {
                 })}
               </div>
 
+              <div className="mt-7 border-t border-[#eee2e6] pt-6">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                  <TicketPercent size={16} className="text-[#d85c7a]" />
+                  Cupom de desconto
+                </div>
+
+                {order?.coupon_code ? (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-emerald-800">
+                        {order.coupon_code}
+                      </span>
+                      <span className="block text-xs text-emerald-700">
+                        Desconto aplicado
+                      </span>
+                    </span>
+                    {!order.mercado_pago_payment_id && !pixData && !boletoData && (
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        disabled={applyingCoupon}
+                        aria-label="Remover cupom"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 transition hover:text-[#d85c7a] disabled:opacity-50"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={couponCode}
+                      onChange={(event) =>
+                        setCouponCode(event.target.value.toUpperCase())
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          applyCoupon();
+                        }
+                      }}
+                      placeholder="EX: ANA10"
+                      className="h-12 min-w-0 flex-1 rounded-2xl border border-[#eee2e6] px-4 text-sm uppercase outline-none transition focus:border-[#d85c7a] focus:ring-4 focus:ring-[#fbe9ee]"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={applyingCoupon}
+                      className="h-12 shrink-0 rounded-2xl bg-[#43232d] px-4 text-xs font-semibold text-white transition hover:bg-[#d85c7a] disabled:opacity-50"
+                    >
+                      {applyingCoupon ? "..." : "Aplicar"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-7 space-y-3 border-t border-[#eee2e6] pt-6 text-sm">
                 <div className="flex justify-between text-zinc-600">
                   <span>Subtotal</span>
@@ -1563,11 +1747,22 @@ export default function PublicCheckoutPage() {
                     <span>- {formatMoney(selectedShipping.discount)}</span>
                   </div>
                 )}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between gap-4 font-medium text-emerald-700">
+                    <span>Cupom {order?.coupon_code}</span>
+                    <span>- {formatMoney(couponDiscount)}</span>
+                  </div>
+                )}
                 {pixDiscount > 0 && (
                   <div className="flex justify-between font-medium text-emerald-700">
                     <span>Desconto exclusivo no PIX</span>
                     <span>- {formatMoney(pixDiscount)}</span>
                   </div>
+                )}
+                {selectedPaymentMethod === "pix" && order?.coupon && !couponAllowsPixDiscount && (
+                  <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                    Este cupom não acumula com o desconto de PIX.
+                  </p>
                 )}
                 <div className="flex items-end justify-between border-t border-[#eee2e6] pt-5">
                   <span className="text-sm font-medium">Total</span>

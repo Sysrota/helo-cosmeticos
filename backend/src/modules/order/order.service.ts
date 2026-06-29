@@ -195,6 +195,8 @@ export async function listOrdersService() {
     include: {
       contact: true,
 
+      coupon: true,
+
       items: {
         include: {
           product: true,
@@ -237,6 +239,8 @@ export async function showOrderService(
           },
         },
       },
+
+      coupon: true,
 
       items: {
         include: {
@@ -288,6 +292,8 @@ export async function showOrderService(
               },
             },
           },
+
+          coupon: true,
 
           items: {
             include: {
@@ -429,6 +435,8 @@ export async function updateOrderService({
 
     include: {
       contact: true,
+
+      coupon: true,
 
       items: {
         include: {

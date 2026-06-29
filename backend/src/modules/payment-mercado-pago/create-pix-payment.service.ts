@@ -12,14 +12,17 @@ import {
   buildPaymentDescription,
 } from "./payment-description.js";
 import {
-  getCommercialPolicy,
-} from "../store-config/store-config.service.js";
-import {
   getPaymentNotificationUrl,
 } from "./payment-webhook-url.js";
 import {
   notifyManagersAboutOrder,
 } from "../manager/manager-notification.service.js";
+import {
+  calculateOrderTotals,
+} from "../coupons/coupon-totals.service.js";
+import {
+  syncCouponRedemption,
+} from "../coupons/coupons.service.js";
 
 interface Props {
   order_id: number;
@@ -38,6 +41,7 @@ export async function createPixPaymentService({
 
       include: {
         contact: true,
+        coupon: true,
         items: {
           include: {
             product: true,
@@ -53,40 +57,22 @@ export async function createPixPaymentService({
     );
   }
 
-  const regularTotal =
-    Number(
-      (
-        Number(order.subtotal || 0) +
-        Number(order.shipping || 0)
-      ).toFixed(2)
+  const totals =
+    await calculateOrderTotals(
+      order,
+      "pix"
     );
-
-  const commercialPolicy =
-    await getCommercialPolicy();
-
-  const discount =
-    Number(
-      (
-        regularTotal *
-        (
-          commercialPolicy.pix_discount_percent /
-          100
-        )
-      ).toFixed(2)
-    );
-
   const total =
-    Number(
-      (
-        regularTotal -
-        discount
-      ).toFixed(2)
-    );
+    totals.total;
 
   console.log({
     total,
-    regularTotal,
-    discount,
+    regularTotal:
+      totals.regularTotal,
+    couponDiscount:
+      totals.couponDiscount,
+    paymentDiscount:
+      totals.paymentDiscount,
   });
 
   if (
@@ -164,7 +150,12 @@ export async function createPixPaymentService({
       payment_status:
         "pending",
 
-      discount,
+      coupon_discount:
+        totals.couponDiscount,
+      payment_discount:
+        totals.paymentDiscount,
+      discount:
+        totals.discount,
 
       total,
 
@@ -178,6 +169,11 @@ export async function createPixPaymentService({
         String(payment.id),
     },
   });
+
+  await syncCouponRedemption(
+    order.id,
+    "pending"
+  );
 
   void notifyManagersAboutOrder(
     order.id,
@@ -206,7 +202,12 @@ export async function createPixPaymentService({
     amount:
       total,
 
-    discount,
+    discount:
+      totals.discount,
+    coupon_discount:
+      totals.couponDiscount,
+    payment_discount:
+      totals.paymentDiscount,
   };
 }
 

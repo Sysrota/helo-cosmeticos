@@ -28,6 +28,12 @@ import {
 import {
   notifyManagersAboutOrder,
 } from "../manager/manager-notification.service.js";
+import {
+  calculateOrderTotals,
+} from "../coupons/coupon-totals.service.js";
+import {
+  syncCouponRedemption,
+} from "../coupons/coupons.service.js";
 
 interface Props {
 
@@ -89,6 +95,7 @@ export async function createCardPaymentService({
 
       include: {
         contact: true,
+        coupon: true,
         items: {
           include: {
             product: true,
@@ -116,13 +123,13 @@ export async function createCardPaymentService({
     );
   }
 
-  const total =
-    Number(
-      (
-        Number(order.subtotal || 0) +
-        Number(order.shipping || 0)
-      ).toFixed(2)
+  const totals =
+    await calculateOrderTotals(
+      order,
+      "credit_card"
     );
+  const total =
+    totals.total;
   // =========================
   // PAYMENT CLIENT
   // =========================
@@ -197,8 +204,14 @@ export async function createCardPaymentService({
             ? "paid"
             : order.status,
 
+        coupon_discount:
+          totals.couponDiscount,
+
+        payment_discount:
+          totals.paymentDiscount,
+
         discount:
-          0,
+          totals.discount,
 
         total,
 
@@ -227,6 +240,13 @@ export async function createCardPaymentService({
   io.emit(
     "order_updated",
     updatedOrder
+  );
+
+  await syncCouponRedemption(
+    order.id,
+    isApproved
+      ? "paid"
+      : payment.status
   );
 
   if (isApproved) {

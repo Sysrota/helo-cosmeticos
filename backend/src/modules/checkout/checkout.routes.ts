@@ -7,6 +7,10 @@ import {
   trackOrderController,
   updateCheckoutDeliveryController,
 } from "./checkout.controller.js";
+import {
+  applyCheckoutCouponController,
+  removeCheckoutCouponController,
+} from "../coupons/coupons.controller.js";
 
 export const checkoutRoutes =
   Router();
@@ -24,4 +28,14 @@ checkoutRoutes.post(
 checkoutRoutes.put(
   "/:id/delivery",
   updateCheckoutDeliveryController
+);
+
+checkoutRoutes.post(
+  "/:id/coupon",
+  applyCheckoutCouponController
+);
+
+checkoutRoutes.delete(
+  "/:id/coupon",
+  removeCheckoutCouponController
 );

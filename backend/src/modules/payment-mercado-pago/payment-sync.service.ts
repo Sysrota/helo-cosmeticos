@@ -13,6 +13,9 @@ import {
 } from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
 import { sendMetaCapiEvent } from "../meta/meta-capi.service.js";
+import {
+  syncCouponRedemption,
+} from "../coupons/coupons.service.js";
 
 function getOrderReference(
   externalReference: unknown
@@ -133,6 +136,11 @@ export async function syncMercadoPagoPayment(
       updatedOrder
     );
 
+    await syncCouponRedemption(
+      updatedOrder.id,
+      nextStatus
+    );
+
     if (
       previousStatus !== nextStatus &&
       nextStatus !== "pending"
@@ -194,6 +202,11 @@ export async function syncMercadoPagoPayment(
           new Date(),
       },
     });
+
+  await syncCouponRedemption(
+    updatedOrder.id,
+    "paid"
+  );
 
   // Emitir socket apenas na primeira confirmação — evita Purchase duplicado
   // quando o Mercado Pago retenta o webhook para pedido já pago.

@@ -24,6 +24,9 @@ import {
 import {
   generateOrderNumber,
 } from "../order/order-number.service.js";
+import {
+  calculateOrderTotals,
+} from "../coupons/coupon-totals.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -355,6 +358,9 @@ export async function updateCheckoutDeliveryController(
         where: {
           id: orderId,
         },
+        include: {
+          coupon: true,
+        },
       });
 
     if (!order) {
@@ -385,9 +391,15 @@ export async function updateCheckoutDeliveryController(
         selectedShipping.price
       );
 
-    const total =
-      Number(order.subtotal) +
-      shippingPrice;
+    const totals =
+      await calculateOrderTotals({
+        subtotal:
+          order.subtotal,
+        shipping:
+          shippingPrice,
+        coupon:
+          order.coupon,
+      });
 
     await prisma.contact.update({
       where: {
@@ -471,8 +483,13 @@ export async function updateCheckoutDeliveryController(
           shipping_deadline:
             selectedShipping.deadline,
           discount:
+            totals.discount,
+          coupon_discount:
+            totals.couponDiscount,
+          payment_discount:
             0,
-          total,
+          total:
+            totals.total,
         },
         include: {
           contact: true,
@@ -589,6 +606,7 @@ export async function trackOrderController(
             },
           },
         },
+        coupon: true,
         items: {
           include: {
             product: {
@@ -635,6 +653,7 @@ export async function trackOrderController(
                   },
                 },
               },
+              coupon: true,
               items: {
                 include: {
                   product: {
@@ -687,6 +706,12 @@ export async function trackOrderController(
       order.shipping,
     discount:
       order.discount,
+    coupon_code:
+      order.coupon_code,
+    coupon_discount:
+      order.coupon_discount,
+    payment_discount:
+      order.payment_discount,
     total:
       order.total,
     pix_code:

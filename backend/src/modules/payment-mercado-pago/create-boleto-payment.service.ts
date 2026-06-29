@@ -4,6 +4,8 @@ import { buildPaymentDescription } from "./payment-description.js";
 import { getPaymentNotificationUrl } from "./payment-webhook-url.js";
 import { notifyManagersAboutOrder } from "../manager/manager-notification.service.js";
 import { getMercadoPagoAccessToken } from "./mercado-pago.provider.js";
+import { calculateOrderTotals } from "../coupons/coupon-totals.service.js";
+import { syncCouponRedemption } from "../coupons/coupons.service.js";
 
 interface Props {
   order_id: number;
@@ -40,6 +42,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
       contact: {
         include: { addresses: true },
       },
+      coupon: true,
       items: {
         include: { product: true },
       },
@@ -75,9 +78,13 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     });
   }
 
-  const total = Number(
-    (Number(order.subtotal || 0) + Number(order.shipping || 0)).toFixed(2)
-  );
+  const totals =
+    await calculateOrderTotals(
+      order,
+      "boleto"
+    );
+  const total =
+    totals.total;
 
   if (!total || isNaN(total) || total <= 0) {
     throw new Error("Pedido sem valor válido");
@@ -170,12 +177,20 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
     data: {
       payment_method: "boleto",
       payment_status: "pending",
+      coupon_discount: totals.couponDiscount,
+      payment_discount: totals.paymentDiscount,
+      discount: totals.discount,
       total,
       boleto_url: boletoUrl,
       boleto_barcode: boletoBarcode,
       mercado_pago_payment_id: String(payment.id),
     },
   });
+
+  await syncCouponRedemption(
+    order.id,
+    "pending"
+  );
 
   void notifyManagersAboutOrder(
     order.id,

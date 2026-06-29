@@ -21,6 +21,7 @@ import { melhorEnvioRoutes } from "./modules/shipping/melhor-envio/melhor-envio.
 import { paymentRoutes } from "./modules/payment-mercado-pago/payment.routes.js";
 import { aiRoutes } from "./modules/ai/ai.routes.js";
 import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
+import { couponRoutes } from "./modules/coupons/coupons.routes.js";
 
 
 // Sempre backend/uploads/, independente do CWD do processo
@@ -71,6 +72,8 @@ app.use("/payment",paymentRoutes);
 app.use("/ai",aiRoutes);
 
 app.use("/checkout",checkoutRoutes);
+
+app.use("/coupons",couponRoutes);
 
 
 
