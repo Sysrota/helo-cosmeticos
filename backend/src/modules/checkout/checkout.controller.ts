@@ -27,6 +27,9 @@ import {
 import {
   calculateOrderTotals,
 } from "../coupons/coupon-totals.service.js";
+import {
+  applyCouponToOrderService,
+} from "../coupons/coupons.service.js";
 
 export async function createCheckoutController(
   req: Request,
@@ -39,6 +42,7 @@ export async function createCheckoutController(
       customer,
       cart,
       shipping,
+      coupon_code,
     } = req.body;
 
     // =====================
@@ -223,7 +227,7 @@ export async function createCheckoutController(
     // ORDER
     // =====================
 
-    const order =
+    let order =
       await prisma.$transaction(
         async (transaction) => {
           const orderNumber =
@@ -290,6 +294,17 @@ export async function createCheckoutController(
           });
         }
       );
+
+    if (coupon_code) {
+      const couponResult =
+        await applyCouponToOrderService(
+          order.id,
+          String(coupon_code)
+        );
+
+      order =
+        couponResult.order;
+    }
 
     void notifyManagersAboutOrder(
       order.id,

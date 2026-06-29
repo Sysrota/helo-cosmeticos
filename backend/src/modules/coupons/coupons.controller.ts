@@ -8,6 +8,7 @@ import {
   createCouponService,
   deleteCouponService,
   listCouponsService,
+  previewCouponService,
   removeCouponFromOrderService,
   updateCouponService,
 } from "./coupons.service.js";
@@ -106,6 +107,32 @@ export async function couponReportController(
   return res.json(
     report
   );
+}
+
+export async function previewCouponController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const result =
+      await previewCouponService(
+        String(req.body.code || ""),
+        req.body.cart || [],
+        Number(req.body.shipping_price || 0)
+      );
+
+    return res.json(
+      result
+    );
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao validar cupom."
+        ),
+    });
+  }
 }
 
 export async function applyCheckoutCouponController(

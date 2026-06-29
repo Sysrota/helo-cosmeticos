@@ -4,6 +4,7 @@ import {
   createCouponController,
   deleteCouponController,
   listCouponsController,
+  previewCouponController,
   updateCouponController,
 } from "./coupons.controller.js";
 
@@ -18,6 +19,11 @@ couponRoutes.get(
 couponRoutes.get(
   "/report",
   couponReportController
+);
+
+couponRoutes.post(
+  "/preview",
+  previewCouponController
 );
 
 couponRoutes.post(

@@ -223,6 +223,7 @@ export default function PublicCheckoutPage() {
   const [selectedShipping, setSelectedShipping] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
   const [couponCode, setCouponCode] = useState("");
+  const [couponPreview, setCouponPreview] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [pixData, setPixData] = useState(null);
   const [loadingPix, setLoadingPix] = useState(false);
@@ -287,6 +288,7 @@ export default function PublicCheckoutPage() {
         setCouponCode(
           data.coupon_code || ""
         );
+        setCouponPreview(null);
         setStep(
           data.shipping_method
             ? 3
@@ -418,6 +420,22 @@ export default function PublicCheckoutPage() {
     [checkoutItems]
   );
 
+  useEffect(() => {
+    if (
+      !order &&
+      couponPreview &&
+      Number(couponPreview.totals?.subtotal || 0) !==
+        Number(subtotal || 0)
+    ) {
+      setCouponPreview(null);
+      setNotice("O carrinho mudou. Aplique o cupom novamente para recalcular o desconto.");
+    }
+  }, [
+    couponPreview,
+    order,
+    subtotal,
+  ]);
+
   const shippingPrice = Number(
     selectedShipping?.price ??
     order?.shipping ??
@@ -425,8 +443,14 @@ export default function PublicCheckoutPage() {
   );
   const couponDiscount =
     Number(
-      order?.coupon_discount || 0
+      order?.coupon_discount ??
+      couponPreview?.totals?.couponDiscount ??
+      0
     );
+  const appliedCouponCode =
+    order?.coupon_code ||
+    couponPreview?.coupon?.code ||
+    "";
   const total =
     Number(
       Math.max(
@@ -437,8 +461,8 @@ export default function PublicCheckoutPage() {
       ).toFixed(2)
     );
   const couponAllowsPixDiscount =
-    !order?.coupon ||
-    order.coupon.allow_pix_discount !== false;
+    !(order?.coupon || couponPreview?.coupon) ||
+    (order?.coupon || couponPreview?.coupon).allow_pix_discount !== false;
   const pixDiscount =
     step === 3 &&
     selectedPaymentMethod === "pix" &&
@@ -785,9 +809,14 @@ export default function PublicCheckoutPage() {
     const { data } = await api.post("/checkout", {
       customer,
       cart: checkoutCart,
+      coupon_code:
+        couponPreview?.coupon?.code ||
+        couponCode.trim() ||
+        undefined,
     });
 
     setOrder(data);
+    setCouponPreview(null);
 
     clearCart();
 
@@ -843,11 +872,6 @@ export default function PublicCheckoutPage() {
     const code =
       couponCode.trim();
 
-    if (!order) {
-      setNotice("Preencha seus dados primeiro para aplicar o cupom ao pedido.");
-      return;
-    }
-
     if (!code) {
       setNotice("Informe o código do cupom.");
       return;
@@ -856,6 +880,25 @@ export default function PublicCheckoutPage() {
     try {
       setApplyingCoupon(true);
       setNotice("");
+
+      if (!order) {
+        const { data } =
+          await api.post(
+            "/coupons/preview",
+            {
+              code,
+              cart:
+                checkoutCart,
+              shipping_price:
+                shippingPrice,
+            }
+          );
+
+        setCouponPreview(data);
+        setCouponCode(data.coupon.code);
+        setNotice(data.message || "Cupom aplicado.");
+        return;
+      }
 
       const { data } =
         await api.post(
@@ -866,6 +909,7 @@ export default function PublicCheckoutPage() {
         );
 
       setOrder(data.order);
+      setCouponPreview(null);
       setCouponCode(data.order.coupon_code || code.toUpperCase());
       setPixData(null);
       setBoletoData(null);
@@ -883,6 +927,8 @@ export default function PublicCheckoutPage() {
   async function removeCoupon() {
     if (!order) {
       setCouponCode("");
+      setCouponPreview(null);
+      setNotice("Cupom removido.");
       return;
     }
 
@@ -896,6 +942,7 @@ export default function PublicCheckoutPage() {
         );
 
       setOrder(data.order);
+      setCouponPreview(null);
       setCouponCode("");
       setPixData(null);
       setBoletoData(null);
@@ -1676,17 +1723,17 @@ export default function PublicCheckoutPage() {
                   Cupom de desconto
                 </div>
 
-                {order?.coupon_code ? (
+                {appliedCouponCode ? (
                   <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-emerald-800">
-                        {order.coupon_code}
+                        {appliedCouponCode}
                       </span>
                       <span className="block text-xs text-emerald-700">
                         Desconto aplicado
                       </span>
                     </span>
-                    {!order.mercado_pago_payment_id && !pixData && !boletoData && (
+                    {!order?.mercado_pago_payment_id && !pixData && !boletoData && (
                       <button
                         type="button"
                         onClick={removeCoupon}
@@ -1749,7 +1796,7 @@ export default function PublicCheckoutPage() {
                 )}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between gap-4 font-medium text-emerald-700">
-                    <span>Cupom {order?.coupon_code}</span>
+                    <span>Cupom {appliedCouponCode}</span>
                     <span>- {formatMoney(couponDiscount)}</span>
                   </div>
                 )}
@@ -1759,7 +1806,7 @@ export default function PublicCheckoutPage() {
                     <span>- {formatMoney(pixDiscount)}</span>
                   </div>
                 )}
-                {selectedPaymentMethod === "pix" && order?.coupon && !couponAllowsPixDiscount && (
+                {selectedPaymentMethod === "pix" && (order?.coupon || couponPreview?.coupon) && !couponAllowsPixDiscount && (
                   <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
                     Este cupom não acumula com o desconto de PIX.
                   </p>

@@ -233,45 +233,12 @@ export async function updateCouponService(
   });
 }
 
-export async function validateCouponForOrder(
+async function validateCouponForSubtotal(
   code: string,
-  orderId: number
+  subtotal: number
 ) {
   const normalizedCode =
     normalizeCouponCode(code);
-
-  const order =
-    await prisma.order.findUnique({
-      where: {
-        id: orderId,
-      },
-      include: {
-        contact: true,
-        coupon: true,
-      },
-    });
-
-  if (!order) {
-    throw new Error(
-      "Pedido não encontrado."
-    );
-  }
-
-  if (
-    order.mercado_pago_payment_id ||
-    [
-      "paid",
-      "approved",
-    ].includes(
-      String(
-        order.payment_status || ""
-      )
-    )
-  ) {
-    throw new Error(
-      "Não é possível alterar cupom após iniciar o pagamento."
-    );
-  }
 
   const coupon =
     await prisma.coupon.findUnique({
@@ -315,13 +282,155 @@ export async function validateCouponForOrder(
   }
 
   if (
-    Number(order.subtotal || 0) <
+    Number(subtotal || 0) <
     Number(coupon.min_subtotal || 0)
   ) {
     throw new Error(
       `Cupom válido para compras acima de R$ ${Number(coupon.min_subtotal).toFixed(2)}.`
     );
   }
+
+  const usage =
+    await getCouponUsage(
+      coupon.id
+    );
+
+  if (
+    coupon.usage_limit &&
+    usage.totalUsage >=
+      coupon.usage_limit
+  ) {
+    throw new Error(
+      "Limite de uso do cupom atingido."
+    );
+  }
+
+  return coupon;
+}
+
+export async function previewCouponService(
+  code: string,
+  cart: any[] = [],
+  shippingPrice = 0
+) {
+  if (!cart.length) {
+    throw new Error(
+      "Carrinho vazio."
+    );
+  }
+
+  const productIds =
+    cart.map(
+      (item) =>
+        Number(
+          item.product_id ??
+          item.id
+        )
+    );
+
+  const products =
+    await prisma.product.findMany({
+      where: {
+        id: {
+          in:
+            productIds,
+        },
+      },
+    });
+
+  let subtotal = 0;
+
+  for (const item of cart) {
+    const productId =
+      Number(
+        item.product_id ??
+        item.id
+      );
+    const product =
+      products.find(
+        (current) =>
+          current.id ===
+          productId
+      );
+
+    if (!product) {
+      throw new Error(
+        "Um ou mais produtos não estão disponíveis."
+      );
+    }
+
+    subtotal +=
+      Number(product.price || 0) *
+      Number(item.quantity || 1);
+  }
+
+  const coupon =
+    await validateCouponForSubtotal(
+      code,
+      subtotal
+    );
+
+  const totals =
+    await calculateOrderTotals({
+      subtotal,
+      shipping:
+        Number(shippingPrice || 0),
+      coupon,
+    });
+
+  return {
+    coupon,
+    totals,
+    message:
+      "Cupom aplicado.",
+  };
+}
+
+export async function validateCouponForOrder(
+  code: string,
+  orderId: number
+) {
+  const normalizedCode =
+    normalizeCouponCode(code);
+
+  const order =
+    await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        contact: true,
+        coupon: true,
+      },
+    });
+
+  if (!order) {
+    throw new Error(
+      "Pedido não encontrado."
+    );
+  }
+
+  if (
+    order.mercado_pago_payment_id ||
+    [
+      "paid",
+      "approved",
+    ].includes(
+      String(
+        order.payment_status || ""
+      )
+    )
+  ) {
+    throw new Error(
+      "Não é possível alterar cupom após iniciar o pagamento."
+    );
+  }
+
+  const coupon =
+    await validateCouponForSubtotal(
+      normalizedCode,
+      order.subtotal
+    );
 
   const usage =
     await getCouponUsage(
