@@ -227,7 +227,7 @@ export default function CouponsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold md:text-3xl">
-                Cupons e blogueiras
+                Cupons e influencers
               </h1>
               <p className="mt-1 text-zinc-500">
                 Cadastro de cupons, regras de desconto e relatório de parcerias.
@@ -286,7 +286,7 @@ export default function CouponsPage() {
                 <thead className="border-b bg-zinc-50 text-left">
                   <tr>
                     <th className="p-3">Código</th>
-                    <th className="p-3">Blogueira</th>
+                    <th className="p-3">Influencer</th>
                     <th className="p-3">Desconto</th>
                     <th className="p-3">Usos</th>
                     <th className="p-3">Status</th>
@@ -364,7 +364,7 @@ export default function CouponsPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm text-zinc-600">
-                  Blogueira
+                  Influencer
                   <input
                     value={form.partner_name}
                     onChange={(event) => updateForm("partner_name", event.target.value)}
@@ -480,7 +480,7 @@ export default function CouponsPage() {
               </div>
 
               <label className="text-sm text-zinc-600">
-                Comissão da blogueira (%)
+                Comissão da influencer (%)
                 <input
                   type="number"
                   min="0"
@@ -533,7 +533,7 @@ export default function CouponsPage() {
           <div className="mb-5 flex items-center gap-2">
             <BarChart3 size={18} className="text-[#d9536f]" />
             <h2 className="text-xl font-semibold">
-              Relatório por blogueira
+              Relatório por influencer
             </h2>
           </div>
 
@@ -541,7 +541,7 @@ export default function CouponsPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-zinc-50 text-left">
                 <tr>
-                  <th className="p-3">Blogueira</th>
+                  <th className="p-3">Influencer</th>
                   <th className="p-3">Cupom</th>
                   <th className="p-3">Pedidos</th>
                   <th className="p-3">Pagos</th>

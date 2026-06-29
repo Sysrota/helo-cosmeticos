@@ -209,7 +209,7 @@ export async function createCouponService(
 
   if (!data.partner_name) {
     throw new Error(
-      "Informe o nome da blogueira/parceira."
+      "Informe o nome da influencer/parceira."
     );
   }
 
