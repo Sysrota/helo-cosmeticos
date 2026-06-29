@@ -123,14 +123,28 @@ echo "✅ Página SEO sem barra final validada: $SEO_SAMPLE_FLAT_FILE"
 # -----------------------------
 echo "🔄 Reiniciando backend..."
 
+EXPECTED_PM2_SCRIPT="$BACKEND_DIR/dist/server.js"
+
 if ! pm2 describe "$PM2_APP_NAME" >/dev/null 2>&1; then
-  echo "ERRO: app PM2 '$PM2_APP_NAME' não encontrado."
-  echo "Defina o nome correto com: PM2_APP_NAME=nome-do-app ./deploy.sh"
-  pm2 list
-  exit 1
+  echo "ℹ️ App PM2 '$PM2_APP_NAME' não encontrado. Criando com cwd do backend..."
+  pm2 start "$EXPECTED_PM2_SCRIPT" --name "$PM2_APP_NAME" --cwd "$BACKEND_DIR" --update-env
+else
+  PM2_INFO="$(pm2 jlist)"
+  PM2_CURRENT_CWD="$(printf '%s' "$PM2_INFO" | node -e 'const fs = require("fs"); const name = process.argv[1]; const apps = JSON.parse(fs.readFileSync(0, "utf8")); const app = apps.find((item) => item.name === name); process.stdout.write(app?.pm2_env?.pm_cwd || "");' "$PM2_APP_NAME")"
+  PM2_CURRENT_SCRIPT="$(printf '%s' "$PM2_INFO" | node -e 'const fs = require("fs"); const name = process.argv[1]; const apps = JSON.parse(fs.readFileSync(0, "utf8")); const app = apps.find((item) => item.name === name); process.stdout.write(app?.pm2_env?.pm_exec_path || "");' "$PM2_APP_NAME")"
+
+  if [ "$PM2_CURRENT_CWD" != "$BACKEND_DIR" ] || [ "$PM2_CURRENT_SCRIPT" != "$EXPECTED_PM2_SCRIPT" ]; then
+    echo "⚠️ PM2 '$PM2_APP_NAME' está com cwd/script diferente do backend."
+    echo "   cwd atual: ${PM2_CURRENT_CWD:-N/A}"
+    echo "   script atual: ${PM2_CURRENT_SCRIPT:-N/A}"
+    echo "   Recriando processo com cwd: $BACKEND_DIR"
+    pm2 delete "$PM2_APP_NAME"
+    pm2 start "$EXPECTED_PM2_SCRIPT" --name "$PM2_APP_NAME" --cwd "$BACKEND_DIR" --update-env
+  else
+    pm2 restart "$PM2_APP_NAME" --update-env
+  fi
 fi
 
-pm2 restart "$PM2_APP_NAME" --update-env
 pm2 save
 
 # -----------------------------

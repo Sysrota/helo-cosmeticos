@@ -6,19 +6,6 @@ import { createPixPaymentService } from "./create-pix-payment.service";
 import { createCardPaymentService } from "./create-card-payment.service";
 import { createBoletoPaymentService } from "./create-boleto-payment.service";
 
-import {
-  MercadoPagoConfig
-} from "mercadopago";
-
-const client =
-  new MercadoPagoConfig({
-
-    accessToken:
-      process.env
-        .MERCADO_PAGO_ACCESS_TOKEN!,
-  });
-
-
 export async function createPixPaymentController(
   req: Request,
   res: Response

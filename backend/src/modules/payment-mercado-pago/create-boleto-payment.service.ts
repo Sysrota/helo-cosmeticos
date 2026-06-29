@@ -3,6 +3,7 @@ import { prisma } from "../../config/prisma.js";
 import { buildPaymentDescription } from "./payment-description.js";
 import { getPaymentNotificationUrl } from "./payment-webhook-url.js";
 import { notifyManagersAboutOrder } from "../manager/manager-notification.service.js";
+import { getMercadoPagoAccessToken } from "./mercado-pago.provider.js";
 
 interface Props {
   order_id: number;
@@ -109,7 +110,7 @@ export async function createBoletoPaymentService({ order_id, cpf_override }: Pro
       requestBody,
       {
         headers: {
-          Authorization: `Bearer ${process.env.MERCADO_PAGO_TOKEN}`,
+          Authorization: `Bearer ${getMercadoPagoAccessToken()}`,
           "Content-Type": "application/json",
           "X-Idempotency-Key": `boleto-${order.id}-${Date.now()}`,
         },
