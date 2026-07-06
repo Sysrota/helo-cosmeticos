@@ -622,6 +622,12 @@ export async function trackOrderController(
           },
         },
         coupon: true,
+        shipping_events_list: {
+          orderBy: {
+            occurred_at:
+              "desc",
+          },
+        },
         items: {
           include: {
             product: {
@@ -669,6 +675,12 @@ export async function trackOrderController(
                 },
               },
               coupon: true,
+              shipping_events_list: {
+                orderBy: {
+                  occurred_at:
+                    "desc",
+                },
+              },
               items: {
                 include: {
                   product: {
@@ -755,6 +767,29 @@ export async function trackOrderController(
       order.shipping_status,
     shipping_status_updated_at:
       order.shipping_status_updated_at,
+    shipping_events:
+      order.shipping_events_list.map(
+        (event) => ({
+          id:
+            event.id,
+          event:
+            event.event,
+          status:
+            event.status,
+          title:
+            event.title,
+          description:
+            event.description,
+          location:
+            event.location,
+          tracking_code:
+            event.tracking_code,
+          tracking_url:
+            event.tracking_url,
+          occurred_at:
+            event.occurred_at,
+        })
+      ),
     created_at:
       order.created_at,
     customer_name:

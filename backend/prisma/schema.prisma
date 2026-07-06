@@ -357,7 +357,42 @@ model Order {
 
   coupon_redemptions CouponRedemption[]
 
+  shipping_events_list OrderShippingEvent[]
+
   @@map("orders")
+}
+
+model OrderShippingEvent {
+  id Int @id @default(autoincrement())
+
+  order_id Int
+
+  event String
+
+  status String?
+
+  title String
+
+  description String?
+
+  location String?
+
+  tracking_code String?
+
+  tracking_url String?
+
+  occurred_at DateTime
+
+  payload Json?
+
+  created_at DateTime @default(now())
+
+  updated_at DateTime @updatedAt
+
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@unique([order_id, event, occurred_at])
+  @@map("order_shipping_events")
 }
 
 model Coupon {

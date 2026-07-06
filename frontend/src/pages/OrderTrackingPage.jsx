@@ -183,6 +183,33 @@ function getShippingStatusLabel(status) {
   );
 }
 
+function formatShippingEventDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Date(value)
+    .toLocaleString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+}
+
+function getShippingTimeline(order) {
+  return Array.isArray(order?.shipping_events)
+    ? [...order.shipping_events].sort(
+        (first, second) =>
+          new Date(second.occurred_at).getTime() -
+          new Date(first.occurred_at).getTime()
+      )
+    : [];
+}
+
 const orderFlow = [
   {
     status: "paid",
@@ -351,6 +378,10 @@ export default function OrderTrackingPage() {
         ...updatedOrder,
         items: current.items,
         customer_name: current.customer_name,
+        shipping_events:
+          updatedOrder.shipping_events ||
+          updatedOrder.shipping_events_list ||
+          current.shipping_events,
       };
 
       setOrder(nextOrder);
@@ -587,6 +618,8 @@ export default function OrderTrackingPage() {
           regularTotal,
       }
       : null;
+  const shippingTimeline =
+    getShippingTimeline(order);
 
   function trackPurchase(paidOrder) {
     const trackedOrder = paidOrder || latestOrderRef.current;
@@ -816,29 +849,6 @@ export default function OrderTrackingPage() {
                     {order.shipping_deadline}
                   </p>
                 )}
-                {(order.tracking_code || order.tracking_url || order.shipping_status) && (
-                  <div className="mt-3 rounded-xl border border-[#efd9e1] bg-white p-3">
-                    <p className="text-xs font-semibold text-[#43232d]">
-                      {getShippingStatusLabel(order.shipping_status)}
-                    </p>
-                    {order.tracking_code && (
-                      <p className="mt-1 break-all text-xs text-[#78636b]">
-                        Código: {order.tracking_code}
-                      </p>
-                    )}
-                    {order.tracking_url && (
-                      <a
-                        href={order.tracking_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#d9536f] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#c64c66]"
-                      >
-                        <ExternalLink size={13} />
-                        Abrir rastreio
-                      </a>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="rounded-2xl bg-[#fff7f9] p-4">
@@ -872,6 +882,92 @@ export default function OrderTrackingPage() {
                 </p>
               </div>
             </div>
+
+            {(order.tracking_code || order.tracking_url || order.shipping_status || shippingTimeline.length > 0) && (
+              <div className="mt-5 rounded-3xl border border-[#f2e1e7] bg-white p-5">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b74b65]">
+                      Rastreamento da entrega
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-[#43232d]">
+                      {getShippingStatusLabel(order.shipping_status)}
+                    </h3>
+                    {order.tracking_code && (
+                      <p className="mt-1 break-all text-sm text-[#78636b]">
+                        Código: {order.tracking_code}
+                      </p>
+                    )}
+                  </div>
+
+                  {order.tracking_url && (
+                    <a
+                      href={order.tracking_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#d9536f] px-4 text-sm font-semibold text-white transition hover:bg-[#c64c66]"
+                    >
+                      <ExternalLink size={15} />
+                      Abrir rastreio
+                    </a>
+                  )}
+                </div>
+
+                {shippingTimeline.length > 0 ? (
+                  <div className="mt-6 space-y-0">
+                    {shippingTimeline.map((event, index) => {
+                      const isLatest = index === 0;
+                      const isLast = index === shippingTimeline.length - 1;
+
+                      return (
+                        <div key={event.id || `${event.event}-${event.occurred_at}`} className="relative flex gap-4 pb-6 last:pb-0">
+                          {!isLast && (
+                            <span className="absolute left-[15px] top-8 h-full w-px bg-[#f1d9e1]" />
+                          )}
+                          <span className={`relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                            isLatest
+                              ? "border-[#d9536f] bg-[#d9536f] text-white"
+                              : "border-[#f1d9e1] bg-white text-[#d9536f]"
+                          }`}>
+                            <Package size={15} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="text-sm font-semibold text-[#43232d]">
+                                {event.title || getShippingStatusLabel(event.status)}
+                              </p>
+                              <span className="text-xs text-[#9b7f89]">
+                                {formatShippingEventDate(event.occurred_at)}
+                              </span>
+                            </div>
+                            {event.description && (
+                              <p className="mt-1 text-xs leading-5 text-[#78636b]">
+                                {event.description}
+                              </p>
+                            )}
+                            {event.location && (
+                              <p className="mt-2 flex items-center gap-1.5 text-xs leading-5 text-[#78636b]">
+                                <MapPin size={13} className="shrink-0 text-[#d9536f]" />
+                                {event.location}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-6 rounded-2xl border border-[#f2e1e7] bg-[#fffafb] p-4">
+                    <p className="text-sm font-semibold text-[#43232d]">
+                      Aguardando atualizações da transportadora
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-[#78636b]">
+                      O código de rastreio já está vinculado ao pedido. Assim que o Melhor Envio enviar novas movimentações, elas aparecerão aqui automaticamente.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-5 rounded-2xl border border-[#f3e7eb] p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold">

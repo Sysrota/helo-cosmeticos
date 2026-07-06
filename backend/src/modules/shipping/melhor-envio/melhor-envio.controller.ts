@@ -12,6 +12,81 @@ import {
   io,
 } from "../../../websocket/socket.js";
 
+const SHIPPING_EVENT_COPY: Record<
+  string,
+  {
+    title: string;
+    description: string;
+  }
+> = {
+  created: {
+    title:
+      "Adicionado no sistema",
+    description:
+      "A etiqueta de envio foi criada e o pacote está pronto para seguir para coleta ou postagem.",
+  },
+  pending: {
+    title:
+      "Aguardando liberação",
+    description:
+      "A etiqueta voltou ao carrinho ou aguarda liberação para continuar o envio.",
+  },
+  released: {
+    title:
+      "Etiqueta paga",
+    description:
+      "A etiqueta foi paga e está pronta para geração.",
+  },
+  generated: {
+    title:
+      "Etiqueta gerada",
+    description:
+      "O pacote foi preparado para ser postado ou coletado pela transportadora.",
+  },
+  received: {
+    title:
+      "Pacote recebido no ponto",
+    description:
+      "A transportadora recebeu o pacote e seguirá com a próxima etapa de distribuição.",
+  },
+  posted: {
+    title:
+      "Pacote postado",
+    description:
+      "A encomenda foi postada e entrou no fluxo de transporte.",
+  },
+  delivered: {
+    title:
+      "Pedido entregue",
+    description:
+      "A encomenda foi entregue ao destinatário.",
+  },
+  undelivered: {
+    title:
+      "Entrega não concluída",
+    description:
+      "A transportadora informou que não conseguiu concluir a entrega.",
+  },
+  paused: {
+    title:
+      "Entrega pausada",
+    description:
+      "A entrega foi interrompida e pode precisar de uma ação do destinatário.",
+  },
+  suspended: {
+    title:
+      "Envio suspenso",
+    description:
+      "O envio da etiqueta foi suspenso pela transportadora ou pelo Melhor Envio.",
+  },
+  cancelled: {
+    title:
+      "Etiqueta cancelada",
+    description:
+      "A etiqueta de envio foi cancelada.",
+  },
+};
+
 export async function connectMelhorEnvioController(
   _: Request,
   res: Response
@@ -281,6 +356,151 @@ async function findOrderForMelhorEnvioWebhook(
   });
 }
 
+function getShippingStatusFromPayload(
+  payload: any
+) {
+  return String(
+    payload?.data?.status ||
+    payload?.event ||
+    ""
+  )
+    .replace(/^order\./, "")
+    .trim();
+}
+
+function getEventDate(
+  data: any,
+  status: string
+) {
+  const candidates = [
+    status === "delivered"
+      ? data.delivered_at
+      : null,
+    status === "posted"
+      ? data.posted_at
+      : null,
+    status === "generated"
+      ? data.generated_at
+      : null,
+    status === "released"
+      ? data.paid_at
+      : null,
+    data.updated_at,
+    data.created_at,
+  ].filter(Boolean);
+
+  const parsed =
+    candidates
+      .map((value) =>
+        new Date(value)
+      )
+      .find(
+        (date) =>
+          !Number.isNaN(
+            date.getTime()
+          )
+      );
+
+  return parsed || new Date();
+}
+
+function getEventLocation(
+  data: any
+) {
+  const tagLocation =
+    (data.tags || [])
+      .map((tag: any) =>
+        tag?.tag || tag?.url
+      )
+      .find(Boolean);
+
+  return tagLocation
+    ? String(tagLocation)
+    : null;
+}
+
+async function saveShippingEvent(
+  orderId: number,
+  payload: any
+) {
+  const data =
+    payload?.data || {};
+  const status =
+    getShippingStatusFromPayload(
+      payload
+    );
+  const event =
+    String(
+      payload?.event ||
+      `order.${status || "updated"}`
+    );
+  const copy =
+    SHIPPING_EVENT_COPY[status] || {
+      title:
+        "Atualização no envio",
+      description:
+        "A transportadora enviou uma nova atualização sobre a entrega.",
+    };
+  const occurredAt =
+    getEventDate(
+      data,
+      status
+    );
+
+  return prisma.orderShippingEvent.upsert({
+    where: {
+      order_id_event_occurred_at: {
+        order_id:
+          orderId,
+        event,
+        occurred_at:
+          occurredAt,
+      },
+    },
+    update: {
+      status:
+        status || null,
+      title:
+        copy.title,
+      description:
+        copy.description,
+      location:
+        getEventLocation(data),
+      tracking_code:
+        data.tracking ||
+        data.self_tracking ||
+        null,
+      tracking_url:
+        data.tracking_url ||
+        null,
+      payload,
+    },
+    create: {
+      order_id:
+        orderId,
+      event,
+      status:
+        status || null,
+      title:
+        copy.title,
+      description:
+        copy.description,
+      location:
+        getEventLocation(data),
+      tracking_code:
+        data.tracking ||
+        data.self_tracking ||
+        null,
+      tracking_url:
+        data.tracking_url ||
+        null,
+      occurred_at:
+        occurredAt,
+      payload,
+    },
+  });
+}
+
 export async function melhorEnvioWebhookController(
   req: Request,
   res: Response
@@ -330,6 +550,11 @@ export async function melhorEnvioWebhookController(
       });
     }
 
+    await saveShippingEvent(
+      order.id,
+      payload
+    );
+
     const updatedOrder =
       await prisma.order.update({
         where: {
@@ -368,6 +593,12 @@ export async function melhorEnvioWebhookController(
           items: {
             include: {
               product: true,
+            },
+          },
+          shipping_events_list: {
+            orderBy: {
+              occurred_at:
+                "desc",
             },
           },
         },

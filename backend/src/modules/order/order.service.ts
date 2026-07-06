@@ -197,6 +197,13 @@ export async function listOrdersService() {
 
       coupon: true,
 
+      shipping_events_list: {
+        orderBy: {
+          occurred_at:
+            "desc",
+        },
+      },
+
       items: {
         include: {
           product: true,
@@ -241,6 +248,13 @@ export async function showOrderService(
       },
 
       coupon: true,
+
+      shipping_events_list: {
+        orderBy: {
+          occurred_at:
+            "desc",
+        },
+      },
 
       items: {
         include: {
@@ -294,6 +308,13 @@ export async function showOrderService(
           },
 
           coupon: true,
+
+          shipping_events_list: {
+            orderBy: {
+              occurred_at:
+                "desc",
+            },
+          },
 
           items: {
             include: {
@@ -467,6 +488,13 @@ export async function updateOrderService({
       contact: true,
 
       coupon: true,
+
+      shipping_events_list: {
+        orderBy: {
+          occurred_at:
+            "desc",
+        },
+      },
 
       items: {
         include: {
