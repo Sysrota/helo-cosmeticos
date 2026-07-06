@@ -11,6 +11,12 @@ import {
 import {
   io,
 } from "../../../websocket/socket.js";
+import {
+  sendOrderStatusMovementEmail,
+} from "../../notification/order-email.service.js";
+import {
+  sendOrderStatusUpdateWhatsApp,
+} from "../../notification/order-whatsapp-template.service.js";
 
 const SHIPPING_EVENT_COPY: Record<
   string,
@@ -501,6 +507,68 @@ async function saveShippingEvent(
   });
 }
 
+function getOrderStatusFromShippingStatus(
+  shippingStatus: string
+) {
+  const statusMap: Record<string, string> = {
+    generated: "preparing",
+    received: "shipping",
+    posted: "shipping",
+    delivered: "finished",
+  };
+
+  return statusMap[shippingStatus] || null;
+}
+
+function shouldApplyOrderStatus(
+  currentStatus: string | null | undefined,
+  nextStatus: string | null
+) {
+  if (!nextStatus) {
+    return false;
+  }
+
+  const rank: Record<string, number> = {
+    pending: 0,
+    paid: 1,
+    preparing: 2,
+    shipping: 3,
+    finished: 4,
+    cancelled: 5,
+  };
+  const currentRank =
+    rank[String(currentStatus || "pending")] ?? 0;
+  const nextRank =
+    rank[nextStatus] ?? currentRank;
+
+  if (currentStatus === "cancelled") {
+    return false;
+  }
+
+  return nextRank > currentRank;
+}
+
+async function notifyCustomerShippingMovement(
+  orderId: number,
+  orderStatus: string | null
+) {
+  if (!orderStatus) {
+    return;
+  }
+
+  await sendOrderStatusMovementEmail(
+    orderId,
+    orderStatus
+  );
+
+  if (orderStatus === "finished") {
+    await sendOrderStatusUpdateWhatsApp(
+      orderId,
+      orderStatus
+    );
+  }
+}
+
 export async function melhorEnvioWebhookController(
   req: Request,
   res: Response
@@ -555,6 +623,20 @@ export async function melhorEnvioWebhookController(
       payload
     );
 
+    const shippingStatus =
+      getShippingStatusFromPayload(
+        payload
+      );
+    const nextOrderStatus =
+      getOrderStatusFromShippingStatus(
+        shippingStatus
+      );
+    const shouldUpdateOrderStatus =
+      shouldApplyOrderStatus(
+        order.status,
+        nextOrderStatus
+      );
+
     const updatedOrder =
       await prisma.order.update({
         where: {
@@ -579,13 +661,16 @@ export async function melhorEnvioWebhookController(
             order.tracking_url,
           shipping_status:
             data.status ||
-            String(payload.event || "")
-              .replace(/^order\./, "") ||
+            shippingStatus ||
             order.shipping_status,
           shipping_status_updated_at:
             new Date(),
           shipping_events:
             payload,
+          status:
+            shouldUpdateOrderStatus
+              ? nextOrderStatus || undefined
+              : undefined,
         },
         include: {
           contact: true,
@@ -608,6 +693,18 @@ export async function melhorEnvioWebhookController(
       "order_updated",
       updatedOrder
     );
+
+    if (nextOrderStatus) {
+      void notifyCustomerShippingMovement(
+        order.id,
+        nextOrderStatus
+      ).catch((error) => {
+        console.error(
+          "Erro ao notificar cliente sobre movimentação do Melhor Envio:",
+          error
+        );
+      });
+    }
 
     return res.json({
       ok: true,

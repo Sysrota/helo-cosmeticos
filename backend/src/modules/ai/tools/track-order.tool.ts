@@ -121,6 +121,55 @@ function orderStatusLabel(
     String(status || "Não informado");
 }
 
+function shippingStatusLabel(
+  status?: string | null
+) {
+  const labels: Record<string, string> = {
+    created: "Adicionado no sistema",
+    pending: "Aguardando liberação",
+    released: "Etiqueta paga",
+    generated: "Etiqueta gerada",
+    received: "Recebido pela transportadora",
+    posted: "Postado",
+    delivered: "Entregue",
+    undelivered: "Entrega não concluída",
+    paused: "Entrega pausada",
+    suspended: "Envio suspenso",
+    cancelled: "Etiqueta cancelada",
+  };
+
+  return labels[String(status || "")] ||
+    String(status || "Não informado");
+}
+
+function formatDateTime(
+  value?: Date | string | null
+) {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  return date.toLocaleString(
+    "pt-BR",
+    {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }
+  );
+}
+
 export async function trackOrderTool({
   conversationId,
   orderId,
@@ -187,6 +236,14 @@ export async function trackOrderTool({
       },
       include: {
         contact: true,
+        shipping_events_list: {
+          orderBy: {
+            occurred_at:
+              "desc",
+          },
+          take:
+            3,
+        },
         items: {
           include: {
             product: true,
@@ -237,6 +294,9 @@ export async function trackOrderTool({
     };
   }
 
+  const latestShippingEvent =
+    order.shipping_events_list[0];
+
   return {
     status: "found",
     order: {
@@ -258,6 +318,54 @@ export async function trackOrderTool({
       shipping_deadline:
         order.shipping_deadline ||
         null,
+      tracking_code:
+        order.tracking_code ||
+        latestShippingEvent?.tracking_code ||
+        null,
+      tracking_url:
+        order.tracking_url ||
+        latestShippingEvent?.tracking_url ||
+        null,
+      shipping_status:
+        shippingStatusLabel(
+          order.shipping_status ||
+          latestShippingEvent?.status
+        ),
+      shipping_status_updated_at:
+        formatDateTime(
+          order.shipping_status_updated_at ||
+          latestShippingEvent?.occurred_at
+        ),
+      latest_shipping_event:
+        latestShippingEvent
+          ? {
+              title:
+                latestShippingEvent.title,
+              description:
+                latestShippingEvent.description,
+              location:
+                latestShippingEvent.location,
+              occurred_at:
+                formatDateTime(
+                  latestShippingEvent.occurred_at
+                ),
+            }
+          : null,
+      shipping_events:
+        order.shipping_events_list.map(
+          (event) => ({
+            title:
+              event.title,
+            description:
+              event.description,
+            location:
+              event.location,
+            occurred_at:
+              formatDateTime(
+                event.occurred_at
+              ),
+          })
+        ),
       total:
         formatMoney(
           order.total

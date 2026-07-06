@@ -38,6 +38,34 @@ function getTrackingUrl() {
   return `${getSiteUrl()}/acompanhar-pedido`;
 }
 
+function getSupportWhatsAppNumber() {
+  return (
+    process.env.ORDER_SUPPORT_WHATSAPP ||
+    "5562994445197"
+  ).replace(/\D/g, "");
+}
+
+function getSupportWhatsAppUrl(
+  orderNumber: string
+) {
+  const message =
+    `Olá, equipe Helô! Estou falando sobre meu pedido #${orderNumber}.`;
+
+  return `https://wa.me/${getSupportWhatsAppNumber()}?text=${encodeURIComponent(message)}`;
+}
+
+function getSupportWhatsAppHtml(
+  orderNumber: string
+) {
+  return `
+    <div style="background:#f2fff7;border:1px solid #c8f0d6;border-radius:14px;margin-top:22px;padding:16px;">
+      <p style="color:#2f6f46;font-size:14px;font-weight:700;margin:0 0 6px;">Fale com a Helô pelo WhatsApp</p>
+      <p style="color:#4b6152;font-size:13px;line-height:1.5;margin:0 0 12px;">Acompanhe seu pedido, tire dúvidas ou chame nossa equipe sempre que quiser. Vai ser um prazer atender você.</p>
+      <a href="${getSupportWhatsAppUrl(orderNumber)}" style="background:#25d366;border-radius:12px;color:#ffffff;display:inline-block;font-size:14px;font-weight:700;padding:12px 16px;text-decoration:none;">Chamar a loja no WhatsApp</a>
+    </div>
+  `;
+}
+
 function getOrderItemsHtml(
   items: {
     quantity: number;
@@ -256,6 +284,7 @@ export async function sendOrderPendingPaymentEmail(
               <p>Entrega: ${escapeHtml(order.shipping_method || "A confirmar")} ${order.shipping_deadline ? `- ${escapeHtml(order.shipping_deadline)}` : ""}</p>
               <a href="${checkoutUrl}" style="background:#d9536f;border-radius:12px;color:#ffffff;display:inline-block;font-weight:700;margin-top:18px;padding:14px 22px;text-decoration:none;">Concluir pagamento</a>
               <p style="color:#78636b;font-size:12px;margin-top:26px;">Você também pode <a href="${trackingUrl}" style="color:#d9536f;">acompanhar seu pedido</a> informando o número #${orderNumber} e este e-mail.</p>
+              ${getSupportWhatsAppHtml(orderNumber)}
             </div>
           </div>
         `,
@@ -381,6 +410,7 @@ export async function sendOrderConfirmationEmail(
               ${timelineHtml}
               <a href="${trackingUrl}" style="background:#d9536f;border-radius:12px;color:#ffffff;display:inline-block;font-weight:700;margin-top:18px;padding:14px 22px;text-decoration:none;">Acompanhar meu pedido</a>
               <p style="color:#78636b;font-size:12px;margin-top:28px;">Na página de acompanhamento, informe o número do pedido e o e-mail usado na compra.</p>
+              ${getSupportWhatsAppHtml(orderNumber)}
             </div>
           </div>
         `,
@@ -521,6 +551,7 @@ export async function sendOrderStatusMovementEmail(
               ${timelineHtml}
               <a href="${trackingUrl}" style="background:#d9536f;border-radius:12px;color:#ffffff;display:inline-block;font-weight:700;margin-top:18px;padding:14px 22px;text-decoration:none;">Acompanhar meu pedido</a>
               <p style="color:#78636b;font-size:12px;margin-top:28px;">Na página de acompanhamento, informe o número do pedido e o e-mail usado na compra.</p>
+              ${getSupportWhatsAppHtml(orderNumber)}
             </div>
           </div>
         `,
