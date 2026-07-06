@@ -346,6 +346,16 @@ interface Props {
   shipping_method: string;
 
   shipping_price: number;
+
+  melhor_envio_order_id?: string | null;
+
+  melhor_envio_protocol?: string | null;
+
+  tracking_code?: string | null;
+
+  tracking_url?: string | null;
+
+  shipping_status?: string | null;
 }
 
 export async function updateOrderService({
@@ -358,7 +368,12 @@ export async function updateOrderService({
   items,
   shipping_method,
   shipping_price,
-  shipping_deadline
+  shipping_deadline,
+  melhor_envio_order_id,
+  melhor_envio_protocol,
+  tracking_code,
+  tracking_url,
+  shipping_status
 }: Props) {
 
   const previousOrder =
@@ -393,6 +408,21 @@ export async function updateOrderService({
       shipping_price,
 
       shipping_deadline,
+
+      melhor_envio_order_id,
+
+      melhor_envio_protocol,
+
+      tracking_code,
+
+      tracking_url,
+
+      shipping_status,
+
+      shipping_status_updated_at:
+        shipping_status
+          ? new Date()
+          : undefined,
     },
   });
 

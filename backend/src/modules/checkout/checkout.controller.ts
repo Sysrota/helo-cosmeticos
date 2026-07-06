@@ -743,6 +743,18 @@ export async function trackOrderController(
       order.shipping_method,
     shipping_deadline:
       order.shipping_deadline,
+    melhor_envio_order_id:
+      order.melhor_envio_order_id,
+    melhor_envio_protocol:
+      order.melhor_envio_protocol,
+    tracking_code:
+      order.tracking_code,
+    tracking_url:
+      order.tracking_url,
+    shipping_status:
+      order.shipping_status,
+    shipping_status_updated_at:
+      order.shipping_status_updated_at,
     created_at:
       order.created_at,
     customer_name:

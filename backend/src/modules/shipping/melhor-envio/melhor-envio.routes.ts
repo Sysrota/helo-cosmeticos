@@ -1,6 +1,10 @@
 import { Router }
   from "express";
-import { connectMelhorEnvioController, melhorEnvioCallbackController } from "./melhor-envio.controller";
+import {
+  connectMelhorEnvioController,
+  melhorEnvioCallbackController,
+  melhorEnvioWebhookController,
+} from "./melhor-envio.controller";
 
 export const melhorEnvioRoutes =
   Router();
@@ -13,4 +17,9 @@ melhorEnvioRoutes.get(
 melhorEnvioRoutes.get(
   "/callback",
   melhorEnvioCallbackController
+);
+
+melhorEnvioRoutes.post(
+  "/webhook",
+  melhorEnvioWebhookController
 );

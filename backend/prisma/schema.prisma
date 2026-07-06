@@ -327,6 +327,20 @@ model Order {
 
   shipping_deadline String?
 
+  melhor_envio_order_id String?
+
+  melhor_envio_protocol String?
+
+  tracking_code String?
+
+  tracking_url String?
+
+  shipping_status String?
+
+  shipping_status_updated_at DateTime?
+
+  shipping_events Json?
+
   created_at DateTime @default(now())
 
   updated_at DateTime @updatedAt

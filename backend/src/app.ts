@@ -33,7 +33,14 @@ const app = express();
 
 app.use(cors());
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buffer) => {
+      (req as express.Request).rawBody =
+        buffer.toString("utf8");
+    },
+  })
+);
 
 app.use(
   "/uploads",

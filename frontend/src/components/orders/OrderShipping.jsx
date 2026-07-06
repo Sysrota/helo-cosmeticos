@@ -248,6 +248,180 @@ export function OrderShipping({
         </div>
       )}
 
+      <div className="
+        mt-5
+        border-t
+        border-zinc-200
+        pt-5
+      ">
+
+        <h3 className="
+          text-lg
+          font-bold
+        ">
+          Rastreamento
+        </h3>
+
+        <p className="
+          mt-1
+          text-sm
+          text-zinc-500
+        ">
+          Dados enviados pelo Melhor Envio ou preenchidos manualmente
+        </p>
+
+        <div className="
+          mt-4
+          grid
+          grid-cols-1
+          gap-3
+        ">
+          <label className="text-sm text-zinc-600">
+            Código de rastreio
+            <input
+              value={order.tracking_code || ""}
+              onChange={(event) =>
+                setOrder({
+                  ...order,
+                  tracking_code:
+                    event.target.value,
+                })
+              }
+              className="
+                mt-2
+                w-full
+                rounded-2xl
+                border
+                border-zinc-200
+                px-4
+                py-3
+                text-zinc-900
+              "
+              placeholder="Ex.: ME220021P96BR"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-600">
+            Link de rastreio
+            <input
+              value={order.tracking_url || ""}
+              onChange={(event) =>
+                setOrder({
+                  ...order,
+                  tracking_url:
+                    event.target.value,
+                })
+              }
+              className="
+                mt-2
+                w-full
+                rounded-2xl
+                border
+                border-zinc-200
+                px-4
+                py-3
+                text-zinc-900
+              "
+              placeholder="https://www.melhorrastreio.com.br/rastreio/..."
+            />
+          </label>
+
+          <div className="
+            grid
+            grid-cols-1
+            gap-3
+            md:grid-cols-2
+          ">
+            <label className="text-sm text-zinc-600">
+              Status logístico
+              <select
+                value={order.shipping_status || ""}
+                onChange={(event) =>
+                  setOrder({
+                    ...order,
+                    shipping_status:
+                      event.target.value,
+                  })
+                }
+                className="
+                  mt-2
+                  w-full
+                  rounded-2xl
+                  border
+                  border-zinc-200
+                  px-4
+                  py-3
+                  text-zinc-900
+                "
+              >
+                <option value="">Não informado</option>
+                <option value="created">Etiqueta criada</option>
+                <option value="pending">Pendente</option>
+                <option value="released">Etiqueta paga</option>
+                <option value="generated">Etiqueta gerada</option>
+                <option value="received">Recebido na distribuição</option>
+                <option value="posted">Postado</option>
+                <option value="delivered">Entregue</option>
+                <option value="undelivered">Não entregue</option>
+                <option value="paused">Pausado</option>
+                <option value="suspended">Suspenso</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </label>
+
+            <label className="text-sm text-zinc-600">
+              Protocolo Melhor Envio
+              <input
+                value={order.melhor_envio_protocol || ""}
+                onChange={(event) =>
+                  setOrder({
+                    ...order,
+                    melhor_envio_protocol:
+                      event.target.value,
+                  })
+                }
+                className="
+                  mt-2
+                  w-full
+                  rounded-2xl
+                  border
+                  border-zinc-200
+                  px-4
+                  py-3
+                  text-zinc-900
+                "
+                placeholder="ORD-..."
+              />
+            </label>
+          </div>
+
+          <label className="text-sm text-zinc-600">
+            ID da etiqueta Melhor Envio
+            <input
+              value={order.melhor_envio_order_id || ""}
+              onChange={(event) =>
+                setOrder({
+                  ...order,
+                  melhor_envio_order_id:
+                    event.target.value,
+                })
+              }
+              className="
+                mt-2
+                w-full
+                rounded-2xl
+                border
+                border-zinc-200
+                px-4
+                py-3
+                text-zinc-900
+              "
+              placeholder="UUID da etiqueta"
+            />
+          </label>
+        </div>
+      </div>
+
       {/* {order.shipping_method && (
 
         <div className="

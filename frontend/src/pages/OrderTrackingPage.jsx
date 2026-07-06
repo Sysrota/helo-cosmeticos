@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  ExternalLink,
   MapPin,
   Package,
   ReceiptText,
@@ -158,6 +159,29 @@ const orderStatusLabels = {
   finished: "Entregue",
   cancelled: "Cancelado",
 };
+
+const shippingStatusLabels = {
+  created: "Etiqueta criada",
+  pending: "Pendente",
+  released: "Etiqueta paga",
+  generated: "Etiqueta gerada",
+  received: "Recebido na distribuição",
+  posted: "Postado",
+  delivered: "Entregue",
+  undelivered: "Não entregue",
+  paused: "Pausado",
+  suspended: "Suspenso",
+  cancelled: "Cancelado",
+  canceled: "Cancelado",
+};
+
+function getShippingStatusLabel(status) {
+  return (
+    shippingStatusLabels[status] ||
+    status ||
+    "Aguardando postagem"
+  );
+}
 
 const orderFlow = [
   {
@@ -791,6 +815,29 @@ export default function OrderTrackingPage() {
                   <p className="mt-1 text-xs text-[#78636b]">
                     {order.shipping_deadline}
                   </p>
+                )}
+                {(order.tracking_code || order.tracking_url || order.shipping_status) && (
+                  <div className="mt-3 rounded-xl border border-[#efd9e1] bg-white p-3">
+                    <p className="text-xs font-semibold text-[#43232d]">
+                      {getShippingStatusLabel(order.shipping_status)}
+                    </p>
+                    {order.tracking_code && (
+                      <p className="mt-1 break-all text-xs text-[#78636b]">
+                        Código: {order.tracking_code}
+                      </p>
+                    )}
+                    {order.tracking_url && (
+                      <a
+                        href={order.tracking_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#d9536f] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#c64c66]"
+                      >
+                        <ExternalLink size={13} />
+                        Abrir rastreio
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
 
