@@ -31,6 +31,195 @@ import {
   applyCouponToOrderService,
 } from "../coupons/coupons.service.js";
 
+function normalizeDigits(value?: string | null) {
+  return String(value || "")
+    .replace(/\D/g, "");
+}
+
+function normalizePhone(value?: string | null) {
+  const digits =
+    normalizeDigits(value);
+
+  if (
+    digits.startsWith("55") &&
+    digits.length > 11
+  ) {
+    return digits.slice(2);
+  }
+
+  return digits;
+}
+
+function phoneMatches(
+  left?: string | null,
+  right?: string | null
+) {
+  const leftPhone =
+    normalizePhone(left);
+
+  const rightPhone =
+    normalizePhone(right);
+
+  if (!leftPhone || !rightPhone) {
+    return false;
+  }
+
+  return (
+    leftPhone === rightPhone ||
+    leftPhone.endsWith(rightPhone) ||
+    rightPhone.endsWith(leftPhone)
+  );
+}
+
+function firstName(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/\s+/)[0] || "";
+}
+
+async function findCheckoutContact(
+  customer: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  }
+) {
+  const contactByExactData =
+    await prisma.contact.findFirst({
+      where: {
+        OR: [
+          {
+            phone:
+              customer.phone,
+          },
+          ...(customer.email
+            ? [
+                {
+                  email:
+                    customer.email,
+                },
+              ]
+            : []),
+        ],
+      },
+    });
+
+  if (contactByExactData) {
+    return contactByExactData;
+  }
+
+  const customerFirstName =
+    firstName(
+      customer.name
+    );
+
+  if (
+    !customerFirstName ||
+    !normalizePhone(customer.phone)
+  ) {
+    return null;
+  }
+
+  const recentContacts =
+    await prisma.contact.findMany({
+      orderBy: {
+        updated_at:
+          "desc",
+      },
+      take:
+        500,
+    });
+
+  return recentContacts.find((contact) =>
+    firstName(contact.name) ===
+      customerFirstName &&
+    phoneMatches(
+      contact.phone,
+      customer.phone
+    )
+  ) || null;
+}
+
+async function updateCheckoutContact(
+  contactId: number,
+  customer: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    cpf?: string;
+    city?: string;
+    state?: string;
+  }
+) {
+  const currentContact =
+    await prisma.contact.findUnique({
+      where: {
+        id:
+          contactId,
+      },
+    });
+
+  if (!currentContact) {
+    return null;
+  }
+
+  const phoneOwner =
+    customer.phone
+      ? await prisma.contact.findUnique({
+          where: {
+            phone:
+              customer.phone,
+          },
+        })
+      : null;
+
+  const emailOwner =
+    customer.email
+      ? await prisma.contact.findFirst({
+          where: {
+            email:
+              customer.email,
+          },
+        })
+      : null;
+
+  return prisma.contact.update({
+    where: {
+      id:
+        contactId,
+    },
+    data: {
+      name:
+        customer.name ||
+        currentContact.name,
+      phone:
+        !phoneOwner ||
+        phoneOwner.id === contactId
+          ? customer.phone ||
+            currentContact.phone
+          : currentContact.phone,
+      email:
+        !emailOwner ||
+        emailOwner.id === contactId
+          ? customer.email ||
+            currentContact.email
+          : currentContact.email,
+      cpf:
+        customer.cpf ||
+        currentContact.cpf,
+      city:
+        customer.city ||
+        currentContact.city,
+      state:
+        customer.state ||
+        currentContact.state,
+    },
+  });
+}
+
 export async function createCheckoutController(
   req: Request,
   res: Response
@@ -76,24 +265,9 @@ export async function createCheckoutController(
     // =====================
 
     let contact =
-      await prisma.contact.findFirst({
-
-        where: {
-
-          OR: [
-
-            {
-              phone:
-                customer.phone,
-            },
-
-            {
-              email:
-                customer.email,
-            },
-          ],
-        },
-      });
+      await findCheckoutContact(
+        customer
+      );
 
     // =====================
     // CREATE CONTACT
@@ -116,6 +290,12 @@ export async function createCheckoutController(
               customer.email,
           },
         });
+    } else {
+      contact =
+        await updateCheckoutContact(
+          contact.id,
+          customer
+        ) || contact;
     }
 
     // =====================
@@ -416,26 +596,10 @@ export async function updateCheckoutDeliveryController(
           order.coupon,
       });
 
-    await prisma.contact.update({
-      where: {
-        id:
-          order.contact_id,
-      },
-      data: {
-        name:
-          customer.name,
-        phone:
-          customer.phone,
-        email:
-          customer.email,
-        cpf:
-          customer.cpf,
-        city:
-          customer.city,
-        state:
-          customer.state,
-      },
-    });
+    await updateCheckoutContact(
+      order.contact_id,
+      customer
+    );
 
     const address =
       await prisma.contactAddress.findFirst({
