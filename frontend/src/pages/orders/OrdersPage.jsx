@@ -29,6 +29,10 @@ function getOrderDisplayNumber(order) {
   return order?.order_number || order?.id;
 }
 
+function buildOrderCheckoutLink(order) {
+  return `${window.location.origin}/checkout/${getOrderDisplayNumber(order)}`;
+}
+
 export default function OrdersPage() {
 
   const navigate =
@@ -39,6 +43,24 @@ export default function OrdersPage() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [copiedOrderId,
+    setCopiedOrderId] =
+    useState(null);
+
+  async function copyOrderLink(order) {
+    await navigator.clipboard.writeText(
+      buildOrderCheckoutLink(order)
+    );
+
+    setCopiedOrderId(
+      order.id
+    );
+
+    setTimeout(() => {
+      setCopiedOrderId(null);
+    }, 2500);
+  }
 
   async function loadOrders() {
 
@@ -268,25 +290,51 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
+                <div className="
+                  grid
+                  grid-cols-2
+                  gap-2
+                ">
+                  <button
+                    onClick={() =>
+                      copyOrderLink(order)
+                    }
 
-                    navigate(
-                      `/admin/orders/${order.id}`
-                    );
-                  }}
+                    className="
+                      w-full
+                      bg-pink-100
+                      text-pink-700
+                      py-2.5
+                      rounded-xl
+                      text-sm
+                      font-semibold
+                    "
+                  >
+                    {copiedOrderId === order.id
+                      ? "Copiado"
+                      : "Copiar link"}
+                  </button>
 
-                  className="
-                    w-full
-                    bg-black
-                    text-white
-                    py-2.5
-                    rounded-xl
-                    text-sm
-                  "
-                >
-                  Abrir Pedido
-                </button>
+                  <button
+                    onClick={() => {
+
+                      navigate(
+                        `/admin/orders/${order.id}`
+                      );
+                    }}
+
+                    className="
+                      w-full
+                      bg-black
+                      text-white
+                      py-2.5
+                      rounded-xl
+                      text-sm
+                    "
+                  >
+                    Abrir Pedido
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -433,6 +481,28 @@ export default function OrdersPage() {
                         text-right
                       ">
 
+                        <div className="
+                          flex
+                          items-center
+                          justify-end
+                          gap-3
+                        ">
+                          <button
+                            onClick={() =>
+                              copyOrderLink(order)
+                            }
+
+                            className="
+                              text-pink-600
+                              font-medium
+                              hover:underline
+                            "
+                          >
+                            {copiedOrderId === order.id
+                              ? "Copiado"
+                              : "Copiar link"}
+                          </button>
+
                         <button
                           onClick={() => {
 
@@ -448,6 +518,7 @@ export default function OrdersPage() {
                         >
                           Abrir
                         </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
