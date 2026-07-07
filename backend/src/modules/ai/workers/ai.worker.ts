@@ -275,7 +275,7 @@ export const aiWorker =
               "agent",
 
             content:
-              `O ${requestedProductPrice.productTitle} custa ${requestedProductPrice.formattedPrice}.\n\nQuer que eu adicione ao seu carrinho?`,
+              `O ${requestedProductPrice.productTitle} está ${requestedProductPrice.formattedPrice}.\n\nMe passa seu CEP para eu montar seu pedido certinho?`,
 
             type:
               "text",
