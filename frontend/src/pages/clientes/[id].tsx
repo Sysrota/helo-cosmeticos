@@ -29,7 +29,10 @@ interface Address {
 
   number?: string;
 
+  complement?: string;
+
   district?: string;
+
 
   city?: string;
 
@@ -607,6 +610,41 @@ export default function ClienteDetalhesPage() {
                   onChange={(e) =>
                     updateAddress(
                       "number",
+                      e.target.value
+                    )
+                  }
+
+                  className="
+                    w-full
+                    border
+                    rounded-xl
+                    px-3
+                    py-2
+                    mt-1
+                  "
+                />
+              </div>
+
+              {/* COMPLEMENTO */}
+              <div>
+
+                <label className="
+                  text-sm
+                  font-medium
+                ">
+                  Complemento
+                </label>
+
+                <input
+                  value={
+                    address.complement || ""
+                  }
+
+                  placeholder="Quadra, lote, apt..."
+
+                  onChange={(e) =>
+                    updateAddress(
+                      "complement",
                       e.target.value
                     )
                   }

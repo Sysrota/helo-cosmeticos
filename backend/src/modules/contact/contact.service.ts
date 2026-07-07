@@ -76,6 +76,7 @@ interface Props {
     city?: string;
     state?: string;
     number?: string;
+    complement?: string;
     district?: string;
   }[];
 }
@@ -91,6 +92,8 @@ interface Address {
   state?: string;
 
   number?: string;
+
+  complement?: string;
 
   district?: string;
 }
@@ -200,6 +203,9 @@ export async function updateContactService({
           number:
             address.number || "",
 
+          complement:
+            address.complement || "",
+
           district:
             address.district || "",
         },
@@ -226,6 +232,9 @@ export async function updateContactService({
 
           number:
             address.number || "",
+
+          complement:
+            address.complement || "",
 
           district:
             address.district || "",

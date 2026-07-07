@@ -616,6 +616,8 @@ export async function updateCheckoutDeliveryController(
         customer.street,
       number:
         customer.number,
+      complement:
+        customer.complement,
       district:
         customer.district,
       city:

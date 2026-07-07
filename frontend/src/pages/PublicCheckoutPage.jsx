@@ -331,6 +331,7 @@ export default function PublicCheckoutPage() {
           zipcode: savedAddress?.cep || previous.zipcode,
           street: savedAddress?.street || previous.street,
           number: savedAddress?.number || previous.number,
+          complement: savedAddress?.complement || previous.complement,
           district: savedAddress?.district || previous.district,
           city: savedAddress?.city || previous.city,
           state: savedAddress?.state || previous.state,
