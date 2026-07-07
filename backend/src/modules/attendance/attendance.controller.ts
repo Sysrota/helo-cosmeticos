@@ -7,6 +7,7 @@ import {
   listConversations,
   listMessages,
   markConversationAsRead,
+  updateConversationAiMode,
 } from "./attendance.service.js";
 import { createConversationSchema, createMessageSchema } from "./attendance.validators.js";
 
@@ -126,6 +127,40 @@ export async function markAsReadController(
     await markConversationAsRead(
       conversationId
     );
+
+  return res.json(conversation);
+}
+
+export async function updateAiModeController(
+  req: Request,
+  res: Response
+) {
+  const conversationId =
+    Number(req.params.id);
+
+  if (
+    !Number.isInteger(conversationId) ||
+    conversationId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Conversa inválida",
+    });
+  }
+
+  const blockedAi =
+    Boolean(req.body?.blocked_ai);
+
+  const conversation =
+    await updateConversationAiMode(
+      conversationId,
+      blockedAi
+    );
+
+  if (!conversation) {
+    return res.status(404).json({
+      error: "Conversa não encontrada",
+    });
+  }
 
   return res.json(conversation);
 }

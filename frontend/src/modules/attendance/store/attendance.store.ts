@@ -120,6 +120,11 @@ export const useAttendanceStore =
                   conversation,
                   ...state.conversations,
                 ],
+                selectedConversation:
+                  state.selectedConversation
+                    ?.id === conversation.id
+                    ? conversation
+                    : state.selectedConversation,
               };
             }
 
@@ -146,6 +151,11 @@ export const useAttendanceStore =
                       ).getTime()
                     );
                   }),
+              selectedConversation:
+                state.selectedConversation
+                  ?.id === conversation.id
+                  ? conversation
+                  : state.selectedConversation,
             };
           }),
 

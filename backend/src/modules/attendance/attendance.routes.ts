@@ -7,6 +7,7 @@ import {
   createMessageController,
   deleteConversationController,
   markAsReadController,
+  updateAiModeController,
   uploadAttendanceFileController,
 } from "./attendance.controller.js";
 
@@ -65,6 +66,13 @@ router.patch(
   )
 );
 
+router.patch(
+  "/:id/ai",
+  auth,
+  asyncHandler(
+    updateAiModeController
+  )
+);
 
 router.post(
   "/upload",

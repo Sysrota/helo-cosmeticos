@@ -4,6 +4,8 @@ export interface Contact {
   name?: string;
 
   phone: string;
+
+  blocked_ai?: boolean;
 }
 
 export interface Conversation {

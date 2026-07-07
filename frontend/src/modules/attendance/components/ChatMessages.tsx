@@ -8,6 +8,7 @@ import {
   deleteConversation,
   getMessages,
   sendMessage,
+  updateAiMode,
   uploadFile,
 } from "../services/attendance.service";
 
@@ -79,6 +80,8 @@ export function ChatMessages() {
 
     removeConversation,
 
+    updateConversation,
+
     setMobileView,
   } =
     useAttendanceStore();
@@ -98,6 +101,10 @@ export function ChatMessages() {
     isDeleting,
     setIsDeleting,
   ] = useState(false);
+
+  const [isUpdatingAiMode,
+    setIsUpdatingAiMode] =
+    useState(false);
 
   const messagesEndRef =
     useRef<HTMLDivElement | null>(
@@ -290,6 +297,44 @@ export function ChatMessages() {
       content:
         currentMessage,
     });
+  }
+
+  async function handleToggleAiMode() {
+    if (
+      !selectedConversation ||
+      isUpdatingAiMode
+    ) {
+      return;
+    }
+
+    const nextBlockedAi =
+      !selectedConversation.contact
+        ?.blocked_ai;
+
+    setIsUpdatingAiMode(true);
+
+    try {
+      const updatedConversation =
+        await updateAiMode(
+          selectedConversation.id,
+          nextBlockedAi
+        );
+
+      updateConversation(
+        updatedConversation
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao alterar modo de atendimento:",
+        error
+      );
+
+      window.alert(
+        "Não foi possível alterar o modo de atendimento."
+      );
+    } finally {
+      setIsUpdatingAiMode(false);
+    }
   }
 
   function handleEmojiClick(
@@ -538,6 +583,93 @@ export function ChatMessages() {
             gap-2
             shrink-0
           ">
+            <div className="
+              hidden
+              md:flex
+              flex-col
+              items-end
+              leading-tight
+            ">
+              <span className="
+                text-[11px]
+                text-[#9b7b72]
+              ">
+                Atendimento
+              </span>
+
+              <span className={`
+                text-xs
+                font-semibold
+                ${
+                  selectedConversation.contact
+                    ?.blocked_ai
+                    ? "text-[#a15c2f]"
+                    : "text-[#2f7d54]"
+                }
+              `}>
+                {selectedConversation.contact
+                  ?.blocked_ai
+                  ? "Humano"
+                  : "IA ativa"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleToggleAiMode}
+              disabled={isUpdatingAiMode}
+              title={
+                selectedConversation.contact
+                  ?.blocked_ai
+                  ? "Voltar atendimento para IA"
+                  : "Passar atendimento para humano"
+              }
+              className={`
+                inline-flex
+                items-center
+                gap-2
+
+                h-10
+                px-3
+
+                rounded-xl
+
+                border
+
+                text-sm
+                font-semibold
+
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+
+                transition-colors
+
+                ${
+                  selectedConversation.contact
+                    ?.blocked_ai
+                    ? `
+                      border-[#cbe7d6]
+                      bg-[#ecfdf3]
+                      text-[#26734d]
+                      hover:bg-[#dff8ea]
+                    `
+                    : `
+                      border-[#f0d3b9]
+                      bg-[#fff7ed]
+                      text-[#a15c2f]
+                      hover:bg-[#ffedd5]
+                    `
+                }
+              `}
+            >
+              {isUpdatingAiMode
+                ? "Salvando..."
+                : selectedConversation.contact
+                  ?.blocked_ai
+                    ? "Voltar IA"
+                    : "Assumir"}
+            </button>
+
             {/* CLIENTE */}
             <button
               onClick={() =>

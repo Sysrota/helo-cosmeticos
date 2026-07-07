@@ -223,6 +223,36 @@ export async function createMessage(
       },
     });
 
+  if (
+    data.sender_type ===
+    "agent"
+  ) {
+    const conversation =
+      await prisma.conversation.findUnique({
+        where: {
+          id:
+            data.conversation_id,
+        },
+        select: {
+          contact_id:
+            true,
+        },
+      });
+
+    if (conversation) {
+      await prisma.contact.update({
+        where: {
+          id:
+            conversation.contact_id,
+        },
+        data: {
+          blocked_ai:
+            true,
+        },
+      });
+    }
+  }
+
   const updatedConversation =
     await prisma.conversation.update({
       where: {
@@ -396,9 +426,62 @@ export async function createMessage(
       );
     }
   }
-}
+  }
 
   return fullMessage;
+}
+
+export async function updateConversationAiMode(
+  conversationId: number,
+  blockedAi: boolean
+) {
+  const conversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id:
+          conversationId,
+      },
+      select: {
+        contact_id:
+          true,
+      },
+    });
+
+  if (!conversation) {
+    return null;
+  }
+
+  await prisma.contact.update({
+    where: {
+      id:
+        conversation.contact_id,
+    },
+    data: {
+      blocked_ai:
+        blockedAi,
+    },
+  });
+
+  const updatedConversation =
+    await prisma.conversation.findUnique({
+      where: {
+        id:
+          conversationId,
+      },
+      include: {
+        contact:
+          true,
+      },
+    });
+
+  if (updatedConversation) {
+    io.emit(
+      "conversation_updated",
+      updatedConversation
+    );
+  }
+
+  return updatedConversation;
 }
 
 export async function listMessages(

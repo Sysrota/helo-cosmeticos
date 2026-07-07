@@ -121,6 +121,33 @@ export async function markAsRead(
   return response.data;
 }
 
+export async function updateAiMode(
+  conversationId: number,
+  blockedAi: boolean
+) {
+  const token =
+    localStorage.getItem(
+      "auth_token"
+    );
+
+  const response =
+    await api.patch(
+      `/attendance/${conversationId}/ai`,
+      {
+        blocked_ai:
+          blockedAi,
+      },
+      {
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+      }
+    );
+
+  return response.data;
+}
+
 export async function uploadFile(
   formData: FormData
 ) {
