@@ -96,6 +96,25 @@ function offeredPaymentLink(message: string) {
   );
 }
 
+function offeredProductLink(message: string) {
+  const normalized =
+    normalizeText(message);
+
+  if (offeredPaymentLink(message)) {
+    return false;
+  }
+
+  return (
+    /\blink\b/.test(normalized) &&
+    (
+      /\bproduto\b/.test(normalized) ||
+      /\bsite\b/.test(normalized) ||
+      /\bver\b/.test(normalized) ||
+      /\bfoto/.test(normalized)
+    )
+  );
+}
+
 export async function findRequestedProductLink({
   conversationId,
   message,
@@ -146,6 +165,17 @@ export async function findRequestedProductLink({
 
   const words =
     productWords(message);
+
+  const canUseLastProduct =
+    Boolean(
+      words.length ||
+      (
+        lastAgentMessage?.content &&
+        offeredProductLink(
+          lastAgentMessage.content
+        )
+      )
+    );
 
   let product:
     | {
@@ -205,7 +235,11 @@ ${item.keywords}
         .sort((a, b) => b.score - a.score)[0]?.product || null;
   }
 
-  if (!product && conversation?.last_product_id) {
+  if (
+    !product &&
+    canUseLastProduct &&
+    conversation?.last_product_id
+  ) {
     product =
       await prisma.product.findFirst({
         where: {
