@@ -8,6 +8,9 @@ import { prisma }
 import {
   buildProductAiContext,
 } from "./product-ai-context.service.js";
+import {
+  ensureCartItemTool,
+} from "../tools/add-cart-item.tool.js";
 
 import {
   getCommercialPolicy,
@@ -258,6 +261,66 @@ function buildNeedOptions(
   ];
 }
 
+function formatBRL(
+  value: number
+) {
+  return Number(value || 0)
+    .toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+}
+
+function reachesFreeShipping(
+  price: number,
+  freeShippingMinimum: number
+) {
+  return (
+    Number(freeShippingMinimum) > 0 &&
+    Number(price) >= Number(freeShippingMinimum)
+  );
+}
+
+function commercialHighlightsText(
+  highlights: string,
+  showSecurePurchase = true,
+  hideShippingHighlights = false
+) {
+  const items =
+    highlights
+      .split(/\r?\n|;/)
+      .map((item) =>
+        item
+          .replace(/^[\s•*_-]+/, "")
+          .replace(/\s+/g, " ")
+          .replace(/[.;:,]+$/, "")
+          .trim()
+      )
+      .filter((item) =>
+        Boolean(item) &&
+        (
+          showSecurePurchase ||
+          !normalizeText(item).includes("compra segura")
+        ) &&
+        (
+          !hideShippingHighlights ||
+          !normalizeText(item).includes("frete")
+        )
+      )
+      .slice(0, 5);
+
+  if (!items.length) {
+    return "";
+  }
+
+  return [
+    "Além disso, tem:",
+    ...items.map((item) =>
+      `• ${item}`
+    ),
+  ].join("\n");
+}
+
 function isGenericInfoRequest(
   message: string
 ) {
@@ -362,6 +425,8 @@ async function buildIntroFromContext(
     await getConversationCustomerFirstName(
       conversationId
     );
+  const commercialPolicy =
+    await getCommercialPolicy();
 
   const greeting =
     customerFirstName
@@ -382,7 +447,47 @@ async function buildIntroFromContext(
     lines[2] += ` Ele contém ${kitItemsText}.`;
   }
 
-  lines.push(...buildNeedOptions(context));
+  const highlightsText =
+    commercialHighlightsText(
+      context.highlights,
+      commercialPolicy.show_secure_purchase,
+      reachesFreeShipping(
+        context.price,
+        commercialPolicy.free_shipping_minimum
+      )
+    );
+
+  if (highlightsText) {
+    lines.push(
+      "",
+      highlightsText
+    );
+  }
+
+  await ensureCartItemTool({
+    conversationId,
+    productId:
+      context.id,
+    quantity:
+      1,
+  });
+
+  const productReference =
+    context.is_kit
+      ? "O kit"
+      : "O produto";
+  const cepReason =
+    reachesFreeShipping(
+      context.price,
+      commercialPolicy.free_shipping_minimum
+    )
+      ? "para eu montar seu pedido certinho"
+      : "que já vejo a entrega certinho";
+
+  lines.push(
+    "",
+    `${productReference} está ${formatBRL(context.price)}. Me passa seu CEP ${cepReason}?`
+  );
 
   return lines.join("\n").trim();
 }
