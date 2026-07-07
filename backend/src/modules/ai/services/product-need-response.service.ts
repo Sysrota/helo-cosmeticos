@@ -186,6 +186,14 @@ function detectSkinNeed(
     return "comecar_rotina";
   }
 
+  if (
+    normalized.includes("outro motivo") ||
+    normalized === "outro" ||
+    normalized === "outro motivo"
+  ) {
+    return "outro_motivo";
+  }
+
   return null;
 }
 
@@ -256,6 +264,14 @@ function buildNeedExplanation({
       "Entendi 😊",
       `Para pele sem brilho, o ${displayName} faz sentido porque ${scrubLabel} auxilia na renovação da pele e ${moisturizerLabel} finaliza com hidratação. Essa combinação favorece uma sensação de pele mais fresca, macia e com aparência cuidada.`,
       "É uma rotina simples para trazer mais viço sem adicionar muitos passos.",
+    ];
+  }
+
+  if (need === "outro_motivo") {
+    return [
+      "Perfeito 😊",
+      `O ${displayName} reúne ${cleanserLabel}, ${scrubLabel} e ${moisturizerLabel} para fazer uma rotina simples de skincare: limpar, renovar e hidratar.`,
+      "A proposta é deixar a pele com sensação limpa, fresca e macia, sem complicar seu cuidado diário.",
     ];
   }
 
