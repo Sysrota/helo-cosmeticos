@@ -44,6 +44,9 @@ import {
 import {
   buildCommercialObjectionResponse,
 } from "../services/commercial-objection-response.service.js";
+import {
+  buildConversationResumeResponse,
+} from "../services/conversation-resume-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -214,6 +217,37 @@ export const aiWorker =
 
             content:
               commercialObjectionResponse,
+
+            type:
+              "text",
+          });
+
+          await updateConversationMemory({
+            conversationId,
+          });
+
+          return;
+        }
+
+        const conversationResumeResponse =
+          lastClientMessage?.content
+            ? await buildConversationResumeResponse({
+                message:
+                  lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (conversationResumeResponse) {
+          await createMessage({
+            conversation_id:
+              conversationId,
+
+            sender_type:
+              "agent",
+
+            content:
+              conversationResumeResponse,
 
             type:
               "text",
