@@ -12,6 +12,8 @@ const checkoutWords = [
   "checkout",
   "pagamento",
   "pagar",
+  "comprar",
+  "compra",
   "pix",
   "cartao",
   "cartão",
@@ -84,6 +86,16 @@ function isProductLinkRequest(message: string) {
   );
 }
 
+function offeredPaymentLink(message: string) {
+  const normalized =
+    normalizeText(message);
+
+  return (
+    /\blink\b/.test(normalized) &&
+    /\bpagamento\b/.test(normalized)
+  );
+}
+
 export async function findRequestedProductLink({
   conversationId,
   message,
@@ -92,6 +104,33 @@ export async function findRequestedProductLink({
   message: string;
 }) {
   if (!isProductLinkRequest(message)) {
+    return null;
+  }
+
+  const lastAgentMessage =
+    await prisma.message.findFirst({
+      where: {
+        conversation_id:
+          conversationId,
+        sender_type:
+          "agent",
+      },
+      orderBy: {
+        created_at:
+          "desc",
+      },
+      select: {
+        content:
+          true,
+      },
+    });
+
+  if (
+    lastAgentMessage?.content &&
+    offeredPaymentLink(
+      lastAgentMessage.content
+    )
+  ) {
     return null;
   }
 
