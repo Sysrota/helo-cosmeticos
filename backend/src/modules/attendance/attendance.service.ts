@@ -173,6 +173,8 @@ interface CreateMessageDTO {
   media_url?: string;
 
   send_caption?: boolean;
+
+  block_ai?: boolean;
 }
 
 function getPublicMediaUrl(
@@ -225,7 +227,8 @@ export async function createMessage(
 
   if (
     data.sender_type ===
-    "agent"
+    "agent" &&
+    data.block_ai === true
   ) {
     const conversation =
       await prisma.conversation.findUnique({

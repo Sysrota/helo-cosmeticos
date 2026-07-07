@@ -296,6 +296,9 @@ export function ChatMessages() {
 
       content:
         currentMessage,
+
+      block_ai:
+        true,
     });
   }
 

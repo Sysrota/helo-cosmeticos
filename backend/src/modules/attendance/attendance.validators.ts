@@ -23,4 +23,7 @@ export const createConversationSchema =
 
     media_url:
       z.string().optional(),
+
+    block_ai:
+      z.boolean().optional(),
   });

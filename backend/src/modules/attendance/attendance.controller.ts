@@ -213,6 +213,9 @@ uploadAttendanceFileController(
         `/uploads/${req.file.filename}`,
 
       type,
+
+      block_ai:
+        true,
     });
 
   return res.json(message);

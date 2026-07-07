@@ -76,6 +76,7 @@ export async function sendMessage(
     conversation_id: number;
     sender_type: string;
     content: string;
+    block_ai?: boolean;
   }
 ) {
   const token =
