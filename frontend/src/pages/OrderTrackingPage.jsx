@@ -183,31 +183,94 @@ function getShippingStatusLabel(status) {
   );
 }
 
-function formatShippingEventDate(value) {
+function formatShippingEventDateParts(value) {
   if (!value) {
-    return "";
+    return {
+      date: "",
+      time: "",
+    };
   }
 
-  return new Date(value)
-    .toLocaleString(
-      "pt-BR",
-      {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
+  const eventDate =
+    new Date(value);
+
+  return {
+    date:
+      eventDate.toLocaleDateString(
+        "pt-BR",
+        {
+          day: "2-digit",
+          month: "short",
+        }
+      ),
+    time:
+      eventDate.toLocaleTimeString(
+        "pt-BR",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ),
+  };
 }
 
 function getShippingTimeline(order) {
-  return Array.isArray(order?.shipping_events)
-    ? [...order.shipping_events].sort(
-        (first, second) =>
-          new Date(second.occurred_at).getTime() -
-          new Date(first.occurred_at).getTime()
-      )
-    : [];
+  const events =
+    Array.isArray(order?.shipping_events)
+      ? order.shipping_events
+      : Array.isArray(order?.shipping_events_list)
+        ? order.shipping_events_list
+        : [];
+
+  return [...events].sort(
+    (first, second) =>
+      new Date(second.occurred_at).getTime() -
+      new Date(first.occurred_at).getTime()
+  );
+}
+
+function getShippingEventIcon(status) {
+  const iconMap = {
+    created: Package,
+    pending: Clock3,
+    released: CheckCircle2,
+    generated: Package,
+    received: Package,
+    posted: Truck,
+    delivered: CheckCircle2,
+    undelivered: AlertCircle,
+    paused: Clock3,
+    suspended: AlertCircle,
+    cancelled: AlertCircle,
+    canceled: AlertCircle,
+  };
+
+  return iconMap[status] || Package;
+}
+
+function getShippingEventTone(status, isLatest) {
+  if (
+    [
+      "cancelled",
+      "canceled",
+      "undelivered",
+      "suspended",
+    ].includes(status)
+  ) {
+    return isLatest
+      ? "border-red-500 bg-red-500 text-white"
+      : "border-red-100 bg-red-50 text-red-600";
+  }
+
+  if (status === "delivered") {
+    return isLatest
+      ? "border-emerald-500 bg-emerald-500 text-white"
+      : "border-emerald-100 bg-emerald-50 text-emerald-600";
+  }
+
+  return isLatest
+    ? "border-[#d9536f] bg-[#d9536f] text-white"
+    : "border-[#f0d8df] bg-white text-[#d9536f]";
 }
 
 const orderFlow = [
@@ -379,9 +442,11 @@ export default function OrderTrackingPage() {
         items: current.items,
         customer_name: current.customer_name,
         shipping_events:
-          updatedOrder.shipping_events ||
-          updatedOrder.shipping_events_list ||
-          current.shipping_events,
+          Array.isArray(updatedOrder.shipping_events_list)
+            ? updatedOrder.shipping_events_list
+            : Array.isArray(updatedOrder.shipping_events)
+              ? updatedOrder.shipping_events
+              : current.shipping_events,
       };
 
       setOrder(nextOrder);
@@ -914,42 +979,95 @@ export default function OrderTrackingPage() {
                 </div>
 
                 {shippingTimeline.length > 0 ? (
-                  <div className="mt-6 space-y-0">
+                  <div className="mt-6 rounded-2xl border border-[#f2e1e7] bg-[#fffafb] px-3 py-5 sm:px-5">
                     {shippingTimeline.map((event, index) => {
                       const isLatest = index === 0;
                       const isLast = index === shippingTimeline.length - 1;
+                      const status =
+                        event.status ||
+                        String(event.event || "")
+                          .replace(/^order\./, "");
+                      const EventIcon =
+                        getShippingEventIcon(status);
+                      const dateParts =
+                        formatShippingEventDateParts(
+                          event.occurred_at
+                        );
+                      const title =
+                        event.title ||
+                        getShippingStatusLabel(status);
+                      const description =
+                        event.description ||
+                        "Seu pacote seguirá trajeto em breve.";
+                      const markerTone =
+                        getShippingEventTone(
+                          status,
+                          isLatest
+                        );
 
                       return (
-                        <div key={event.id || `${event.event}-${event.occurred_at}`} className="relative flex gap-4 pb-6 last:pb-0">
+                        <div
+                          key={event.id || `${event.event}-${event.occurred_at}`}
+                          className="relative grid grid-cols-[54px_34px_minmax(0,1fr)] gap-x-3 pb-7 last:pb-0 sm:grid-cols-[72px_38px_minmax(0,1fr)]"
+                        >
+                          <div className="pt-0.5 text-right">
+                            <p className="text-[11px] font-semibold uppercase leading-none text-[#9b7f89] sm:text-xs">
+                              {dateParts.date}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-none text-[#b59aa4]">
+                              {dateParts.time}
+                            </p>
+                          </div>
+
+                          <div className="relative flex justify-center">
                           {!isLast && (
-                            <span className="absolute left-[15px] top-8 h-full w-px bg-[#f1d9e1]" />
+                              <span className="absolute left-1/2 top-9 h-full w-px -translate-x-1/2 bg-[#ead6de]" />
                           )}
-                          <span className={`relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                            <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 shadow-[0_5px_18px_rgba(217,83,111,0.14)] ${markerTone}`}>
+                              <EventIcon size={16} />
+                            </span>
+                          </div>
+
+                          <div className={`min-w-0 rounded-2xl border bg-white px-4 py-3 shadow-[0_12px_30px_rgba(88,35,52,0.04)] ${
                             isLatest
-                              ? "border-[#d9536f] bg-[#d9536f] text-white"
-                              : "border-[#f1d9e1] bg-white text-[#d9536f]"
+                              ? "border-[#f0c8d3]"
+                              : "border-[#f2e1e7]"
                           }`}>
-                            <Package size={15} />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                              <p className="text-sm font-semibold text-[#43232d]">
-                                {event.title || getShippingStatusLabel(event.status)}
-                              </p>
-                              <span className="text-xs text-[#9b7f89]">
-                                {formatShippingEventDate(event.occurred_at)}
-                              </span>
-                            </div>
-                            {event.description && (
-                              <p className="mt-1 text-xs leading-5 text-[#78636b]">
-                                {event.description}
-                              </p>
-                            )}
+                            <p className="text-sm font-semibold leading-5 text-[#43232d]">
+                              {title}
+                            </p>
+
+                            <p className="mt-1 text-xs leading-5 text-[#78636b]">
+                              {description}
+                            </p>
+
                             {event.location && (
-                              <p className="mt-2 flex items-center gap-1.5 text-xs leading-5 text-[#78636b]">
+                              <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-[#4f9f72]">
                                 <MapPin size={13} className="shrink-0 text-[#d9536f]" />
                                 {event.location}
                               </p>
+                            )}
+
+                            {(event.tracking_code || event.tracking_url) && (
+                              <div className="mt-3 flex flex-col gap-2 border-t border-[#f4e5ea] pt-3 text-xs text-[#78636b] sm:flex-row sm:items-center sm:justify-between">
+                                {event.tracking_code && (
+                                  <span className="break-all">
+                                    Código: {event.tracking_code}
+                                  </span>
+                                )}
+
+                                {event.tracking_url && (
+                                  <a
+                                    href={event.tracking_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 font-semibold text-[#b74662] underline"
+                                  >
+                                    Abrir rastreio
+                                    <ExternalLink size={12} />
+                                  </a>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
