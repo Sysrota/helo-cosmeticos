@@ -6,6 +6,9 @@ import {
 import {
   io,
 } from "../../../websocket/socket.js";
+import {
+  requestShippingOptions,
+} from "../shipping.service.js";
 
 function digits(value?: string | null) {
   return String(value || "")
@@ -206,11 +209,6 @@ function ensureCanGenerateLabel(order: any) {
     );
   }
 
-  if (!order.melhor_envio_service_id) {
-    throw new Error(
-      "O pedido não possui serviço do Melhor Envio salvo. Recalcule o frete, selecione uma transportadora e salve o pedido."
-    );
-  }
 }
 
 function buildSender() {
@@ -346,7 +344,7 @@ function buildProducts(order: any) {
   }));
 }
 
-function buildVolumes(order: any) {
+function getPackageMetrics(order: any) {
   const totalWeight =
     order.items.reduce(
       (total: number, item: any) =>
@@ -378,6 +376,22 @@ function buildVolumes(order: any) {
       0
     );
 
+  return {
+    totalWeight,
+    maxHeight,
+    maxWidth,
+    totalLength,
+  };
+}
+
+function buildVolumes(order: any) {
+  const {
+    totalWeight,
+    maxHeight,
+    maxWidth,
+    totalLength,
+  } = getPackageMetrics(order);
+
   return [
     {
       height:
@@ -392,10 +406,62 @@ function buildVolumes(order: any) {
   ];
 }
 
-function buildCartPayload(order: any) {
+async function resolveMelhorEnvioServiceId(order: any) {
+  if (order.melhor_envio_service_id) {
+    return Number(order.melhor_envio_service_id);
+  }
+
+  const address =
+    order.contact?.addresses?.[0];
+  const cleanCep =
+    digits(address?.cep);
+
+  if (cleanCep.length !== 8) {
+    throw new Error(
+      "Pedido sem CEP válido. Informe o CEP no endereço do cliente antes de gerar a etiqueta."
+    );
+  }
+
+  const {
+    totalWeight,
+    maxHeight,
+    maxWidth,
+    totalLength,
+  } = getPackageMetrics(order);
+
+  const options =
+    await requestShippingOptions({
+      cleanCep,
+      totalWeight,
+      maxHeight,
+      maxWidth,
+      totalLength,
+      insuranceValue:
+        Number(order.subtotal || 0),
+      freeShipping:
+        false,
+    });
+
+  const selectedOption =
+    options.find((option) =>
+      option.melhor_envio_service_id
+    );
+
+  if (!selectedOption?.melhor_envio_service_id) {
+    throw new Error(
+      "Não foi possível identificar um serviço do Melhor Envio para este CEP. Recalcule o frete e selecione uma transportadora."
+    );
+  }
+
+  return Number(
+    selectedOption.melhor_envio_service_id
+  );
+}
+
+function buildCartPayload(order: any, serviceId: number) {
   return {
     service:
-      Number(order.melhor_envio_service_id),
+      serviceId,
     from:
       buildSender(),
     to:
@@ -489,12 +555,17 @@ export async function generateMelhorEnvioLabel(
 
   ensureCanGenerateLabel(order);
 
+  const serviceId =
+    await resolveMelhorEnvioServiceId(order);
   const baseUrl =
     melhorEnvioBaseUrl();
   const headers =
     melhorEnvioHeaders();
   const cartPayload =
-    buildCartPayload(order);
+    buildCartPayload(
+      order,
+      serviceId
+    );
 
   let cartResponse;
   let checkoutResponse;
@@ -635,6 +706,8 @@ export async function generateMelhorEnvioLabel(
               : order.status,
           melhor_envio_order_id:
             labelId,
+          melhor_envio_service_id:
+            serviceId,
           melhor_envio_protocol:
             protocol,
           melhor_envio_print_url:
