@@ -80,6 +80,10 @@ export default function OrderDetailsPage() {
     setLoadingShipping] =
     useState(false);
 
+  const [loadingMelhorEnvioLabel,
+    setLoadingMelhorEnvioLabel] =
+    useState(false);
+
   const [paymentApproved,
     setPaymentApproved] =
     useState(false);
@@ -549,6 +553,34 @@ export default function OrderDetailsPage() {
     }
   }
 
+  async function generateMelhorEnvioLabel() {
+    try {
+      setLoadingMelhorEnvioLabel(true);
+
+      const { data } =
+        await api.post(
+          `/shipping/melhor-envio/orders/${order.id}/label`
+        );
+
+      if (data?.order) {
+        setOrder(data.order);
+      }
+
+      showToast(
+        "Etiqueta gerada com sucesso.",
+        "success"
+      );
+    } catch (error) {
+      showToast(
+        error?.response?.data?.error ||
+        "NÃ£o foi possÃ­vel gerar a etiqueta.",
+        "error"
+      );
+    } finally {
+      setLoadingMelhorEnvioLabel(false);
+    }
+  }
+
   // =========================
   // PIX
   // =========================
@@ -846,6 +878,12 @@ return (
         }
         order={order}
         setOrder={setOrder}
+        generateMelhorEnvioLabel={
+          generateMelhorEnvioLabel
+        }
+        loadingMelhorEnvioLabel={
+          loadingMelhorEnvioLabel
+        }
       />
 
       {/* PAYMENT */}

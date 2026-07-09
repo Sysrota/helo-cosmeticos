@@ -18,6 +18,9 @@ export interface ShippingOption {
   name: string;
   price: number;
   deadline: string;
+  melhor_envio_service_id?: number;
+  melhor_envio_company_name?: string;
+  melhor_envio_service_name?: string;
   original_price?: number;
   discount?: number;
   min_days?: number;
@@ -294,13 +297,22 @@ export async function requestShippingOptions({
 
   const shippingOptions = validServices.map((service: any) => {
     const range = getDeliveryRange(service);
+    const serviceName = [
+      service.company?.name,
+      service.name,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return applyFreeShipping(freeShipping, {
-      name: freeShipping ? "Frete grátis" : "Entrega",
+      name: freeShipping ? "Frete grátis" : serviceName || "Entrega",
       price: Number(service.price),
       deadline: formatDeadline(range.min, range.max),
       min_days: range.min,
       max_days: range.max,
+      melhor_envio_service_id: Number(service.id),
+      melhor_envio_company_name: service.company?.name || "",
+      melhor_envio_service_name: service.name || "",
     });
   });
 

@@ -328,9 +328,13 @@ model Order {
 
   shipping_deadline String?
 
+  melhor_envio_service_id Int?
+
   melhor_envio_order_id String?
 
   melhor_envio_protocol String?
+
+  melhor_envio_print_url String?
 
   tracking_code String?
 

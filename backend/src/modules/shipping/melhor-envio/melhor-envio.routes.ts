@@ -2,6 +2,7 @@ import { Router }
   from "express";
 import {
   connectMelhorEnvioController,
+  generateMelhorEnvioLabelController,
   melhorEnvioCallbackController,
   melhorEnvioWebhookController,
 } from "./melhor-envio.controller";
@@ -22,4 +23,9 @@ melhorEnvioRoutes.get(
 melhorEnvioRoutes.post(
   "/webhook",
   melhorEnvioWebhookController
+);
+
+melhorEnvioRoutes.post(
+  "/orders/:orderId/label",
+  generateMelhorEnvioLabelController
 );

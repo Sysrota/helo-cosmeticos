@@ -445,6 +445,14 @@ export async function createCheckoutController(
           shipping_deadline:
             shipping?.delivery_time
               ? `${shipping.delivery_time} dias úteis`
+              : shipping?.deadline ||
+                null,
+
+          melhor_envio_service_id:
+            shipping?.melhor_envio_service_id
+              ? Number(
+                  shipping.melhor_envio_service_id
+                )
               : null,
 
           total,
@@ -663,6 +671,12 @@ export async function updateCheckoutDeliveryController(
             selectedShipping.name,
           shipping_deadline:
             selectedShipping.deadline,
+          melhor_envio_service_id:
+            selectedShipping.melhor_envio_service_id
+              ? Number(
+                  selectedShipping.melhor_envio_service_id
+                )
+              : order.melhor_envio_service_id,
           discount:
             totals.discount,
           coupon_discount:
@@ -921,10 +935,14 @@ export async function trackOrderController(
       order.shipping_method,
     shipping_deadline:
       order.shipping_deadline,
+    melhor_envio_service_id:
+      order.melhor_envio_service_id,
     melhor_envio_order_id:
       order.melhor_envio_order_id,
     melhor_envio_protocol:
       order.melhor_envio_protocol,
+    melhor_envio_print_url:
+      order.melhor_envio_print_url,
     tracking_code:
       order.tracking_code,
     tracking_url:

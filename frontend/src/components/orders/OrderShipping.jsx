@@ -22,6 +22,8 @@ export function OrderShipping({
   shippingOptions,
   order,
   setOrder,
+  generateMelhorEnvioLabel,
+  loadingMelhorEnvioLabel,
 }) {
 
   return (
@@ -159,6 +161,10 @@ export function OrderShipping({
 
                       shipping_deadline:
                         option.deadline,
+
+                      melhor_envio_service_id:
+                        option.melhor_envio_service_id ||
+                        null,
                     });
                   }}
 
@@ -419,6 +425,112 @@ export function OrderShipping({
               placeholder="UUID da etiqueta"
             />
           </label>
+
+          <label className="text-sm text-zinc-600">
+            ServiÃ§o Melhor Envio
+            <input
+              value={order.melhor_envio_service_id || ""}
+              onChange={(event) =>
+                setOrder({
+                  ...order,
+                  melhor_envio_service_id:
+                    event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                })
+              }
+              className="
+                mt-2
+                w-full
+                rounded-2xl
+                border
+                border-zinc-200
+                px-4
+                py-3
+                text-zinc-900
+              "
+              placeholder="ID do serviÃ§o selecionado"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-600">
+            Link de impressÃ£o da etiqueta
+            <input
+              value={order.melhor_envio_print_url || ""}
+              onChange={(event) =>
+                setOrder({
+                  ...order,
+                  melhor_envio_print_url:
+                    event.target.value,
+                })
+              }
+              className="
+                mt-2
+                w-full
+                rounded-2xl
+                border
+                border-zinc-200
+                px-4
+                py-3
+                text-zinc-900
+              "
+              placeholder="Link pÃºblico da etiqueta"
+            />
+          </label>
+
+          <div className="
+            flex
+            flex-col
+            gap-2
+            rounded-2xl
+            border
+            border-zinc-200
+            bg-zinc-50
+            p-4
+          ">
+            <button
+              type="button"
+              onClick={generateMelhorEnvioLabel}
+              disabled={
+                loadingMelhorEnvioLabel ||
+                Boolean(order.melhor_envio_order_id)
+              }
+              className="
+                rounded-2xl
+                bg-black
+                px-5
+                py-3
+                text-sm
+                font-semibold
+                text-white
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
+            >
+              {loadingMelhorEnvioLabel
+                ? "Gerando etiqueta..."
+                : order.melhor_envio_order_id
+                  ? "Etiqueta jÃ¡ gerada"
+                  : "Gerar etiqueta Melhor Envio"}
+            </button>
+
+            {order.melhor_envio_print_url && (
+              <a
+                href={order.melhor_envio_print_url}
+                target="_blank"
+                rel="noreferrer"
+                className="
+                  text-center
+                  text-sm
+                  font-semibold
+                  text-zinc-700
+                  underline
+                "
+              >
+                Abrir etiqueta para impressÃ£o
+              </a>
+            )}
+          </div>
         </div>
       </div>
 

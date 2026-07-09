@@ -17,6 +17,9 @@ import {
 import {
   sendOrderStatusUpdateWhatsApp,
 } from "../../notification/order-whatsapp-template.service.js";
+import {
+  generateMelhorEnvioLabel,
+} from "./melhor-envio-label.service.js";
 
 const SHIPPING_EVENT_COPY: Record<
   string,
@@ -112,7 +115,7 @@ export async function connectMelhorEnvioController(
         "code",
 
       scope:
-        "shipping-calculate shipping-generate shipping-tracking",
+        "shipping-calculate shipping-checkout shipping-generate shipping-print shipping-tracking",
     });
 
   return res.redirect(
@@ -720,6 +723,27 @@ export async function melhorEnvioWebhookController(
         error instanceof Error
           ? error.message
           : "Erro ao processar webhook",
+    });
+  }
+}
+
+export async function generateMelhorEnvioLabelController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const result =
+      await generateMelhorEnvioLabel(
+        Number(req.params.orderId)
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao gerar etiqueta",
     });
   }
 }
