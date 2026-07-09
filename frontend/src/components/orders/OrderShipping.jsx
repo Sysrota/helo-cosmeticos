@@ -21,6 +21,7 @@ export function OrderShipping({
   shippingOptions,
   order,
   setOrder,
+  selectShippingOption,
   generateMelhorEnvioLabel,
   loadingMelhorEnvioLabel,
 }) {
@@ -144,28 +145,11 @@ export function OrderShipping({
                 <button
                   key={index}
 
-                  onClick={() => {
-
-                    setOrder({
-                      ...order,
-
-                      shipping:
-                        option.price,
-
-                      shipping_method:
-                        option.name,
-
-                      shipping_price:
-                        option.price,
-
-                      shipping_deadline:
-                        option.deadline,
-
-                      melhor_envio_service_id:
-                        option.melhor_envio_service_id ||
-                        null,
-                    });
-                  }}
+                  onClick={() =>
+                    selectShippingOption(
+                      option
+                    )
+                  }
 
                   className={`
                     border

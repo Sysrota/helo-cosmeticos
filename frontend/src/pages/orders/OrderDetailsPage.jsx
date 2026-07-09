@@ -424,51 +424,87 @@ export default function OrderDetailsPage() {
   // SAVE
   // =========================
 
+  function buildOrderPayload(
+    sourceOrder = order
+  ) {
+    const payloadSubtotal =
+      sourceOrder.items?.reduce(
+        (sum, item) =>
+          sum +
+          Number(item.quantity || 0) *
+            Number(item.unit_price || 0),
+        0
+      ) || 0;
+    const payloadTotal =
+      payloadSubtotal +
+      Number(sourceOrder.shipping || 0) -
+      Number(sourceOrder.discount || 0);
+
+    return {
+      ...sourceOrder,
+      subtotal:
+        payloadSubtotal,
+      total:
+        payloadTotal,
+    };
+  }
+
+  async function persistOrder(
+    sourceOrder = order,
+    successMessage = "Pedido salvo com sucesso."
+  ) {
+    const res =
+      await fetch(
+        `${API_URL}/orders/${id}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify(
+            buildOrderPayload(
+              sourceOrder
+            )
+          ),
+        }
+      );
+
+    const data =
+      await res.json()
+        .catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(
+        data?.error ||
+        "Erro ao salvar pedido"
+      );
+    }
+
+    if (data) {
+      setOrder(data);
+    }
+
+    if (successMessage) {
+      showToast(
+        successMessage,
+        "success"
+      );
+    }
+
+    return data;
+  }
+
   async function saveOrder() {
 
     try {
 
       setSavingOrder(true);
 
-      const res =
-        await fetch(
-          `${API_URL}/orders/${id}`,
-          {
-            method: "PUT",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              ...order,
-
-              subtotal,
-
-              total,
-            }),
-          }
-        );
-
-      const data =
-        await res.json()
-          .catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(
-          data?.error ||
-          "Erro ao salvar pedido"
-        );
-      }
-
-      if (data) {
-        setOrder(data);
-      }
-
-      showToast(
-        "Pedido salvo com sucesso.",
-        "success"
+      await persistOrder(
+        order
       );
 
     } catch (error) {
@@ -581,6 +617,41 @@ export default function OrderDetailsPage() {
       );
     } finally {
       setLoadingMelhorEnvioLabel(false);
+    }
+  }
+
+  async function selectShippingOption(
+    option
+  ) {
+    const nextOrder = {
+      ...order,
+      shipping:
+        option.price,
+      shipping_method:
+        option.name,
+      shipping_price:
+        option.price,
+      shipping_deadline:
+        option.deadline,
+      melhor_envio_service_id:
+        option.melhor_envio_service_id ||
+        null,
+    };
+
+    setOrder(nextOrder);
+
+    try {
+      await persistOrder(
+        nextOrder,
+        "Frete salvo no pedido."
+      );
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o frete.",
+        "error"
+      );
     }
   }
 
@@ -881,6 +952,9 @@ return (
         }
         order={order}
         setOrder={setOrder}
+        selectShippingOption={
+          selectShippingOption
+        }
         generateMelhorEnvioLabel={
           generateMelhorEnvioLabel
         }
