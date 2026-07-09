@@ -13,6 +13,85 @@ function formatShippingOptionPrice(option) {
   );
 }
 
+const shippingStatusLabels = {
+  created: "Etiqueta criada",
+  pending: "Pendente",
+  released: "Etiqueta paga",
+  generated: "Etiqueta gerada",
+  received: "Recebido na distribuição",
+  posted: "Postado",
+  delivered: "Entregue",
+  undelivered: "Não entregue",
+  paused: "Pausado",
+  suspended: "Suspenso",
+  cancelled: "Cancelado",
+};
+
+function getShippingStatusLabel(status) {
+  return (
+    shippingStatusLabels[status] ||
+    status ||
+    "Não informado"
+  );
+}
+
+function TrackingInfoItem({
+  label,
+  value,
+  href,
+}) {
+  const displayValue =
+    value || "Não informado";
+
+  return (
+    <div className="
+      rounded-2xl
+      border
+      border-zinc-200
+      bg-white
+      px-4
+      py-3
+    ">
+      <p className="
+        text-xs
+        font-semibold
+        text-zinc-500
+      ">
+        {label}
+      </p>
+
+      {href && value ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="
+            mt-1
+            block
+            break-all
+            text-sm
+            font-semibold
+            text-zinc-900
+            underline
+          "
+        >
+          {displayValue}
+        </a>
+      ) : (
+        <p className="
+          mt-1
+          break-all
+          text-sm
+          font-semibold
+          text-zinc-900
+        ">
+          {displayValue}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function OrderShipping({
   cep,
   setCep,
@@ -20,7 +99,6 @@ export function OrderShipping({
   loadingShipping,
   shippingOptions,
   order,
-  setOrder,
   selectShippingOption,
   generateMelhorEnvioLabel,
   loadingMelhorEnvioLabel,
@@ -379,7 +457,7 @@ export function OrderShipping({
           text-sm
           text-zinc-500
         ">
-          Dados enviados pelo Melhor Envio ou preenchidos manualmente
+          Dados preenchidos automaticamente pelo Melhor Envio.
         </p>
 
         <div className="
@@ -388,201 +466,55 @@ export function OrderShipping({
           grid-cols-1
           gap-3
         ">
-          <label className="text-sm text-zinc-600">
-            Código de rastreio
-            <input
-              value={order.tracking_code || ""}
-              onChange={(event) =>
-                setOrder({
-                  ...order,
-                  tracking_code:
-                    event.target.value,
-                })
-              }
-              className="
-                mt-2
-                w-full
-                rounded-2xl
-                border
-                border-zinc-200
-                px-4
-                py-3
-                text-zinc-900
-              "
-              placeholder="Ex.: ME220021P96BR"
-            />
-          </label>
-
-          <label className="text-sm text-zinc-600">
-            Link de rastreio
-            <input
-              value={order.tracking_url || ""}
-              onChange={(event) =>
-                setOrder({
-                  ...order,
-                  tracking_url:
-                    event.target.value,
-                })
-              }
-              className="
-                mt-2
-                w-full
-                rounded-2xl
-                border
-                border-zinc-200
-                px-4
-                py-3
-                text-zinc-900
-              "
-              placeholder="https://www.melhorrastreio.com.br/rastreio/..."
-            />
-          </label>
-
           <div className="
             grid
             grid-cols-1
             gap-3
             md:grid-cols-2
           ">
-            <label className="text-sm text-zinc-600">
-              Status logístico
-              <select
-                value={order.shipping_status || ""}
-                onChange={(event) =>
-                  setOrder({
-                    ...order,
-                    shipping_status:
-                      event.target.value,
-                  })
-                }
-                className="
-                  mt-2
-                  w-full
-                  rounded-2xl
-                  border
-                  border-zinc-200
-                  px-4
-                  py-3
-                  text-zinc-900
-                "
-              >
-                <option value="">Não informado</option>
-                <option value="created">Etiqueta criada</option>
-                <option value="pending">Pendente</option>
-                <option value="released">Etiqueta paga</option>
-                <option value="generated">Etiqueta gerada</option>
-                <option value="received">Recebido na distribuição</option>
-                <option value="posted">Postado</option>
-                <option value="delivered">Entregue</option>
-                <option value="undelivered">Não entregue</option>
-                <option value="paused">Pausado</option>
-                <option value="suspended">Suspenso</option>
-                <option value="cancelled">Cancelado</option>
-              </select>
-            </label>
+            <TrackingInfoItem
+              label="Código de rastreio"
+              value={order.tracking_code}
+            />
 
-            <label className="text-sm text-zinc-600">
-              Protocolo Melhor Envio
-              <input
-                value={order.melhor_envio_protocol || ""}
-                onChange={(event) =>
-                  setOrder({
-                    ...order,
-                    melhor_envio_protocol:
-                      event.target.value,
-                  })
-                }
-                className="
-                  mt-2
-                  w-full
-                  rounded-2xl
-                  border
-                  border-zinc-200
-                  px-4
-                  py-3
-                  text-zinc-900
-                "
-                placeholder="ORD-..."
-              />
-            </label>
+            <TrackingInfoItem
+              label="Link de rastreio"
+              value={order.tracking_url}
+              href={order.tracking_url}
+            />
+
+            <TrackingInfoItem
+              label="Status logístico"
+              value={getShippingStatusLabel(
+                order.shipping_status
+              )}
+            />
+
+            <TrackingInfoItem
+              label="Protocolo Melhor Envio"
+              value={order.melhor_envio_protocol}
+            />
+
+            <TrackingInfoItem
+              label="ID da etiqueta Melhor Envio"
+              value={order.melhor_envio_order_id}
+            />
+
+            <TrackingInfoItem
+              label="Serviço Melhor Envio"
+              value={
+                order.melhor_envio_service_id
+                  ? String(order.melhor_envio_service_id)
+                  : ""
+              }
+            />
           </div>
 
-          <label className="text-sm text-zinc-600">
-            ID da etiqueta Melhor Envio
-            <input
-              value={order.melhor_envio_order_id || ""}
-              onChange={(event) =>
-                setOrder({
-                  ...order,
-                  melhor_envio_order_id:
-                    event.target.value,
-                })
-              }
-              className="
-                mt-2
-                w-full
-                rounded-2xl
-                border
-                border-zinc-200
-                px-4
-                py-3
-                text-zinc-900
-              "
-              placeholder="UUID da etiqueta"
-            />
-          </label>
-
-          <label className="text-sm text-zinc-600">
-            ServiÃ§o Melhor Envio
-            <input
-              value={order.melhor_envio_service_id || ""}
-              onChange={(event) =>
-                setOrder({
-                  ...order,
-                  melhor_envio_service_id:
-                    event.target.value
-                      ? Number(event.target.value)
-                      : null,
-                })
-              }
-              className="
-                mt-2
-                w-full
-                rounded-2xl
-                border
-                border-zinc-200
-                px-4
-                py-3
-                text-zinc-900
-              "
-              placeholder="ID do serviÃ§o selecionado"
-            />
-          </label>
-
-          <label className="text-sm text-zinc-600">
-            Link de impressÃ£o da etiqueta
-            <input
-              value={order.melhor_envio_print_url || ""}
-              onChange={(event) =>
-                setOrder({
-                  ...order,
-                  melhor_envio_print_url:
-                    event.target.value,
-                })
-              }
-              className="
-                mt-2
-                w-full
-                rounded-2xl
-                border
-                border-zinc-200
-                px-4
-                py-3
-                text-zinc-900
-              "
-              placeholder="Link pÃºblico da etiqueta"
-            />
-          </label>
+          <TrackingInfoItem
+            label="Link de impressão da etiqueta"
+            value={order.melhor_envio_print_url}
+            href={order.melhor_envio_print_url}
+          />
 
           <div className="
             flex
@@ -616,7 +548,7 @@ export function OrderShipping({
               {loadingMelhorEnvioLabel
                 ? "Gerando etiqueta..."
                 : order.melhor_envio_order_id
-                  ? "Etiqueta jÃ¡ gerada"
+                  ? "Etiqueta já gerada"
                   : "Gerar etiqueta Melhor Envio"}
             </button>
 
@@ -633,7 +565,7 @@ export function OrderShipping({
                   underline
                 "
               >
-                Abrir etiqueta para impressÃ£o
+                Abrir etiqueta para impressão
               </a>
             )}
           </div>

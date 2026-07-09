@@ -620,7 +620,7 @@ export default function OrderDetailsPage() {
     } catch (error) {
       showToast(
         error?.response?.data?.error ||
-        "NÃ£o foi possÃ­vel gerar a etiqueta.",
+        "Não foi possível gerar a etiqueta.",
         "error"
       );
     } finally {
@@ -962,7 +962,6 @@ return (
           shippingOptions
         }
         order={order}
-        setOrder={setOrder}
         selectShippingOption={
           selectShippingOption
         }
