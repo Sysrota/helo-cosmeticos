@@ -46,12 +46,15 @@ export async function calculateShippingController(
     const {
       cep,
       order_id,
+      all_options,
     } = req.body;
 
     const shipping =
       await calculateShipping({
         cep,
         order_id,
+        allOptions:
+          Boolean(all_options),
       });
 
     return res.json(

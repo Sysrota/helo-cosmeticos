@@ -6,6 +6,7 @@ import { getCommercialPolicy } from "../store-config/store-config.service.js";
 interface Props {
   cep: string;
   order_id: number;
+  allOptions?: boolean;
 }
 
 interface ProductShippingProps {
@@ -35,6 +36,7 @@ interface ShippingPackage {
   totalLength: number;
   insuranceValue: number;
   freeShipping?: boolean;
+  allOptions?: boolean;
 }
 
 const MOTO_UBER_CITIES = new Set([
@@ -225,6 +227,7 @@ export async function requestShippingOptions({
   totalLength,
   insuranceValue,
   freeShipping = false,
+  allOptions = false,
 }: ShippingPackage): Promise<ShippingOption[]> {
   const packageData = {
     width: Math.max(Number(maxWidth || 0), 11),
@@ -320,7 +323,9 @@ export async function requestShippingOptions({
     throw new Error("Nenhuma transportadora disponível");
   }
 
-  return getBestShippingOption(shippingOptions);
+  return allOptions
+    ? sortShippingOptions(shippingOptions)
+    : getBestShippingOption(shippingOptions);
 }
 
 export async function calculateProductShipping({
@@ -383,6 +388,7 @@ export async function calculateProductShipping({
 export async function calculateShipping({
   cep,
   order_id,
+  allOptions = false,
 }: Props): Promise<ShippingOption[]> {
   const cleanCep = cep.replace(/\D/g, "");
 
@@ -449,12 +455,22 @@ export async function calculateShipping({
       totalLength,
       insuranceValue: subtotal,
       freeShipping: hasFreeShipping,
+      allOptions,
     });
 
-    return getBestShippingOption([...localOptions, ...carrierOptions]);
+    const options = [
+      ...localOptions,
+      ...carrierOptions,
+    ];
+
+    return allOptions
+      ? sortShippingOptions(options)
+      : getBestShippingOption(options);
   } catch (error) {
     if (localOptions.length) {
-      return getBestShippingOption(localOptions);
+      return allOptions
+        ? sortShippingOptions(localOptions)
+        : getBestShippingOption(localOptions);
     }
 
     throw error;

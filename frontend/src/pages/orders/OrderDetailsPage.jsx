@@ -528,6 +528,9 @@ export default function OrderDetailsPage() {
 
             order_id:
               order.id,
+
+            all_options:
+              true,
           }
         );
 

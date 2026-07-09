@@ -6,9 +6,6 @@ import {
 import {
   io,
 } from "../../../websocket/socket.js";
-import {
-  requestShippingOptions,
-} from "../shipping.service.js";
 
 function digits(value?: string | null) {
   return String(value || "")
@@ -411,50 +408,8 @@ async function resolveMelhorEnvioServiceId(order: any) {
     return Number(order.melhor_envio_service_id);
   }
 
-  const address =
-    order.contact?.addresses?.[0];
-  const cleanCep =
-    digits(address?.cep);
-
-  if (cleanCep.length !== 8) {
-    throw new Error(
-      "Pedido sem CEP válido. Informe o CEP no endereço do cliente antes de gerar a etiqueta."
-    );
-  }
-
-  const {
-    totalWeight,
-    maxHeight,
-    maxWidth,
-    totalLength,
-  } = getPackageMetrics(order);
-
-  const options =
-    await requestShippingOptions({
-      cleanCep,
-      totalWeight,
-      maxHeight,
-      maxWidth,
-      totalLength,
-      insuranceValue:
-        Number(order.subtotal || 0),
-      freeShipping:
-        false,
-    });
-
-  const selectedOption =
-    options.find((option) =>
-      option.melhor_envio_service_id
-    );
-
-  if (!selectedOption?.melhor_envio_service_id) {
-    throw new Error(
-      "Não foi possível identificar um serviço do Melhor Envio para este CEP. Recalcule o frete e selecione uma transportadora."
-    );
-  }
-
-  return Number(
-    selectedOption.melhor_envio_service_id
+  throw new Error(
+    "Escolha uma transportadora do Melhor Envio, salve o pedido e gere a etiqueta novamente."
   );
 }
 
