@@ -121,6 +121,14 @@ export default function OrderDetailsPage() {
       await res.json();
 
     setOrder(data);
+
+    const savedCep =
+      data?.contact?.addresses?.[0]?.cep ||
+      "";
+
+    if (savedCep) {
+      setCep(savedCep);
+    }
   }
 
   async function loadProducts() {

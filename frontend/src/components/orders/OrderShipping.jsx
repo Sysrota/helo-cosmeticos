@@ -55,6 +55,92 @@ export function OrderShipping({
         </p>
       </div>
 
+      {order.shipping_method && (
+        <div className="
+          mb-4
+          rounded-2xl
+          border
+          border-emerald-200
+          bg-emerald-50
+          p-4
+        ">
+          <div className="
+            flex
+            items-start
+            justify-between
+            gap-4
+          ">
+            <div>
+              <p className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-emerald-700
+              ">
+                Frete selecionado
+              </p>
+
+              <p className="
+                mt-1
+                text-base
+                font-bold
+                text-zinc-900
+              ">
+                {order.shipping_method}
+              </p>
+
+              {order.shipping_deadline && (
+                <p className="
+                  mt-1
+                  text-sm
+                  text-zinc-600
+                ">
+                  {order.shipping_deadline}
+                </p>
+              )}
+
+              {order.melhor_envio_service_id && (
+                <p className="
+                  mt-1
+                  text-xs
+                  font-medium
+                  text-zinc-500
+                ">
+                  Serviço Melhor Envio: {order.melhor_envio_service_id}
+                </p>
+              )}
+            </div>
+
+            <div className="
+              text-right
+            ">
+              <p className="
+                text-xs
+                font-semibold
+                text-zinc-500
+              ">
+                Valor do frete
+              </p>
+
+              <p className="
+                mt-1
+                text-xl
+                font-bold
+                text-zinc-900
+              ">
+                {Number(order.shipping_price ?? order.shipping ?? 0) === 0
+                  ? "Grátis"
+                  : Formatter.formataMoeda(
+                      order.shipping_price ??
+                      order.shipping
+                    )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CEP */}
       <div className="
         flex
