@@ -439,6 +439,13 @@ export async function createCheckoutController(
           shipping_price:
             shippingPrice,
 
+          shipping_cost:
+            Number(
+              shipping?.original_price ??
+              shipping?.price ??
+              0
+            ),
+
           shipping_method:
             shipping?.name,
 
@@ -667,6 +674,12 @@ export async function updateCheckoutDeliveryController(
             shippingPrice,
           shipping_price:
             shippingPrice,
+          shipping_cost:
+            Number(
+              selectedShipping.original_price ??
+              selectedShipping.price ??
+              0
+            ),
           shipping_method:
             selectedShipping.name,
           shipping_deadline:
@@ -911,6 +924,8 @@ export async function trackOrderController(
       order.subtotal,
     shipping:
       order.shipping,
+    shipping_cost:
+      order.shipping_cost,
     discount:
       order.discount,
     coupon_code:

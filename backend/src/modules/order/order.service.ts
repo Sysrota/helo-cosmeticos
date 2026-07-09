@@ -368,6 +368,8 @@ interface Props {
 
   shipping_price: number;
 
+  shipping_cost?: number | null;
+
   melhor_envio_service_id?: number | null;
 
   melhor_envio_order_id?: string | null;
@@ -393,6 +395,7 @@ export async function updateOrderService({
   items,
   shipping_method,
   shipping_price,
+  shipping_cost,
   shipping_deadline,
   melhor_envio_service_id,
   melhor_envio_order_id,
@@ -433,6 +436,11 @@ export async function updateOrderService({
       shipping_method,
 
       shipping_price,
+
+      shipping_cost:
+        Number(
+          shipping_cost ?? shipping_price ?? shipping ?? 0
+        ),
 
       shipping_deadline,
 

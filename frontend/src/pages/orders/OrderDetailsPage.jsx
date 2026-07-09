@@ -639,6 +639,9 @@ export default function OrderDetailsPage() {
         option.name,
       shipping_price:
         option.price,
+      shipping_cost:
+        option.original_price ??
+        option.price,
       shipping_deadline:
         option.deadline,
       melhor_envio_service_id:

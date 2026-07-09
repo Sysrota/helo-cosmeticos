@@ -326,6 +326,8 @@ model Order {
 
   shipping_price Float @default(0)
 
+  shipping_cost Float @default(0)
+
   shipping_deadline String?
 
   melhor_envio_service_id Int?

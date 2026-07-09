@@ -120,7 +120,7 @@ export function OrderShipping({
                 font-semibold
                 text-zinc-500
               ">
-                Valor do frete
+                Cobrado do cliente
               </p>
 
               <p className="
@@ -134,7 +134,30 @@ export function OrderShipping({
                   : Formatter.formataMoeda(
                       order.shipping_price ??
                       order.shipping
-                    )}
+                )}
+              </p>
+
+              <p className="
+                mt-3
+                text-xs
+                font-semibold
+                text-zinc-500
+              ">
+                Custo para a loja
+              </p>
+
+              <p className="
+                mt-1
+                text-lg
+                font-bold
+                text-zinc-900
+              ">
+                {Formatter.formataMoeda(
+                  order.shipping_cost ??
+                  order.shipping_price ??
+                  order.shipping ??
+                  0
+                )}
               </p>
             </div>
           </div>
