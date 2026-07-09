@@ -3,7 +3,6 @@ import Formatter
 
 function formatShippingOptionPrice(option) {
   if (
-    String(option?.name || "").startsWith("Moto Uber") &&
     Number(option?.price || 0) === 0
   ) {
     return "Grátis";
@@ -230,6 +229,20 @@ export function OrderShipping({
                       text-xl
                       font-bold
                     ">
+                      {Number(option.original_price) >
+                        Number(option.price) && (
+                        <div className="
+                          text-xs
+                          font-medium
+                          text-zinc-400
+                          line-through
+                        ">
+                          {Formatter.formataMoeda(
+                            option.original_price
+                          )}
+                        </div>
+                      )}
+
                       {formatShippingOptionPrice(
                         option
                       )}

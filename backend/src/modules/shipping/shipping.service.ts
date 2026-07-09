@@ -118,7 +118,6 @@ function applyFreeShipping(
 
   return {
     ...option,
-    name: freeShipping ? "Frete grátis" : option.name,
     price,
     original_price: originalPrice,
     discount: freeShipping ? originalPrice : 0,
@@ -308,7 +307,7 @@ export async function requestShippingOptions({
       .join(" ");
 
     return applyFreeShipping(freeShipping, {
-      name: freeShipping ? "Frete grátis" : serviceName || "Entrega",
+      name: serviceName || "Entrega",
       price: Number(service.price),
       deadline: formatDeadline(range.min, range.max),
       min_days: range.min,
