@@ -2,7 +2,8 @@ import axios from "axios";
 
 const MANDA_BEM_URL = "https://mandabem.com.br/ws/valor_envio";
 
-const MANDA_BEM_SERVICES = ["PAC", "SEDEX"] as const;
+// A loja nao envia por SEDEX, so por transportadora.
+const MANDA_BEM_SERVICES = ["PAC"] as const;
 
 interface MandaBemQuoteParams {
   cepOrigem: string;

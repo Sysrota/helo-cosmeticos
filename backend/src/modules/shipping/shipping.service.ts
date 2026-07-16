@@ -239,6 +239,7 @@ interface CarrierPackageData {
 
 // Transportadoras de carga aérea: excluídas por completo (cosméticos com
 // aerossol/álcool costumam ser restritos ou proibidos em modal aéreo).
+// SEDEX (Correios e Manda Bem) tambem sai: a loja so envia por transportadora.
 const EXCLUDED_MELHOR_ENVIO_COMPANIES = new Set([
   "latam cargo",
   "azul cargo express",
@@ -254,8 +255,14 @@ function isExcludedMelhorEnvioService(service: any) {
     .replace(DIACRITICS_PATTERN, "")
     .toLowerCase()
     .trim();
+  const serviceName = String(service.name || "")
+    .toLowerCase()
+    .trim();
 
-  return EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company);
+  return (
+    EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company) ||
+    serviceName.includes("sedex")
+  );
 }
 
 async function fetchMelhorEnvioOptions(
