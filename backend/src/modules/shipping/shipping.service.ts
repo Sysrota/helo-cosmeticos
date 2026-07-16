@@ -14,6 +14,7 @@ interface ProductShippingProps {
   cep: string;
   product_id: number;
   quantity: number;
+  allOptions?: boolean;
 }
 
 export interface ShippingOption {
@@ -401,6 +402,7 @@ export async function calculateProductShipping({
   cep,
   product_id,
   quantity,
+  allOptions = false,
 }: ProductShippingProps): Promise<ShippingOption[]> {
   const cleanCep = cep.replace(/\D/g, "");
 
@@ -442,12 +444,19 @@ export async function calculateProductShipping({
       totalLength: Number(product.length || 1) * safeQuantity,
       insuranceValue: subtotal,
       freeShipping: hasFreeShipping,
+      allOptions,
     });
 
-    return getBestShippingOption([...localOptions, ...carrierOptions]);
+    const options = [...localOptions, ...carrierOptions];
+
+    return allOptions
+      ? sortShippingOptions(options)
+      : getBestShippingOption(options);
   } catch (error) {
     if (localOptions.length) {
-      return getBestShippingOption(localOptions);
+      return allOptions
+        ? sortShippingOptions(localOptions)
+        : getBestShippingOption(localOptions);
     }
 
     throw error;
