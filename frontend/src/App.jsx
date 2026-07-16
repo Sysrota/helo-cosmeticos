@@ -1,4 +1,13 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
+import {
+  useEffect,
+} from "react";
 
 import Layout from "./layout/Layout";
 import Carrinho from "./pages/Carrinho";
@@ -29,12 +38,50 @@ import AdminLayout from "./components/admin/AdminLayout";
 import { CommercialPolicyProvider } from "./context/CommercialPolicyContext";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
+const INFLUENCER_COUPON_STORAGE_KEY =
+  "helo_influencer_coupon";
+
+function getCouponFromSearch(search) {
+  const params =
+    new URLSearchParams(search);
+  const code =
+    params.get("cupom") ||
+    params.get("coupon") ||
+    params.get("ref") ||
+    "";
+
+  return code.trim().toUpperCase();
+}
+
+function InfluencerCouponTracker() {
+  const location =
+    useLocation();
+
+  useEffect(() => {
+    const couponCode =
+      getCouponFromSearch(
+        location.search
+      );
+
+    if (couponCode) {
+      localStorage.setItem(
+        INFLUENCER_COUPON_STORAGE_KEY,
+        couponCode
+      );
+    }
+  }, [
+    location.search,
+  ]);
+
+  return null;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <CommercialPolicyProvider>
         <AnalyticsTracker />
+        <InfluencerCouponTracker />
         <Layout>
           <Routes>
           {/* públicas */}

@@ -46,6 +46,8 @@ import {
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "/api";
+const INFLUENCER_COUPON_STORAGE_KEY =
+  "helo_influencer_coupon";
 
 const steps = [
   { id: 1, label: "Dados" },
@@ -123,6 +125,28 @@ function itemProductId(item) {
 
 function getOrderDisplayNumber(order) {
   return order?.order_number || order?.id;
+}
+
+function getCouponFromSearch(search) {
+  const params =
+    new URLSearchParams(search);
+  const code =
+    params.get("cupom") ||
+    params.get("coupon") ||
+    params.get("ref") ||
+    "";
+
+  return code.trim().toUpperCase();
+}
+
+function getSavedInfluencerCoupon() {
+  return (
+    localStorage.getItem(
+      INFLUENCER_COUPON_STORAGE_KEY
+    ) || ""
+  )
+    .trim()
+    .toUpperCase();
 }
 
 function mergeCartItems(items) {
@@ -222,7 +246,14 @@ export default function PublicCheckoutPage() {
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("pix");
-  const [couponCode, setCouponCode] = useState("");
+  const [influencerCouponCode, setInfluencerCouponCode] = useState(() =>
+    getCouponFromSearch(location.search) ||
+    getSavedInfluencerCoupon()
+  );
+  const [couponCode, setCouponCode] = useState(() =>
+    getCouponFromSearch(location.search) ||
+    getSavedInfluencerCoupon()
+  );
   const [couponPreview, setCouponPreview] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [pixData, setPixData] = useState(null);
@@ -237,10 +268,36 @@ export default function PublicCheckoutPage() {
   const addressRequestRef = useRef(0);
   const purchaseTrackedRef = useRef(null);
   const initiateCheckoutTrackedRef = useRef(false);
+  const autoCouponAppliedRef = useRef("");
 
   // InitiateCheckout com event_id é disparado em createOrderFromCart (quando
   // o pedido é criado), garantindo deduplicação correta com o order.id.
   // O disparo antigo sem event_id (no mount) foi removido para evitar duplicação.
+
+  useEffect(() => {
+    const codeFromUrl =
+      getCouponFromSearch(
+        location.search
+      );
+
+    if (!codeFromUrl) {
+      return;
+    }
+
+    localStorage.setItem(
+      INFLUENCER_COUPON_STORAGE_KEY,
+      codeFromUrl
+    );
+    setInfluencerCouponCode(
+      codeFromUrl
+    );
+    setCouponCode(
+      codeFromUrl
+    );
+    autoCouponAppliedRef.current = "";
+  }, [
+    location.search,
+  ]);
 
   useEffect(() => {
     if (
@@ -464,6 +521,47 @@ export default function PublicCheckoutPage() {
   const couponAllowsPixDiscount =
     !(order?.coupon || couponPreview?.coupon) ||
     (order?.coupon || couponPreview?.coupon).allow_pix_discount !== false;
+
+  useEffect(() => {
+    const code =
+      influencerCouponCode
+        .trim()
+        .toUpperCase();
+
+    if (
+      !code ||
+      appliedCouponCode ||
+      applyingCoupon ||
+      autoCouponAppliedRef.current === code ||
+      !checkoutItems.length ||
+      Number(subtotal || 0) <= 0 ||
+      order?.mercado_pago_payment_id ||
+      pixData ||
+      boletoData
+    ) {
+      return;
+    }
+
+    autoCouponAppliedRef.current =
+      code;
+    setCouponCode(
+      code
+    );
+    void applyCoupon({
+      automatic: true,
+      codeOverride: code,
+    });
+  }, [
+    appliedCouponCode,
+    applyingCoupon,
+    boletoData,
+    checkoutItems.length,
+    influencerCouponCode,
+    order?.mercado_pago_payment_id,
+    pixData,
+    subtotal,
+  ]);
+
   const pixDiscount =
     step === 3 &&
     selectedPaymentMethod === "pix" &&
@@ -869,12 +967,19 @@ export default function PublicCheckoutPage() {
     }
   }
 
-  async function applyCoupon() {
+  async function applyCoupon({
+    automatic = false,
+    codeOverride = "",
+  } = {}) {
     const code =
-      couponCode.trim();
+      (codeOverride || couponCode)
+        .trim()
+        .toUpperCase();
 
     if (!code) {
-      setNotice("Informe o código do cupom.");
+      if (!automatic) {
+        setNotice("Informe o código do cupom.");
+      }
       return;
     }
 
@@ -897,7 +1002,11 @@ export default function PublicCheckoutPage() {
 
         setCouponPreview(data);
         setCouponCode(data.coupon.code);
-        setNotice(data.message || "Cupom aplicado.");
+        setNotice(
+          automatic
+            ? "Cupom da influencer aplicado."
+            : data.message || "Cupom aplicado."
+        );
         return;
       }
 
@@ -914,8 +1023,19 @@ export default function PublicCheckoutPage() {
       setCouponCode(data.order.coupon_code || code.toUpperCase());
       setPixData(null);
       setBoletoData(null);
-      setNotice(data.message || "Cupom aplicado.");
+      setNotice(
+        automatic
+          ? "Cupom da influencer aplicado."
+          : data.message || "Cupom aplicado."
+      );
     } catch (error) {
+      if (automatic) {
+        localStorage.removeItem(
+          INFLUENCER_COUPON_STORAGE_KEY
+        );
+        setInfluencerCouponCode("");
+      }
+
       setNotice(
         error?.response?.data?.error ||
           "Não foi possível aplicar este cupom."
@@ -926,6 +1046,12 @@ export default function PublicCheckoutPage() {
   }
 
   async function removeCoupon() {
+    localStorage.removeItem(
+      INFLUENCER_COUPON_STORAGE_KEY
+    );
+    setInfluencerCouponCode("");
+    autoCouponAppliedRef.current = "";
+
     if (!order) {
       setCouponCode("");
       setCouponPreview(null);

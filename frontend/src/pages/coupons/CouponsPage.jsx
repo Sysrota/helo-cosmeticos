@@ -5,6 +5,7 @@ import {
 } from "react";
 import {
   BarChart3,
+  Copy,
   Edit3,
   Plus,
   Save,
@@ -83,6 +84,17 @@ function payloadFromForm(form) {
   };
 }
 
+function buildInfluencerLink(code) {
+  const origin =
+    window.location.origin;
+  const couponCode =
+    String(code || "")
+      .trim()
+      .toUpperCase();
+
+  return `${origin}/checkout?cupom=${encodeURIComponent(couponCode)}`;
+}
+
 export default function CouponsPage() {
   const [coupons, setCoupons] =
     useState([]);
@@ -96,6 +108,8 @@ export default function CouponsPage() {
     useState(false);
   const [notice, setNotice] =
     useState("");
+  const [copiedCouponId, setCopiedCouponId] =
+    useState(null);
 
   const reportRows =
     report?.rows || [];
@@ -212,6 +226,36 @@ export default function CouponsPage() {
     await loadData();
   }
 
+  async function copyInfluencerLink(coupon) {
+    const link =
+      buildInfluencerLink(
+        coupon.code
+      );
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(
+        link
+      );
+    } else {
+      window.prompt(
+        "Copie o link da influencer:",
+        link
+      );
+    }
+
+    setCopiedCouponId(
+      coupon.id
+    );
+    setNotice(
+      `Link da influencer copiado: ${link}`
+    );
+
+    window.setTimeout(
+      () => setCopiedCouponId(null),
+      2500
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100 text-sm text-zinc-500">
@@ -310,6 +354,16 @@ export default function CouponsPage() {
                         </span>
                       </td>
                       <td className="p-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => copyInfluencerLink(coupon)}
+                          className="mr-3 inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                        >
+                          <Copy size={14} />
+                          {copiedCouponId === coupon.id
+                            ? "Copiado"
+                            : "Link"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => editCoupon(coupon)}
