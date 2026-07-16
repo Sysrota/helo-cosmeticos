@@ -83,7 +83,6 @@ export async function calculateProductShippingController(
       cep,
       product_id,
       quantity,
-      all_options,
     } = req.body;
 
     const shipping =
@@ -94,8 +93,6 @@ export async function calculateProductShippingController(
           Number(product_id),
         quantity:
           Number(quantity || 1),
-        allOptions:
-          Boolean(all_options),
       });
 
     return res.json(

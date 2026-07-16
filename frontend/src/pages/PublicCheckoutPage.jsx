@@ -1108,7 +1108,6 @@ export default function PublicCheckoutPage() {
       const { data } = await api.post("/shipping/calculate", {
         cep: customer.zipcode,
         order_id: order.id,
-        all_options: true,
       });
 
       setShippingOptions(data);

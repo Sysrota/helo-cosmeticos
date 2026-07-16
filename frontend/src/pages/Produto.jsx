@@ -377,12 +377,7 @@ export default function Produto() {
       const response = await fetch(`${API_URL}/shipping/product-quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cep: shippingCep,
-          product_id: product.id,
-          quantity,
-          all_options: true,
-        }),
+        body: JSON.stringify({ cep: shippingCep, product_id: product.id, quantity }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível calcular o frete.");
