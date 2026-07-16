@@ -165,8 +165,16 @@ function sortShippingOptions(options: ShippingOption[]) {
   });
 }
 
+const MAX_PREFERRED_DEADLINE_DAYS = 6;
+
 function getBestShippingOption(options: ShippingOption[]) {
-  return sortShippingOptions(options).slice(0, 1);
+  const sorted = sortShippingOptions(options);
+
+  const withinDeadline = sorted.filter(
+    (option) => getDeadlineMax(option) <= MAX_PREFERRED_DEADLINE_DAYS
+  );
+
+  return (withinDeadline.length ? withinDeadline : sorted).slice(0, 1);
 }
 
 function formatDeadline(minDays: number, maxDays: number) {
