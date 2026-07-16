@@ -229,6 +229,24 @@ interface CarrierPackageData {
   weight: number;
 }
 
+const EXCLUDED_MELHOR_ENVIO_COMPANIES = new Set(["latam cargo"]);
+
+const EXCLUDED_MELHOR_ENVIO_SERVICES = new Set(["azul cargo express|expresso"]);
+
+function isExcludedMelhorEnvioService(service: any) {
+  const company = String(service.company?.name || "")
+    .toLowerCase()
+    .trim();
+  const serviceName = String(service.name || "")
+    .toLowerCase()
+    .trim();
+
+  return (
+    EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company) ||
+    EXCLUDED_MELHOR_ENVIO_SERVICES.has(`${company}|${serviceName}`)
+  );
+}
+
 async function fetchMelhorEnvioOptions(
   cleanCep: string,
   packageData: CarrierPackageData,
@@ -274,7 +292,13 @@ async function fetchMelhorEnvioOptions(
       const price = Number(service.price);
       const range = getDeliveryRange(service);
 
-      return !service.error && price > 0 && range.min > 0 && range.max > 0;
+      return (
+        !service.error &&
+        price > 0 &&
+        range.min > 0 &&
+        range.max > 0 &&
+        !isExcludedMelhorEnvioService(service)
+      );
     });
 
     return validServices.map((service: any) => {
