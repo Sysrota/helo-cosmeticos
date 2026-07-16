@@ -63,6 +63,19 @@ function formatMoney(value) {
     );
 }
 
+function getPublicShippingLabel(shippingMethod) {
+  const name = String(shippingMethod || "");
+
+  if (
+    name.startsWith("Moto Uber") ||
+    name.startsWith("Retirar em mãos")
+  ) {
+    return name;
+  }
+
+  return name ? "Transportadora" : "A definir";
+}
+
 function formatDate(value) {
   if (!value) {
     return "";
@@ -907,7 +920,7 @@ export default function OrderTrackingPage() {
                   Entrega
                 </div>
                 <p className="text-sm text-[#78636b]">
-                  {order.shipping_method || "A definir"}
+                  {getPublicShippingLabel(order.shipping_method)}
                 </p>
                 {order.shipping_deadline && (
                   <p className="mt-1 text-xs text-[#78636b]">

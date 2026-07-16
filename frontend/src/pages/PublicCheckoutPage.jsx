@@ -95,6 +95,21 @@ function formatShippingOptionPrice(option) {
   );
 }
 
+function isLocalDeliveryOption(option) {
+  const name = String(option?.name || "");
+
+  return (
+    name.startsWith("Moto Uber") ||
+    name.startsWith("Retirar em mãos")
+  );
+}
+
+function getPublicShippingLabel(option) {
+  return isLocalDeliveryOption(option)
+    ? option.name
+    : "Transportadora";
+}
+
 function getCheckoutImageUrl(item) {
   const image =
     item.product?.images?.[0]?.image_url ||
@@ -1575,7 +1590,7 @@ export default function PublicCheckoutPage() {
                               </span>
                               <span>
                                 <span className="block text-sm font-semibold text-zinc-900">
-                                  {option.name}
+                                  {getPublicShippingLabel(option)}
                                 </span>
                                 <span className="block text-xs text-zinc-500">
                                   {option.deadline}
@@ -1629,7 +1644,7 @@ export default function PublicCheckoutPage() {
                 <div className="mt-7 rounded-2xl border border-[#eee2e6] bg-[#fcf9fa] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <span>
-                      <span className="block text-sm font-semibold">{selectedShipping?.name}</span>
+                      <span className="block text-sm font-semibold">{selectedShipping ? getPublicShippingLabel(selectedShipping) : ""}</span>
                       <span className="block text-xs text-zinc-500">{selectedShipping?.deadline}</span>
                     </span>
                     <span className="text-right">

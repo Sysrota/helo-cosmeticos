@@ -68,6 +68,20 @@ function isSedexOption(option) {
   return String(option?.name || "").toLowerCase().includes("sedex");
 }
 
+function isLocalDeliveryOption(option) {
+  const name = String(option?.name || "");
+  return (
+    name.startsWith("Moto Uber") ||
+    name.startsWith("Retirar em mãos")
+  );
+}
+
+function getPublicShippingLabel(option) {
+  return isLocalDeliveryOption(option)
+    ? option.name
+    : "Transportadora";
+}
+
 function isPriorityShippingOption(option) {
   const name = String(option?.name || "");
   return (
@@ -742,7 +756,7 @@ export default function Produto() {
                             className="flex items-center justify-between gap-4 rounded-xl bg-white px-3.5 py-3 text-sm"
                           >
                             <span>
-                              <span className="block font-medium text-zinc-800">{option.name}</span>
+                              <span className="block font-medium text-zinc-800">{getPublicShippingLabel(option)}</span>
                               <span className="block text-xs text-zinc-500">{option.deadline}</span>
                               {Number(option.discount || 0) > 0 && (
                                 <span className="mt-1 block text-xs font-medium text-emerald-700">

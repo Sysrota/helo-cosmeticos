@@ -229,22 +229,25 @@ interface CarrierPackageData {
   weight: number;
 }
 
-const EXCLUDED_MELHOR_ENVIO_COMPANIES = new Set(["latam cargo"]);
+// Transportadoras de carga aérea: excluídas por completo (cosméticos com
+// aerossol/álcool costumam ser restritos ou proibidos em modal aéreo).
+const EXCLUDED_MELHOR_ENVIO_COMPANIES = new Set([
+  "latam cargo",
+  "azul cargo express",
+  "gollog",
+  "gol linhas aereas",
+]);
 
-const EXCLUDED_MELHOR_ENVIO_SERVICES = new Set(["azul cargo express|expresso"]);
+const DIACRITICS_PATTERN = new RegExp("[\\u0300-\\u036f]", "g");
 
 function isExcludedMelhorEnvioService(service: any) {
   const company = String(service.company?.name || "")
-    .toLowerCase()
-    .trim();
-  const serviceName = String(service.name || "")
+    .normalize("NFD")
+    .replace(DIACRITICS_PATTERN, "")
     .toLowerCase()
     .trim();
 
-  return (
-    EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company) ||
-    EXCLUDED_MELHOR_ENVIO_SERVICES.has(`${company}|${serviceName}`)
-  );
+  return EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company);
 }
 
 async function fetchMelhorEnvioOptions(
