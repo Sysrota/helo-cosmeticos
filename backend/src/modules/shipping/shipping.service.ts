@@ -150,18 +150,17 @@ function sortShippingOptions(options: ShippingOption[]) {
 
     if (priorityDiff !== 0) return priorityDiff;
 
+    const originalPriceFirst = Number(first.original_price ?? first.price);
+    const originalPriceSecond = Number(second.original_price ?? second.price);
+    const priceDiff = originalPriceFirst - originalPriceSecond;
+
+    if (priceDiff !== 0) return priceDiff;
+
     const minDiff = getDeadlineMin(first) - getDeadlineMin(second);
 
     if (minDiff !== 0) return minDiff;
 
-    const maxDiff = getDeadlineMax(first) - getDeadlineMax(second);
-
-    if (maxDiff !== 0) return maxDiff;
-
-    const originalPriceFirst = Number(first.original_price ?? first.price);
-    const originalPriceSecond = Number(second.original_price ?? second.price);
-
-    return originalPriceFirst - originalPriceSecond;
+    return getDeadlineMax(first) - getDeadlineMax(second);
   });
 }
 
