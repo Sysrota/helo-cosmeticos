@@ -13,6 +13,57 @@ function formatShippingOptionPrice(option) {
   );
 }
 
+function getShippingOptionCarrierLabel(option) {
+  if (option?.melhor_envio_service_id) {
+    return "Melhor Envio";
+  }
+
+  if (option?.manda_bem_service) {
+    return "Manda Bem";
+  }
+
+  return null;
+}
+
+function getOrderCarrierLabel(order) {
+  if (order?.shipping_carrier === "melhor_envio") {
+    return "Melhor Envio";
+  }
+
+  if (order?.shipping_carrier === "manda_bem") {
+    return "Manda Bem";
+  }
+
+  if (order?.melhor_envio_service_id) {
+    return "Melhor Envio";
+  }
+
+  return null;
+}
+
+function CarrierBadge({ label }) {
+  if (!label) {
+    return null;
+  }
+
+  return (
+    <span className="
+      inline-block
+      rounded-full
+      bg-zinc-200
+      px-2
+      py-0.5
+      text-[10px]
+      font-semibold
+      uppercase
+      tracking-wide
+      text-zinc-600
+    ">
+      {label}
+    </span>
+  );
+}
+
 const shippingStatusLabels = {
   created: "Etiqueta criada",
   pending: "Pendente",
@@ -163,11 +214,18 @@ export function OrderShipping({
 
               <p className="
                 mt-1
+                flex
+                items-center
+                gap-2
                 text-base
                 font-bold
                 text-zinc-900
               ">
                 {order.shipping_method}
+
+                <CarrierBadge
+                  label={getOrderCarrierLabel(order)}
+                />
               </p>
 
               {order.shipping_deadline && (
@@ -386,10 +444,17 @@ export function OrderShipping({
                   ">
 
                     <div className="
+                      flex
+                      items-center
+                      gap-2
                       text-sm
                       font-bold
                     ">
                       {option.name}
+
+                      <CarrierBadge
+                        label={getShippingOptionCarrierLabel(option)}
+                      />
                     </div>
 
                     <div className="
