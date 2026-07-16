@@ -84,15 +84,19 @@ function payloadFromForm(form) {
   };
 }
 
-function buildInfluencerLink(code) {
+function buildInfluencerLink(code, productId) {
   const origin =
     window.location.origin;
   const couponCode =
     String(code || "")
       .trim()
       .toUpperCase();
+  const path =
+    productId
+      ? `/produto/${productId}`
+      : "/produtos";
 
-  return `${origin}/checkout?cupom=${encodeURIComponent(couponCode)}`;
+  return `${origin}${path}?cupom=${encodeURIComponent(couponCode)}`;
 }
 
 export default function CouponsPage() {
@@ -110,6 +114,10 @@ export default function CouponsPage() {
     useState("");
   const [copiedCouponId, setCopiedCouponId] =
     useState(null);
+  const [products, setProducts] =
+    useState([]);
+  const [linkProductByCoupon, setLinkProductByCoupon] =
+    useState({});
 
   const reportRows =
     report?.rows || [];
@@ -145,8 +153,20 @@ export default function CouponsPage() {
     }
   }
 
+  async function loadProducts() {
+    const response =
+      await api.get(
+        "/products?active=true&limit=100&sort=display"
+      );
+
+    setProducts(
+      response.data?.items || []
+    );
+  }
+
   useEffect(() => {
     loadData();
+    loadProducts();
   }, []);
 
   function updateForm(field, value) {
@@ -227,9 +247,12 @@ export default function CouponsPage() {
   }
 
   async function copyInfluencerLink(coupon) {
+    const productId =
+      linkProductByCoupon[coupon.id];
     const link =
       buildInfluencerLink(
-        coupon.code
+        coupon.code,
+        productId
       );
 
     if (navigator.clipboard?.writeText) {
@@ -354,6 +377,23 @@ export default function CouponsPage() {
                         </span>
                       </td>
                       <td className="p-3 text-right">
+                        <select
+                          value={linkProductByCoupon[coupon.id] || ""}
+                          onChange={(event) =>
+                            setLinkProductByCoupon((previous) => ({
+                              ...previous,
+                              [coupon.id]: event.target.value,
+                            }))
+                          }
+                          className="mr-3 h-9 rounded-lg border px-2 text-xs text-zinc-700"
+                        >
+                          <option value="">Todos os produtos</option>
+                          {products.map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.title}
+                            </option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           onClick={() => copyInfluencerLink(coupon)}
