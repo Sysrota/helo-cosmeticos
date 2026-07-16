@@ -338,6 +338,12 @@ model Order {
 
   melhor_envio_print_url String?
 
+  shipping_carrier String?
+
+  manda_bem_service String?
+
+  manda_bem_envio_id String?
+
   tracking_code String?
 
   tracking_url String?

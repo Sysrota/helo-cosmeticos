@@ -18,6 +18,7 @@ import { updateContactController } from "./modules/contact/contact.controller.js
 import { orderRoutes } from "./modules/order/order.routes.js";
 import { storeConfigRoutes } from "./modules/store-config/store-config.routes.js";
 import { melhorEnvioRoutes } from "./modules/shipping/melhor-envio/melhor-envio.routes.js";
+import { mandaBemRoutes } from "./modules/shipping/manda-bem/manda-bem.routes.js";
 import { paymentRoutes } from "./modules/payment-mercado-pago/payment.routes.js";
 import { aiRoutes } from "./modules/ai/ai.routes.js";
 import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
@@ -73,6 +74,8 @@ app.use("/orders",orderRoutes);
 app.use("/store-config",storeConfigRoutes);
 
 app.use("/shipping/melhor-envio",melhorEnvioRoutes);
+
+app.use("/shipping/manda-bem",mandaBemRoutes);
 
 app.use("/payment",paymentRoutes);
 

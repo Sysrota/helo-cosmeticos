@@ -378,6 +378,10 @@ interface Props {
 
   melhor_envio_print_url?: string | null;
 
+  shipping_carrier?: string | null;
+
+  manda_bem_service?: string | null;
+
   tracking_code?: string | null;
 
   tracking_url?: string | null;
@@ -401,6 +405,8 @@ export async function updateOrderService({
   melhor_envio_order_id,
   melhor_envio_protocol,
   melhor_envio_print_url,
+  shipping_carrier,
+  manda_bem_service,
   tracking_code,
   tracking_url,
   shipping_status
@@ -451,6 +457,10 @@ export async function updateOrderService({
       melhor_envio_protocol,
 
       melhor_envio_print_url,
+
+      shipping_carrier,
+
+      manda_bem_service,
 
       tracking_code,
 

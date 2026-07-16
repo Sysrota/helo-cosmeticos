@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { prisma } from "../../config/prisma.js";
 import { getCommercialPolicy } from "../store-config/store-config.service.js";
+import { quoteMandaBemShipping } from "./manda-bem/manda-bem.service.js";
 
 interface Props {
   cep: string;
@@ -13,6 +14,7 @@ interface ProductShippingProps {
   cep: string;
   product_id: number;
   quantity: number;
+  allOptions?: boolean;
 }
 
 export interface ShippingOption {
@@ -22,6 +24,7 @@ export interface ShippingOption {
   melhor_envio_service_id?: number;
   melhor_envio_company_name?: string;
   melhor_envio_service_name?: string;
+  manda_bem_service?: string;
   original_price?: number;
   discount?: number;
   min_days?: number;
@@ -38,6 +41,8 @@ interface ShippingPackage {
   freeShipping?: boolean;
   allOptions?: boolean;
 }
+
+const STORE_ORIGIN_CEP = "74976040";
 
 const MOTO_UBER_CITIES = new Set([
   "aparecida de goiania",
@@ -218,6 +223,117 @@ export async function findAddressByCep(cep: string) {
   };
 }
 
+interface CarrierPackageData {
+  width: number;
+  height: number;
+  length: number;
+  weight: number;
+}
+
+async function fetchMelhorEnvioOptions(
+  cleanCep: string,
+  packageData: CarrierPackageData,
+  insuranceValue: number
+): Promise<ShippingOption[]> {
+  const payload = {
+    from: {
+      postal_code: STORE_ORIGIN_CEP,
+    },
+
+    to: {
+      postal_code: cleanCep,
+    },
+
+    package: packageData,
+
+    options: {
+      insurance_value: insuranceValue,
+      receipt: false,
+      own_hand: false,
+    },
+  };
+
+  try {
+    const melhorEnvioResponse = await axios.post(
+      "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "HeloCosmeticos",
+        },
+      }
+    );
+
+    const rawServices: any[] = Array.isArray(melhorEnvioResponse.data)
+      ? melhorEnvioResponse.data
+      : [];
+
+    const validServices = rawServices.filter((service: any) => {
+      const price = Number(service.price);
+      const range = getDeliveryRange(service);
+
+      return !service.error && price > 0 && range.min > 0 && range.max > 0;
+    });
+
+    return validServices.map((service: any) => {
+      const range = getDeliveryRange(service);
+      const serviceName = [
+        service.company?.name,
+        service.name,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return {
+        name: serviceName || "Entrega",
+        price: Number(service.price),
+        deadline: formatDeadline(range.min, range.max),
+        min_days: range.min,
+        max_days: range.max,
+        melhor_envio_service_id: Number(service.id),
+        melhor_envio_company_name: service.company?.name || "",
+        melhor_envio_service_name: service.name || "",
+      };
+    });
+  } catch (error) {
+    console.error("[ME] Erro no cálculo:", {
+      status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      destination: cleanCep,
+      response: axios.isAxiosError(error) ? error.response?.data : error,
+    });
+
+    return [];
+  }
+}
+
+async function fetchMandaBemOptions(
+  cleanCep: string,
+  packageData: CarrierPackageData,
+  insuranceValue: number
+): Promise<ShippingOption[]> {
+  const quotes = await quoteMandaBemShipping({
+    cepOrigem: STORE_ORIGIN_CEP,
+    cepDestino: cleanCep,
+    peso: packageData.weight,
+    altura: packageData.height,
+    largura: packageData.width,
+    comprimento: packageData.length,
+    valorSeguro: insuranceValue,
+  });
+
+  return quotes.map((quote) => ({
+    name: `Manda Bem ${quote.servico}`,
+    price: quote.price,
+    deadline: formatDeadline(quote.days, quote.days),
+    min_days: quote.days,
+    max_days: quote.days,
+    manda_bem_service: quote.servico,
+  }));
+}
+
 export async function requestShippingOptions({
   cleanCep,
   totalWeight,
@@ -235,88 +351,17 @@ export async function requestShippingOptions({
     weight: Math.max(Number(totalWeight || 0), 0.3),
   };
 
-  const payload = {
-    from: {
-      postal_code: "74976040",
-    },
+  const safeInsuranceValue = Math.max(Number(insuranceValue || 0), 0);
 
-    to: {
-      postal_code: cleanCep,
-    },
+  const [melhorEnvioOptions, mandaBemOptions] = await Promise.all([
+    fetchMelhorEnvioOptions(cleanCep, packageData, safeInsuranceValue),
+    fetchMandaBemOptions(cleanCep, packageData, safeInsuranceValue),
+  ]);
 
-    package: packageData,
-
-    options: {
-      insurance_value: Math.max(Number(insuranceValue || 0), 0),
-      receipt: false,
-      own_hand: false,
-    },
-  };
-
-  let melhorEnvioResponse;
-
-  try {
-    console.log("[ME] Payload enviado:", JSON.stringify(payload, null, 2));
-
-    melhorEnvioResponse = await axios.post(
-      "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "User-Agent": "HeloCosmeticos",
-        },
-      }
-    );
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error("[ME] Erro no cálculo:", {
-        status: error.response?.status,
-        destination: cleanCep,
-        response: error.response?.data,
-      });
-
-      throw new Error("Não foi possível consultar o frete no Melhor Envio.");
-    }
-
-    throw error;
-  }
-
-  const rawServices: any[] = Array.isArray(melhorEnvioResponse.data)
-    ? melhorEnvioResponse.data
-    : [];
-
-  console.log("[ME] Resposta completa:", JSON.stringify(rawServices, null, 2));
-
-  const validServices = rawServices.filter((service: any) => {
-    const price = Number(service.price);
-    const range = getDeliveryRange(service);
-
-    return !service.error && price > 0 && range.min > 0 && range.max > 0;
-  });
-
-  const shippingOptions = validServices.map((service: any) => {
-    const range = getDeliveryRange(service);
-    const serviceName = [
-      service.company?.name,
-      service.name,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    return applyFreeShipping(freeShipping, {
-      name: serviceName || "Entrega",
-      price: Number(service.price),
-      deadline: formatDeadline(range.min, range.max),
-      min_days: range.min,
-      max_days: range.max,
-      melhor_envio_service_id: Number(service.id),
-      melhor_envio_company_name: service.company?.name || "",
-      melhor_envio_service_name: service.name || "",
-    });
-  });
+  const shippingOptions = [
+    ...melhorEnvioOptions,
+    ...mandaBemOptions,
+  ].map((option) => applyFreeShipping(freeShipping, option));
 
   if (!shippingOptions.length) {
     throw new Error("Nenhuma transportadora disponível");
@@ -331,6 +376,7 @@ export async function calculateProductShipping({
   cep,
   product_id,
   quantity,
+  allOptions = false,
 }: ProductShippingProps): Promise<ShippingOption[]> {
   const cleanCep = cep.replace(/\D/g, "");
 
@@ -372,12 +418,19 @@ export async function calculateProductShipping({
       totalLength: Number(product.length || 1) * safeQuantity,
       insuranceValue: subtotal,
       freeShipping: hasFreeShipping,
+      allOptions,
     });
 
-    return getBestShippingOption([...localOptions, ...carrierOptions]);
+    const options = [...localOptions, ...carrierOptions];
+
+    return allOptions
+      ? sortShippingOptions(options)
+      : getBestShippingOption(options);
   } catch (error) {
     if (localOptions.length) {
-      return getBestShippingOption(localOptions);
+      return allOptions
+        ? sortShippingOptions(localOptions)
+        : getBestShippingOption(localOptions);
     }
 
     throw error;

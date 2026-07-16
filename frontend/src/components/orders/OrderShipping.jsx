@@ -102,6 +102,8 @@ export function OrderShipping({
   selectShippingOption,
   generateMelhorEnvioLabel,
   loadingMelhorEnvioLabel,
+  generateMandaBemLabel,
+  loadingMandaBemLabel,
 }) {
 
   return (
@@ -186,6 +188,17 @@ export function OrderShipping({
                   text-zinc-500
                 ">
                   Serviço Melhor Envio: {order.melhor_envio_service_id}
+                </p>
+              )}
+
+              {order.manda_bem_service && (
+                <p className="
+                  mt-1
+                  text-xs
+                  font-medium
+                  text-zinc-500
+                ">
+                  Serviço Manda Bem: {order.manda_bem_service}
                 </p>
               )}
             </div>
@@ -457,7 +470,7 @@ export function OrderShipping({
           text-sm
           text-zinc-500
         ">
-          Dados preenchidos automaticamente pelo Melhor Envio.
+          Dados preenchidos automaticamente pela transportadora selecionada.
         </p>
 
         <div className="
@@ -508,67 +521,123 @@ export function OrderShipping({
                   : ""
               }
             />
+
+            <TrackingInfoItem
+              label="ID do envio Manda Bem"
+              value={order.manda_bem_envio_id}
+            />
           </div>
 
-          <TrackingInfoItem
-            label="Link de impressão da etiqueta"
-            value={order.melhor_envio_print_url}
-            href={order.melhor_envio_print_url}
-          />
+          {order.melhor_envio_print_url && (
+            <TrackingInfoItem
+              label="Link de impressão da etiqueta"
+              value={order.melhor_envio_print_url}
+              href={order.melhor_envio_print_url}
+            />
+          )}
 
-          <div className="
-            flex
-            flex-col
-            gap-2
-            rounded-2xl
-            border
-            border-zinc-200
-            bg-zinc-50
-            p-4
-          ">
-            <button
-              type="button"
-              onClick={generateMelhorEnvioLabel}
-              disabled={
-                loadingMelhorEnvioLabel ||
-                Boolean(order.melhor_envio_order_id)
-              }
-              className="
-                rounded-2xl
-                bg-black
-                px-5
-                py-3
-                text-sm
-                font-semibold
-                text-white
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-              "
-            >
-              {loadingMelhorEnvioLabel
-                ? "Gerando etiqueta..."
-                : order.melhor_envio_order_id
-                  ? "Etiqueta já gerada"
-                  : "Gerar etiqueta Melhor Envio"}
-            </button>
-
-            {order.melhor_envio_print_url && (
-              <a
-                href={order.melhor_envio_print_url}
-                target="_blank"
-                rel="noreferrer"
+          {order.shipping_carrier === "manda_bem" ? (
+            <div className="
+              flex
+              flex-col
+              gap-2
+              rounded-2xl
+              border
+              border-zinc-200
+              bg-zinc-50
+              p-4
+            ">
+              <button
+                type="button"
+                onClick={generateMandaBemLabel}
+                disabled={
+                  loadingMandaBemLabel ||
+                  Boolean(order.manda_bem_envio_id)
+                }
                 className="
-                  text-center
+                  rounded-2xl
+                  bg-black
+                  px-5
+                  py-3
                   text-sm
                   font-semibold
-                  text-zinc-700
-                  underline
+                  text-white
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
                 "
               >
-                Abrir etiqueta para impressão
-              </a>
-            )}
-          </div>
+                {loadingMandaBemLabel
+                  ? "Gerando etiqueta..."
+                  : order.manda_bem_envio_id
+                    ? "Etiqueta já gerada"
+                    : "Gerar etiqueta Manda Bem"}
+              </button>
+
+              {order.manda_bem_envio_id && (
+                <p className="
+                  text-center
+                  text-xs
+                  text-zinc-500
+                ">
+                  A Manda Bem não fornece link de impressão pela API. Acesse o painel deles com o ID do envio acima para imprimir.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="
+              flex
+              flex-col
+              gap-2
+              rounded-2xl
+              border
+              border-zinc-200
+              bg-zinc-50
+              p-4
+            ">
+              <button
+                type="button"
+                onClick={generateMelhorEnvioLabel}
+                disabled={
+                  loadingMelhorEnvioLabel ||
+                  Boolean(order.melhor_envio_order_id)
+                }
+                className="
+                  rounded-2xl
+                  bg-black
+                  px-5
+                  py-3
+                  text-sm
+                  font-semibold
+                  text-white
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                {loadingMelhorEnvioLabel
+                  ? "Gerando etiqueta..."
+                  : order.melhor_envio_order_id
+                    ? "Etiqueta já gerada"
+                    : "Gerar etiqueta Melhor Envio"}
+              </button>
+
+              {order.melhor_envio_print_url && (
+                <a
+                  href={order.melhor_envio_print_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="
+                    text-center
+                    text-sm
+                    font-semibold
+                    text-zinc-700
+                    underline
+                  "
+                >
+                  Abrir etiqueta para impressão
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

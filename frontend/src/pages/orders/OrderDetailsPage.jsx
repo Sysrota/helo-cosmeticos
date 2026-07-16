@@ -84,6 +84,10 @@ export default function OrderDetailsPage() {
     setLoadingMelhorEnvioLabel] =
     useState(false);
 
+  const [loadingMandaBemLabel,
+    setLoadingMandaBemLabel] =
+    useState(false);
+
   const [paymentApproved,
     setPaymentApproved] =
     useState(false);
@@ -628,6 +632,34 @@ export default function OrderDetailsPage() {
     }
   }
 
+  async function generateMandaBemLabel() {
+    try {
+      setLoadingMandaBemLabel(true);
+
+      const { data } =
+        await api.post(
+          `/shipping/manda-bem/orders/${order.id}/label`
+        );
+
+      if (data?.order) {
+        setOrder(data.order);
+      }
+
+      showToast(
+        "Etiqueta gerada com sucesso.",
+        "success"
+      );
+    } catch (error) {
+      showToast(
+        error?.response?.data?.error ||
+        "Não foi possível gerar a etiqueta.",
+        "error"
+      );
+    } finally {
+      setLoadingMandaBemLabel(false);
+    }
+  }
+
   async function selectShippingOption(
     option
   ) {
@@ -647,6 +679,15 @@ export default function OrderDetailsPage() {
       melhor_envio_service_id:
         option.melhor_envio_service_id ||
         null,
+      manda_bem_service:
+        option.manda_bem_service ||
+        null,
+      shipping_carrier:
+        option.melhor_envio_service_id
+          ? "melhor_envio"
+          : option.manda_bem_service
+            ? "manda_bem"
+            : null,
     };
 
     setOrder(nextOrder);
@@ -970,6 +1011,12 @@ return (
         }
         loadingMelhorEnvioLabel={
           loadingMelhorEnvioLabel
+        }
+        generateMandaBemLabel={
+          generateMandaBemLabel
+        }
+        loadingMandaBemLabel={
+          loadingMandaBemLabel
         }
       />
 
