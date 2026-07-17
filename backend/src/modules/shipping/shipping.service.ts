@@ -239,13 +239,17 @@ interface CarrierPackageData {
 
 // Transportadoras de carga aérea: excluídas por completo (cosméticos com
 // aerossol/álcool costumam ser restritos ou proibidos em modal aéreo).
-// SEDEX (Correios e Manda Bem) tambem sai: a loja so envia por transportadora.
 const EXCLUDED_MELHOR_ENVIO_COMPANIES = new Set([
   "latam cargo",
   "azul cargo express",
   "gollog",
   "gol linhas aereas",
 ]);
+
+// PAC e SEDEX (Correios) saem, tanto do Melhor Envio quanto da Manda Bem:
+// a loja so envia por transportadora. Comparacao exata (nao "includes") pra
+// nao pegar servicos tipo ".Package" da Jadlog no Melhor Envio.
+const EXCLUDED_CORREIOS_SERVICE_NAMES = new Set(["pac", "sedex"]);
 
 const DIACRITICS_PATTERN = new RegExp("[\\u0300-\\u036f]", "g");
 
@@ -261,7 +265,7 @@ function isExcludedMelhorEnvioService(service: any) {
 
   return (
     EXCLUDED_MELHOR_ENVIO_COMPANIES.has(company) ||
-    serviceName.includes("sedex")
+    EXCLUDED_CORREIOS_SERVICE_NAMES.has(serviceName)
   );
 }
 
@@ -365,8 +369,14 @@ async function fetchMandaBemOptions(
     valorSeguro: insuranceValue,
   });
 
-  return quotes.map((quote) => ({
-    name: `Manda Bem ${quote.servico}`,
+  // Mesma politica do Melhor Envio: PAC e SEDEX (Correios) ficam de fora.
+  const allowedQuotes = quotes.filter(
+    (quote) =>
+      !EXCLUDED_CORREIOS_SERVICE_NAMES.has(quote.servico.toLowerCase())
+  );
+
+  return allowedQuotes.map((quote) => ({
+    name: `Manda Bem ${quote.name || quote.servico}`,
     price: quote.price,
     deadline: formatDeadline(quote.days, quote.days),
     min_days: quote.days,

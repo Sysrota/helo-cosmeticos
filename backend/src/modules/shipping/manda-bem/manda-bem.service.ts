@@ -2,8 +2,12 @@ import axios from "axios";
 
 const MANDA_BEM_URL = "https://mandabem.com.br/ws/valor_envio";
 
-// A loja nao envia por SEDEX, so por transportadora.
-const MANDA_BEM_SERVICES = ["PAC"] as const;
+// servico=ALL retorna todas as transportadoras habilitadas na conta pra
+// aquele trajeto/pacote (Correios PAC/SEDEX, Jadlog, Loggi etc), cada uma
+// como uma chave do objeto "resultado" - nao ha lista fixa de codigos.
+const ALL_SERVICES = "ALL";
+
+const NON_SERVICE_KEYS = new Set(["sucesso", "mensagem", "error"]);
 
 interface MandaBemQuoteParams {
   cepOrigem: string;
@@ -17,6 +21,7 @@ interface MandaBemQuoteParams {
 
 export interface MandaBemServiceQuote {
   servico: string;
+  name?: string;
   price: number;
   days: number;
 }
@@ -28,16 +33,19 @@ function isConfigured() {
   );
 }
 
-async function quoteService(
-  servico: string,
+export async function quoteMandaBemShipping(
   params: MandaBemQuoteParams
-): Promise<MandaBemServiceQuote | null> {
+): Promise<MandaBemServiceQuote[]> {
+  if (!isConfigured()) {
+    return [];
+  }
+
   const body = new URLSearchParams({
     plataforma_id: process.env.MANDA_BEM_PLATAFORMA_ID || "",
     plataforma_chave: process.env.MANDA_BEM_PLATAFORMA_CHAVE || "",
     cep_origem: params.cepOrigem,
     cep_destino: params.cepDestino,
-    servico,
+    servico: ALL_SERVICES,
     peso: params.peso.toFixed(2),
     altura: params.altura.toFixed(2),
     largura: params.largura.toFixed(2),
@@ -57,56 +65,49 @@ async function quoteService(
     if (!resultado || String(resultado.sucesso) !== "true") {
       if (resultado?.error) {
         console.warn(
-          `[MandaBem] ${servico} indisponível para ${params.cepDestino}:`,
+          `[MandaBem] Cotação indisponível para ${params.cepDestino}:`,
           resultado.error
         );
       }
 
-      return null;
+      return [];
     }
 
-    const service = resultado[servico];
-    const price = Number(service?.valor);
-    const days = Number(service?.prazo);
+    const quotes: MandaBemServiceQuote[] = [];
 
-    if (
-      !Number.isFinite(price) ||
-      price <= 0 ||
-      !Number.isFinite(days) ||
-      days <= 0
-    ) {
-      return null;
+    for (const [servico, rawService] of Object.entries(resultado)) {
+      if (NON_SERVICE_KEYS.has(servico)) continue;
+
+      const service = rawService as { valor?: unknown; prazo?: unknown; name?: unknown };
+      const price = Number(service?.valor);
+      const days = Number(service?.prazo);
+
+      if (
+        !Number.isFinite(price) ||
+        price <= 0 ||
+        !Number.isFinite(days) ||
+        days <= 0
+      ) {
+        continue;
+      }
+
+      quotes.push({
+        servico,
+        name: service?.name ? String(service.name) : undefined,
+        price,
+        days,
+      });
     }
 
-    return {
-      servico,
-      price,
-      days,
-    };
+    return quotes;
   } catch (error) {
     console.error(
-      `[MandaBem] Erro ao consultar ${servico}:`,
+      "[MandaBem] Erro ao consultar frete:",
       axios.isAxiosError(error)
         ? error.response?.data || error.message
         : error
     );
 
-    return null;
-  }
-}
-
-export async function quoteMandaBemShipping(
-  params: MandaBemQuoteParams
-): Promise<MandaBemServiceQuote[]> {
-  if (!isConfigured()) {
     return [];
   }
-
-  const results = await Promise.all(
-    MANDA_BEM_SERVICES.map((servico) => quoteService(servico, params))
-  );
-
-  return results.filter(
-    (result): result is MandaBemServiceQuote => Boolean(result)
-  );
 }
