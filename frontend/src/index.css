@@ -155,9 +155,50 @@
     line-height: 1.55;
   }
 
+  .product-sale-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.5rem;
+    align-items: stretch;
+  }
+
+  .product-sale-chip {
+    display: inline-flex;
+    min-height: 2.15rem;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #f0dce4;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fff9fb 0%, #fff1f5 100%);
+    padding: 0.46rem 0.86rem;
+    color: #b74662;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.05;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  }
+
   .product-sale-price-box {
+    border: 1px solid #f0dce4;
     border-radius: 1.5rem;
-    background: #fff5f8;
+    background:
+      linear-gradient(180deg, #fff8fa 0%, #fff2f6 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  }
+
+  .product-sale-price-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.9rem;
+  }
+
+  .product-sale-compare-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.32rem;
+    margin-bottom: 0.38rem;
   }
 
   .product-sale-price {
@@ -166,6 +207,54 @@
     font-family: Inter, Arial, sans-serif;
     font-weight: 700;
     letter-spacing: -0.05em;
+  }
+
+  .product-sale-compare-at {
+    color: #5f3541;
+    display: flex;
+    align-items: baseline;
+    gap: 0.38rem;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .product-sale-compare-value {
+    color: #4f2632;
+    text-decoration: line-through;
+    text-decoration-thickness: 2.4px;
+    text-decoration-color: #b74662;
+    text-underline-offset: 0.16em;
+  }
+
+  .product-sale-savings-pill {
+    border-radius: 999px;
+    border: 1px solid rgba(183, 70, 98, 0.3);
+    background: linear-gradient(180deg, #ffffff 0%, #fff0f4 100%);
+    color: #9f314e;
+    padding: 0.36rem 0.76rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 8px 18px rgba(183, 70, 98, 0.13);
+  }
+
+  .product-sale-quantity-selector {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    border: 1px solid #eadfe3;
+    border-radius: 1rem;
+    background: #ffffff;
+    margin-top: 0.18rem;
+    box-shadow: 0 10px 20px rgba(91, 39, 56, 0.07);
+  }
+
+  .floating-whatsapp {
+    width: 4rem;
+    height: 4rem;
+    right: max(1.5rem, env(safe-area-inset-right));
+    bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 
   .product-sale-price-row {
@@ -266,8 +355,37 @@
       padding: 1rem;
     }
 
+    .product-sale-chips {
+      gap: 0.42rem;
+    }
+
+    .product-sale-chip {
+      min-height: 2.08rem;
+      padding: 0.43rem 0.75rem;
+      line-height: 1.12;
+    }
+
     .product-sale-price-box {
-      padding: 0.65rem 1rem;
+      padding: 1rem;
+    }
+
+    .product-sale-price-head {
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .product-sale-compare-stack {
+      gap: 0.28rem;
+      margin-bottom: 0.36rem;
+    }
+
+    .product-sale-compare-at {
+      font-size: 0.94rem;
+    }
+
+    .product-sale-savings-pill {
+      font-size: 0.74rem;
+      padding: 0.34rem 0.68rem;
     }
 
     /* Preço e quantidade ficam lado a lado no mobile */
@@ -278,6 +396,18 @@
 
     .product-sale-buy-button {
       min-height: 3.25rem;
+    }
+
+    .floating-whatsapp {
+      width: 3.35rem;
+      height: 3.35rem;
+      right: max(0.9rem, env(safe-area-inset-right));
+      bottom: max(1rem, calc(env(safe-area-inset-bottom) + 1rem));
+    }
+
+    .floating-whatsapp svg {
+      width: 1.9rem;
+      height: 1.9rem;
     }
   }
 }

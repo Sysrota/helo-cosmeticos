@@ -16,10 +16,6 @@ export default function HeaderModuloFincob({
   onClearOrder,
   ismostrarnovo = "true"
 }) {
-  const temFiltrosAtivos = Object.values(filtros || {}).some(
-    (v) => v && String(v).trim() !== ""
-  );
-
   return (
     <div className="w-full space-y-3 mb-1">
 

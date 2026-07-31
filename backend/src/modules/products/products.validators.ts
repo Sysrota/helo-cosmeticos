@@ -13,6 +13,8 @@ export const createProductSchema = z.object({
 
   price: z.number().positive(),
 
+  compare_at_price: z.number().positive().optional().nullable(),
+
   category: z.string(),
 
   image_url: z.string().optional().default(""),

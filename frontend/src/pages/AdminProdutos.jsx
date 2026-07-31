@@ -78,6 +78,7 @@ export default function AdminProdutos() {
   const [metaDescription, setMetaDescription] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [compareAtPrice, setCompareAtPrice] = useState("");
   const [formCategory, setFormCategory] = useState("Selecione");
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
@@ -324,6 +325,7 @@ export default function AdminProdutos() {
     setMetaDescription("");
     setDescription("");
     setPrice("0,00");
+    setCompareAtPrice("");
     setFormCategory("");
     setIsActive(true);
     setIsFeatured(false);
@@ -356,6 +358,11 @@ export default function AdminProdutos() {
     setMetaDescription(p.meta_description || "");
     setDescription(p.description || "");
     setPrice(String(p.price ?? 0).replace(".", ","));
+    setCompareAtPrice(
+      p.compare_at_price
+        ? String(p.compare_at_price).replace(".", ",")
+        : ""
+    );
     setFormCategory(p.category || "");
     setIsActive(Boolean(p.is_active));
     setIsFeatured(Boolean(p.is_featured));
@@ -387,6 +394,13 @@ export default function AdminProdutos() {
       setSalesTitle(full.sales_title || p.sales_title || "");
       setSubtitle(full.subtitle || p.subtitle || "");
       setMetaDescription(full.meta_description || p.meta_description || "");
+      setCompareAtPrice(
+        full.compare_at_price
+          ? String(full.compare_at_price).replace(".", ",")
+          : p.compare_at_price
+            ? String(p.compare_at_price).replace(".", ",")
+            : ""
+      );
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
       setDestaques(full.destaques || p.destaques || "");
@@ -410,6 +424,10 @@ export default function AdminProdutos() {
     meta_description: metaDescription,
     description,
     price: reaisToNumber(price),
+    compare_at_price:
+      String(compareAtPrice || "").trim()
+        ? reaisToNumber(compareAtPrice)
+        : null,
     category: formCategory,
     is_active: isActive,
     is_featured: isFeatured,
@@ -1109,6 +1127,46 @@ export default function AdminProdutos() {
           placeholder="0,00"
           required
         />
+      </div>
+
+      {/* PREÇO DE */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Preço De
+        </label>
+
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={compareAtPrice}
+
+          onChange={(e) =>
+            setCompareAtPrice(
+              e.target.value
+            )
+          }
+
+          placeholder="0,00"
+        />
+
+        <p className="mt-2 text-xs leading-5 text-zinc-500">
+          Preço utilizado apenas para demonstrar a economia da promoção.
+          Exemplo: De R$ 122,97 por R$ 97,90. Esse campo não altera o preço de venda.
+        </p>
       </div>
 
       {/* STATUS */}

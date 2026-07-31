@@ -153,29 +153,11 @@ export default function Produto() {
   );
 
   const destaquesList = useMemo(
-    () => {
-      const preferredOrder = [
-        "Necessaire exclusiva inclusa",
-        "Frete grátis",
-        "3x sem juros",
-        "Desconto no Pix",
-        "Compra segura",
-      ];
-      const items = String(product?.destaques || "")
+    () =>
+      String(product?.destaques || "")
         .split("\n")
         .map((item) => item.trim())
-        .filter(Boolean);
-
-      return items.sort((a, b) => {
-        const aIndex = preferredOrder.findIndex(
-          (label) => label.toLowerCase() === a.toLowerCase()
-        );
-        const bIndex = preferredOrder.findIndex(
-          (label) => label.toLowerCase() === b.toLowerCase()
-        );
-        return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
-      });
-    },
+        .filter(Boolean),
     [product]
   );
 
@@ -254,6 +236,12 @@ export default function Produto() {
   const category = String(product?.category || "beleza").replace(/[-_]/g, " ");
   const salesTitle = product?.sales_title?.trim() || product?.title || "";
   const productTotal = Number(product?.price || 0) * quantity;
+  const compareAtTotal =
+    Number(product?.compare_at_price || 0) * quantity;
+  const hasCompareAtPrice =
+    compareAtTotal > productTotal;
+  const compareAtSavings =
+    Number((compareAtTotal - productTotal).toFixed(2));
   const pixTotal = Number(
     (productTotal * (1 - pixDiscountPercent / 100)).toFixed(2)
   );
@@ -301,14 +289,6 @@ export default function Produto() {
       behavior: "smooth",
       block: "start",
     });
-  }
-
-  function destaqueIcon(badge) {
-    const normalized = String(badge || "").toLowerCase();
-    if (normalized.includes("frete")) return <Truck size={13} />;
-    if (normalized.includes("juros") || normalized.includes("pix")) return <CreditCard size={13} />;
-    if (normalized.includes("segura")) return <ShieldCheck size={13} />;
-    return <ShoppingBag size={13} />;
   }
 
   function handleAddToCart() {
@@ -574,13 +554,13 @@ export default function Produto() {
 
               {/* ── Badges comerciais — vindos do banco (destaques) ── */}
               {destaquesList.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-4">
+                <div className="product-sale-chips mt-3 sm:mt-3.5">
                   {destaquesList.map((badge) => (
                     <span
                       key={badge}
-                      className="inline-flex items-center gap-1 rounded-full border border-[#f0dce4] bg-[#fff5f8] px-3 py-1 text-xs font-semibold text-[#b74662]"
+                      className="product-sale-chip"
                     >
-                      {destaqueIcon(badge)}
+                      <Sparkles size={12} className="shrink-0" />
                       {badge}
                     </span>
                   ))}
@@ -623,15 +603,30 @@ export default function Produto() {
               )}
 
               {/* ── Bloco de preço + CTA — tudo num único bloco visual ── */}
-              <div className="product-sale-price-box mt-3 px-4 py-4 sm:mt-5 sm:px-5 sm:py-5">
+              <div className="product-sale-price-box mt-4 px-4 py-4 sm:mt-4 sm:px-5 sm:py-5">
 
                 {/* Linha 1: Preço principal + quantidade (discreta) */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
+                <div className="product-sale-price-head">
+                  <div className="min-w-0">
                     {quantity > 1 && (
                       <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-[#a85a6d]">
                         Total · {quantity} unidades
                       </p>
+                    )}
+                    {hasCompareAtPrice && (
+                      <div className="product-sale-compare-stack">
+                        <p className="product-sale-compare-at">
+                          <span>De</span>
+                          <span className="product-sale-compare-value">
+                            {formatBRL(compareAtTotal)}
+                          </span>
+                        </p>
+                        {compareAtSavings > 0 && (
+                          <p className="product-sale-savings-pill">
+                            Economize {formatBRL(compareAtSavings)}
+                          </p>
+                        )}
+                      </div>
                     )}
                     <p className="product-sale-price font-bold leading-none tracking-tight text-helo-text">
                       {formatBRL(productTotal)}
@@ -639,7 +634,7 @@ export default function Produto() {
                   </div>
 
                   {!unavailable && (
-                    <div className="flex shrink-0 items-center rounded-xl border border-[#eadfe3] bg-white">
+                    <div className="product-sale-quantity-selector">
                       <button
                         type="button"
                         onClick={() => updateQuantity(quantity - 1)}

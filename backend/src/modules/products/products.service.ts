@@ -112,6 +112,7 @@ interface CreateProductDTO {
   meta_description?: string;
   description?: string;
   price: number;
+  compare_at_price?: number | null;
   category: string;
   image_url?: string;
   dicas_uso?: string;
@@ -172,6 +173,7 @@ export async function createProduct(
         meta_description: data.meta_description ?? "",
         description: data.description ?? "",
         price: data.price,
+        compare_at_price: data.compare_at_price ?? null,
         category: data.category,
         image_url: data.image_url ?? "",
         dicas_uso: data.dicas_uso ?? "",
@@ -215,6 +217,7 @@ interface UpdateProductDTO {
   meta_description?: string;
   description?: string;
   price?: number;
+  compare_at_price?: number | null;
   category?: string;
   image_url?: string;
   dicas_uso?: string;

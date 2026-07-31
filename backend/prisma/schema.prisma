@@ -19,6 +19,7 @@ model Product {
   keywords          String @default("")
 
   price             Float
+  compare_at_price  Float?
 
   category          String
 

@@ -23,7 +23,6 @@ export default function Checkout() {
   const {
     cart,
     subtotal,
-    totalItems,
   } = useCart();
 
   // =====================
@@ -68,19 +67,6 @@ export default function Checkout() {
       });
 
   // =====================
-  // EMPTY CART
-  // =====================
-
-  if (
-    !cart.length
-  ) {
-
-    navigate("/carrinho");
-
-    return null;
-  }
-
-  // =====================
   // SHIPPING TOTAL
   // =====================
 
@@ -105,6 +91,19 @@ export default function Checkout() {
       subtotal,
       shippingPrice,
     ]);
+
+  // =====================
+  // EMPTY CART
+  // =====================
+
+  if (
+    !cart.length
+  ) {
+
+    navigate("/carrinho");
+
+    return null;
+  }
 
   // =====================
   // SHIPPING

@@ -33,7 +33,7 @@ export default function FloatingWhatsApp() {
       rel="noopener noreferrer"
       aria-label="Falar com a Helô pelo WhatsApp"
       onClick={() => trackClarityEvent("whatsapp_click")}
-      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-green-500 rounded-full shadow-xl hover:scale-110 transition transform"
+      className="floating-whatsapp fixed z-50 flex items-center justify-center bg-green-500 rounded-full shadow-xl hover:scale-110 transition transform"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

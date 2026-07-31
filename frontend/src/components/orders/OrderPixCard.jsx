@@ -5,7 +5,6 @@ export function OrderPixCard({
   order,
   pixDiscount,
   pixTotal,
-  pixDiscountPercent = 10,
 }) {
   const isPaid =
     order.payment_status === "paid" ||

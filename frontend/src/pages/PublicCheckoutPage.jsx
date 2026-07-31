@@ -282,7 +282,6 @@ export default function PublicCheckoutPage() {
   );
   const addressRequestRef = useRef(0);
   const purchaseTrackedRef = useRef(null);
-  const initiateCheckoutTrackedRef = useRef(false);
   const autoCouponAppliedRef = useRef("");
 
   // InitiateCheckout com event_id é disparado em createOrderFromCart (quando
@@ -533,9 +532,12 @@ export default function PublicCheckoutPage() {
         couponDiscount
       ).toFixed(2)
     );
+  const selectedCoupon =
+    order?.coupon ||
+    couponPreview?.coupon;
   const couponAllowsPixDiscount =
-    !(order?.coupon || couponPreview?.coupon) ||
-    (order?.coupon || couponPreview?.coupon).allow_pix_discount !== false;
+    !selectedCoupon ||
+    selectedCoupon.allow_pix_discount !== false;
 
   useEffect(() => {
     const code =

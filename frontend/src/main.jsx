@@ -26,7 +26,7 @@ async function init() {
   await loadMercadoPago();
 
   window.mp =
-    new MercadoPago(
+    new window.MercadoPago(
       import.meta.env
         .VITE_MP_PUBLIC_KEY
     );
