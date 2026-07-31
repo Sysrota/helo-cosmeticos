@@ -46,6 +46,12 @@ export async function findAllProducts(
                   },
                 },
                 {
+                  sales_title: {
+                    contains: options.search,
+                    mode: "insensitive",
+                  },
+                },
+                {
                   subtitle: {
                     contains: options.search,
                     mode: "insensitive",
@@ -101,6 +107,7 @@ export async function findProductById(
 
 interface CreateProductDTO {
   title: string;
+  sales_title?: string | null;
   subtitle?: string;
   meta_description?: string;
   description?: string;
@@ -160,6 +167,7 @@ export async function createProduct(
     return transaction.product.create({
       data: {
         title: data.title,
+        sales_title: data.sales_title?.trim() || null,
         subtitle: data.subtitle ?? "",
         meta_description: data.meta_description ?? "",
         description: data.description ?? "",
@@ -202,6 +210,7 @@ export async function createProduct(
 
 interface UpdateProductDTO {
   title?: string;
+  sales_title?: string | null;
   subtitle?: string;
   meta_description?: string;
   description?: string;
@@ -252,9 +261,16 @@ export async function updateProduct(
       });
     }
 
+    const updateData = {
+      ...data,
+      ...(Object.prototype.hasOwnProperty.call(data, "sales_title")
+        ? { sales_title: data.sales_title?.trim() || null }
+        : {}),
+    };
+
     return transaction.product.update({
       where: { id },
-      data,
+      data: updateData,
     });
   });
 }

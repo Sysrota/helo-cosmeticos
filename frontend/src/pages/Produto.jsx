@@ -114,9 +114,9 @@ export default function Produto() {
   const [shippingOptions, setShippingOptions] = useState([]);
   const [shippingError, setShippingError] = useState("");
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [feelingsExpanded, setFeelingsExpanded] = useState(false);
   const dragStartRef = useRef(null);
   const suppressImageClickRef = useRef(false);
+  const feelingsSectionRef = useRef(null);
 
   const cover = useMemo(() => {
     if (!product?.image_url) return "";
@@ -153,11 +153,29 @@ export default function Produto() {
   );
 
   const destaquesList = useMemo(
-    () =>
-      String(product?.destaques || "")
+    () => {
+      const preferredOrder = [
+        "Necessaire exclusiva inclusa",
+        "Frete grátis",
+        "3x sem juros",
+        "Desconto no Pix",
+        "Compra segura",
+      ];
+      const items = String(product?.destaques || "")
         .split("\n")
         .map((item) => item.trim())
-        .filter(Boolean),
+        .filter(Boolean);
+
+      return items.sort((a, b) => {
+        const aIndex = preferredOrder.findIndex(
+          (label) => label.toLowerCase() === a.toLowerCase()
+        );
+        const bIndex = preferredOrder.findIndex(
+          (label) => label.toLowerCase() === b.toLowerCase()
+        );
+        return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+      });
+    },
     [product]
   );
 
@@ -234,6 +252,7 @@ export default function Produto() {
   const currentImageIndex = selectedImageIndex >= 0 ? selectedImageIndex : 0;
   const unavailable = product?.is_active === false;
   const category = String(product?.category || "beleza").replace(/[-_]/g, " ");
+  const salesTitle = product?.sales_title?.trim() || product?.title || "";
   const productTotal = Number(product?.price || 0) * quantity;
   const pixTotal = Number(
     (productTotal * (1 - pixDiscountPercent / 100)).toFixed(2)
@@ -275,6 +294,21 @@ export default function Produto() {
       image: mainImage || cover || "",
       quantity,
     };
+  }
+
+  function scrollToFeelings() {
+    feelingsSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  function destaqueIcon(badge) {
+    const normalized = String(badge || "").toLowerCase();
+    if (normalized.includes("frete")) return <Truck size={13} />;
+    if (normalized.includes("juros") || normalized.includes("pix")) return <CreditCard size={13} />;
+    if (normalized.includes("segura")) return <ShieldCheck size={13} />;
+    return <ShoppingBag size={13} />;
   }
 
   function handleAddToCart() {
@@ -522,8 +556,12 @@ export default function Produto() {
                 <span className="text-xs font-medium text-[#b74662] sm:text-sm">Helô</span>
               </div>
 
-              {/* Título do produto */}
-              <h1 className="product-sale-title mt-2 font-display sm:mt-4">
+              {/* Título comercial + nome oficial */}
+              <p className="product-sale-title mt-2 font-display sm:mt-4">
+                {salesTitle}
+              </p>
+
+              <h1 className="product-sale-official-title mt-1.5 font-display">
                 {product.title}
               </h1>
 
@@ -542,17 +580,7 @@ export default function Produto() {
                       key={badge}
                       className="inline-flex items-center gap-1 rounded-full border border-[#f0dce4] bg-[#fff5f8] px-3 py-1 text-xs font-semibold text-[#b74662]"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3 w-3 shrink-0"
-                      >
-                        <path d="M5 12l5 5L20 7" />
-                      </svg>
+                      {destaqueIcon(badge)}
                       {badge}
                     </span>
                   ))}
@@ -562,7 +590,7 @@ export default function Produto() {
               {/* ── Destaques visuais — vindos do banco (o_que_vai_sentir) ── */}
               {feelingList.length > 0 && (
                 <div className="mt-3 space-y-1.5 sm:mt-4 sm:space-y-2">
-                  {(feelingsExpanded ? feelingList : feelingList.slice(0, 3)).map((feeling) => (
+                  {feelingList.slice(0, 3).map((feeling) => (
                     <div key={feeling} className="flex items-start gap-2 text-sm text-zinc-700">
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#d85c7a] text-white">
                         <svg
@@ -582,13 +610,13 @@ export default function Produto() {
                       </span>
                     </div>
                   ))}
-                  {feelingList.length > 3 && !feelingsExpanded && (
+                  {feelingList.length > 3 && (
                     <button
                       type="button"
-                      onClick={() => setFeelingsExpanded(true)}
+                      onClick={scrollToFeelings}
                       className="pl-6 text-xs font-semibold text-[#b74662] hover:text-[#d85c7a]"
                     >
-                      ver mais benefícios
+                      Ver mais benefícios
                     </button>
                   )}
                 </div>
@@ -789,7 +817,7 @@ export default function Produto() {
 
         {/* 8. O que você vai sentir — logo após os CTAs, vende resultado emocional */}
         {feelingList.length > 0 && (
-          <article className="product-sale-feelings mt-10 bg-white p-7 sm:p-9">
+          <article ref={feelingsSectionRef} className="product-sale-feelings mt-10 scroll-mt-24 bg-white p-7 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">O que você vai sentir</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {feelingList.map((feeling) => (

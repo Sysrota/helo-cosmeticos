@@ -73,6 +73,7 @@ export default function AdminProdutos() {
   const [productTab, setProductTab] = useState("details");
 
   const [title, setTitle] = useState("");
+  const [salesTitle, setSalesTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [description, setDescription] = useState("");
@@ -318,6 +319,7 @@ export default function AdminProdutos() {
     setMode("create");
     setEditingId(null);
     setTitle("");
+    setSalesTitle("");
     setSubtitle("");
     setMetaDescription("");
     setDescription("");
@@ -330,6 +332,7 @@ export default function AdminProdutos() {
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
+    setDestaques("");
     setComposicao("");
     setIndicacoes("");
     setRestricoes("");
@@ -348,6 +351,7 @@ export default function AdminProdutos() {
     setEditingId(p.id);
     setProductTab("details");
     setTitle(p.title || "");
+    setSalesTitle(p.sales_title || "");
     setSubtitle(p.subtitle || "");
     setMetaDescription(p.meta_description || "");
     setDescription(p.description || "");
@@ -380,6 +384,7 @@ export default function AdminProdutos() {
     // carrega detalhes (inclui galeria e pode incluir campos completos)
     try {
       const full = await fetchProductDetails(p.id);
+      setSalesTitle(full.sales_title || p.sales_title || "");
       setSubtitle(full.subtitle || p.subtitle || "");
       setMetaDescription(full.meta_description || p.meta_description || "");
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
@@ -400,6 +405,7 @@ export default function AdminProdutos() {
 
   const payload = {
     title,
+    sales_title: salesTitle,
     subtitle,
     meta_description: metaDescription,
     description,
@@ -901,6 +907,47 @@ export default function AdminProdutos() {
           placeholder="Ex: Kit PrimeSkin"
           required
         />
+      </div>
+
+      {/* TÍTULO PARA VENDA */}
+      <div className="md:col-span-2">
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Título para venda
+        </label>
+
+        <input
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+          "
+
+          value={salesTitle}
+
+          onChange={(e) =>
+            setSalesTitle(
+              e.target.value
+            )
+          }
+
+          placeholder="Ex: Sua pele merece esse cuidado todos os dias."
+          maxLength={100}
+        />
+
+        <p className="mt-2 text-xs leading-5 text-zinc-500">
+          Frase principal de destaque exibida na primeira dobra da página do produto.
+          Quando não preenchido, o nome oficial do produto será usado como título principal.
+        </p>
       </div>
 
       {/* SUBTÍTULO */}

@@ -136,8 +136,18 @@
 
   .product-sale-title {
     color: #40202a;
-    font-size: clamp(2rem, 2.6vw, 2.55rem);
-    line-height: 1.12;
+    font-size: clamp(2rem, 2.45vw, 2.45rem);
+    line-height: 1.08;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .product-sale-official-title {
+    color: #7f3f51;
+    font-size: clamp(1.12rem, 1.4vw, 1.35rem);
+    line-height: 1.25;
   }
 
   .product-sale-intro {
@@ -238,7 +248,12 @@
     }
 
     .product-sale-title {
-      font-size: 1.85rem;
+      font-size: 1.72rem;
+      line-height: 1.12;
+    }
+
+    .product-sale-official-title {
+      font-size: 1.08rem;
     }
 
     .product-sale-image {
