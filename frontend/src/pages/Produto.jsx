@@ -5,6 +5,7 @@ import {
   Heart,
   Lock,
   Minus,
+  Package,
   Plus,
   ShieldCheck,
   Sparkles,
@@ -565,7 +566,7 @@ export default function Produto() {
 
               {/* Subtítulo vindo do banco */}
               {product.subtitle && (
-                <p className="product-sale-intro mt-1.5 text-zinc-600 sm:mt-3">
+                <p className="product-sale-intro mt-1.5 whitespace-pre-line text-zinc-600 sm:mt-3">
                   {product.subtitle}
                 </p>
               )}
@@ -602,6 +603,13 @@ export default function Produto() {
                   <p className="mt-1 text-sm text-zinc-600">
                     ou {interestFreeInstallments}x de{" "}
                     {formatBRL(productTotal / interestFreeInstallments)} sem juros
+                  </p>
+                )}
+
+                {product.free_shipping && (
+                  <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                    <Truck size={13} className="shrink-0" />
+                    Este produto possui frete grátis para todo o Brasil
                   </p>
                 )}
 
@@ -655,55 +663,55 @@ export default function Produto() {
                       </button>
                     </div>
 
-                    {/* Formas de pagamento */}
-                    {(pixEnabled || creditCardEnabled || boletoEnabled) && (
-                      <div className="mt-4 border-t border-[#f4e1e7] pt-4">
-                        <p className="text-xs font-semibold text-zinc-500">
-                          Formas de pagamento
-                        </p>
-                        <div className="mt-2 flex gap-2">
-                          {pixEnabled && (
-                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
-                              <img src={pixIcon} alt="" className="h-[18px] w-[18px]" />
-                              <span className="text-[11px] font-medium text-zinc-600">
-                                PIX
-                              </span>
-                            </div>
-                          )}
-                          {creditCardEnabled && (
-                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
-                              <CreditCard size={18} className="text-black" />
-                              <span className="text-[11px] font-medium text-zinc-600">
-                                Cartão de crédito
-                              </span>
-                            </div>
-                          )}
-                          {boletoEnabled && (
-                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
-                              <Barcode size={18} className="text-black" />
-                              <span className="text-[11px] font-medium text-zinc-600">
-                                Boleto bancário
-                              </span>
-                            </div>
-                          )}
+                    {/* Formas de pagamento + selos de confiança — grade 2x3 */}
+                    <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[#f4e1e7] pt-4">
+                      {pixEnabled && (
+                        <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                          <img src={pixIcon} alt="" className="h-[18px] w-[18px] shrink-0" />
+                          <span className="text-xs font-medium text-zinc-600">
+                            PIX
+                          </span>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Ambiente seguro */}
-                    {showSecurePurchase && (
-                      <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-[#fff7f9] px-3.5 py-3">
-                        <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#d85c7a]" />
-                        <div>
-                          <p className="text-sm font-semibold text-[#43232d]">
-                            Ambiente seguro
-                          </p>
-                          <p className="text-xs text-zinc-500">
-                            Seus dados protegidos do início ao fim.
-                          </p>
+                      )}
+                      {creditCardEnabled && (
+                        <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                          <CreditCard size={18} className="shrink-0 text-black" />
+                          <span className="text-xs font-medium text-zinc-600">
+                            Cartão
+                          </span>
                         </div>
+                      )}
+                      {boletoEnabled && (
+                        <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                          <Barcode size={18} className="shrink-0 text-black" />
+                          <span className="text-xs font-medium text-zinc-600">
+                            Boleto
+                          </span>
+                        </div>
+                      )}
+                      {product.free_shipping && (
+                        <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                          <Truck size={18} className="shrink-0 text-emerald-600" />
+                          <span className="text-xs font-medium text-zinc-600">
+                            Frete grátis
+                          </span>
+                        </div>
+                      )}
+                      {showSecurePurchase && (
+                        <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                          <Lock size={18} className="shrink-0 text-[#d85c7a]" />
+                          <span className="text-xs font-medium text-zinc-600">
+                            Compra segura
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 rounded-xl border border-[#eee0e4] px-3 py-2.5">
+                        <Package size={18} className="shrink-0 text-[#d85c7a]" />
+                        <span className="text-xs font-medium text-zinc-600">
+                          Envio rápido
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </>
                 )}
               </div>
