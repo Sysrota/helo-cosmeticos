@@ -18,7 +18,7 @@ export default function ProductKitContents({ items = [], kitTitle }) {
   return (
     <section className="product-kit-contents mt-6 bg-white p-7 sm:p-9">
       <h2 className="font-display text-3xl text-[#43232d]">
-        O que vem no Kit{kitTitle ? ` ${kitTitle}` : ""}
+        O que vem no{kitTitle ? ` ${kitTitle}` : ""}
       </h2>
       <p className="mt-1 text-sm text-zinc-500">
         Tudo o que você precisa para uma rotina completa e eficaz.
