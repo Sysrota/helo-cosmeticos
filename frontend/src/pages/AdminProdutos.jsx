@@ -1134,7 +1134,7 @@ export default function AdminProdutos() {
           Subtítulo para venda
         </label>
 
-        <input
+        <textarea
           className="
             w-full
             px-4
@@ -1143,6 +1143,7 @@ export default function AdminProdutos() {
             border
             border-helo-dark/10
             bg-white
+            min-h-[70px]
           "
 
           value={subtitle}
@@ -1156,6 +1157,9 @@ export default function AdminProdutos() {
           placeholder="Ex: Rotina completa para pele mais hidratada e iluminada."
           maxLength={160}
         />
+        <p className="mt-1 text-xs text-zinc-500">
+          Use Enter pra quebrar linha — a quebra aparece igual na página do produto.
+        </p>
       </div>
 
       {/* META DESCRIÇÃO SEO */}
