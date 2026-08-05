@@ -32,6 +32,12 @@ import {
   calculateOrderTotals,
 } from "../coupons/coupon-totals.service.js";
 import {
+  sendMetaCapiEvent,
+} from "../meta/meta-capi.service.js";
+import {
+  buildMetaUserData,
+} from "../meta/build-meta-user-data.js";
+import {
   syncCouponRedemption,
 } from "../coupons/coupons.service.js";
 
@@ -94,7 +100,14 @@ export async function createCardPaymentService({
       },
 
       include: {
-        contact: true,
+        contact: {
+          include: {
+            addresses: {
+              orderBy: { updated_at: "desc" },
+              take: 1,
+            },
+          },
+        },
         coupon: true,
         items: {
           include: {
@@ -273,6 +286,39 @@ export async function createCardPaymentService({
     await sendOrderPaymentConfirmedWhatsApp(
       order.id
     );
+
+    // Conversions API — antes deste ajuste, o Purchase de cartão só disparava
+    // pelo Pixel do navegador (onPaymentApproved), sem backup no servidor.
+    // Se o navegador bloqueasse o Pixel (ad blocker, Safari ITP), esse
+    // Purchase nunca era registrado em lugar nenhum. Mesmo event_id do
+    // Pixel (`purchase_${order.id}`) garante a deduplicação na Meta.
+    // Pedidos origin=manual (venda fechada no admin) nunca vão para a Meta.
+    if (order.origin !== "manual") {
+      const contentIds = order.items.map((item) => String(item.product_id));
+      const numItems = order.items.reduce(
+        (sum, item) => sum + Number(item.quantity || 1),
+        0
+      );
+      const contents = order.items.map((item) => ({
+        id: String(item.product_id),
+        quantity: Number(item.quantity || 1),
+        item_price: Number(item.unit_price || 0),
+      }));
+
+      void sendMetaCapiEvent({
+        event_name: "Purchase",
+        event_id: `purchase_${order.id}`,
+        value: Number(total),
+        currency: "BRL",
+        content_ids: contentIds,
+        content_type: "product",
+        contents,
+        num_items: numItems,
+        user_data: buildMetaUserData(order),
+      }).catch((error) => {
+        console.error("[Meta CAPI] Purchase (cartão) failed:", error);
+      });
+    }
   } else if (
     [
       "rejected",

@@ -31,6 +31,7 @@ import ClientesPage from "./pages/clientes/Clientes";
 import OrderDetailsPage from "./pages/orders/OrderDetailsPage";
 import StoreSettingsPage from "./pages/settings/StoreSettingsPage";
 import CouponsPage from "./pages/coupons/CouponsPage";
+import ReviewsPage from "./pages/reviews/ReviewsPage";
 import AiCartPage from "./pages/AiCartPage";
 import PublicCheckoutPage from "./pages/PublicCheckoutPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
@@ -119,6 +120,7 @@ export default function App() {
             <Route path="orders" element={<OrdersPage />} />
             <Route path="orders/:id" element={<OrderDetailsPage />} />
             <Route path="coupons" element={<CouponsPage />} />
+            <Route path="reviews" element={<ReviewsPage />} />
             <Route path="settings" element={<StoreSettingsPage />} />
           </Route>
           

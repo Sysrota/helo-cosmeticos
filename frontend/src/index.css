@@ -135,19 +135,13 @@
   }
 
   .product-sale-title {
-    color: #40202a;
+    color: #b74662;
     font-size: clamp(2rem, 2.45vw, 2.45rem);
     line-height: 1.08;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  .product-sale-official-title {
-    color: #7f3f51;
-    font-size: clamp(1.12rem, 1.4vw, 1.35rem);
-    line-height: 1.25;
   }
 
   .product-sale-intro {
@@ -312,7 +306,7 @@
     }
 
     .product-sale-hero {
-      grid-template-columns: minmax(0, 1.04fr) minmax(410px, 0.96fr);
+      grid-template-columns: minmax(0, 1.7fr) minmax(360px, 1fr);
       column-gap: 2.5rem;
     }
 
@@ -339,10 +333,6 @@
     .product-sale-title {
       font-size: 1.72rem;
       line-height: 1.12;
-    }
-
-    .product-sale-official-title {
-      font-size: 1.08rem;
     }
 
     .product-sale-image {

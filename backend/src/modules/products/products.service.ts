@@ -101,6 +101,22 @@ export async function findProductById(
           sort_order: "asc",
         },
       },
+      kit_items: {
+        orderBy: {
+          sort_order: "asc",
+        },
+        include: {
+          item_product: {
+            include: {
+              images: {
+                orderBy: {
+                  sort_order: "asc",
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 }
@@ -117,6 +133,9 @@ interface CreateProductDTO {
   image_url?: string;
   dicas_uso?: string;
   o_que_vai_sentir?: string;
+  destaques?: string;
+  indicado_para?: string;
+  audience_fit_image_url?: string;
   composicao?: string;
   indicacoes?: string;
   restricoes?: string;
@@ -178,6 +197,9 @@ export async function createProduct(
         image_url: data.image_url ?? "",
         dicas_uso: data.dicas_uso ?? "",
         o_que_vai_sentir: data.o_que_vai_sentir ?? "",
+        destaques: data.destaques ?? "",
+        indicado_para: data.indicado_para ?? "",
+        audience_fit_image_url: data.audience_fit_image_url ?? "",
         composicao: data.composicao ?? "",
         indicacoes: data.indicacoes ?? "",
         restricoes: data.restricoes ?? "",
@@ -222,6 +244,9 @@ interface UpdateProductDTO {
   image_url?: string;
   dicas_uso?: string;
   o_que_vai_sentir?: string;
+  destaques?: string;
+  indicado_para?: string;
+  audience_fit_image_url?: string;
   composicao?: string;
   indicacoes?: string;
   restricoes?: string;

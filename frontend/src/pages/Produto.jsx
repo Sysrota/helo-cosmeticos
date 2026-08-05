@@ -1,10 +1,12 @@
 import {
+  Barcode,
   ChevronRight,
   CreditCard,
+  Heart,
+  Lock,
   Minus,
   Plus,
   ShieldCheck,
-  ShoppingBag,
   Sparkles,
   Truck,
 } from "lucide-react";
@@ -33,13 +35,17 @@ import {
   setSeoMeta,
 } from "../utils/seo";
 import {
-  buildMetaContentIds,
-  buildMetaContents,
   trackMetaCustomEvent,
   trackMetaEvent,
 } from "../services/metaPixel";
 import { trackClarityEvent } from "../services/clarity";
 import { saveWhatsAppProductContext } from "../utils/whatsappContext";
+import ProductReviews from "../components/reviews/ProductReviews";
+import ProductAudienceFit from "../components/product/ProductAudienceFit";
+import ProductKitContents from "../components/product/ProductKitContents";
+import StarRating from "../components/reviews/StarRating";
+import pixIcon from "../assets/icon-pix.png";
+import { fetchProductReviews } from "../services/reviews";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -97,10 +103,12 @@ export default function Produto() {
   const { addToCart } = useCart();
   const {
     pix_discount_percent: pixDiscountPercent,
+    formattedPixDiscount,
+    card_interest_free_installments: interestFreeInstallments,
     pixEnabled,
     creditCardEnabled,
+    boletoEnabled,
     cardLabel,
-    freeShippingLabel,
     paymentMethodsLabel,
     show_secure_purchase: showSecurePurchase,
   } = useCommercialPolicy();
@@ -152,9 +160,9 @@ export default function Produto() {
     [product]
   );
 
-  const destaquesList = useMemo(
+  const indicadoParaList = useMemo(
     () =>
-      String(product?.destaques || "")
+      String(product?.indicado_para || "")
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
@@ -218,6 +226,7 @@ export default function Produto() {
         value: Number(product.price || 0),
         content_ids: [String(product.id)],
         content_name: product.title,
+        content_category: product.category || undefined,
         content_type: "product",
       },
       { eventId: `view_content_${product.id}` }
@@ -229,23 +238,44 @@ export default function Produto() {
     saveWhatsAppProductContext(product);
   }, [product]);
 
+  const [reviewsData, setReviewsData] = useState(null);
+
+  useEffect(() => {
+    if (!product) return undefined;
+
+    let active = true;
+
+    fetchProductReviews(product.id)
+      .then((result) => {
+        if (active) setReviewsData(result);
+      })
+      .catch(() => {
+        if (active) {
+          setReviewsData({
+            summary: { average: 0, count: 0, distribution: {} },
+            reviews: [],
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product]);
+
   const mainImage = selected || cover;
   const selectedImageIndex = images.findIndex((image) => image.full === mainImage);
   const currentImageIndex = selectedImageIndex >= 0 ? selectedImageIndex : 0;
   const unavailable = product?.is_active === false;
-  const category = String(product?.category || "beleza").replace(/[-_]/g, " ");
   const salesTitle = product?.sales_title?.trim() || product?.title || "";
   const productTotal = Number(product?.price || 0) * quantity;
   const compareAtTotal =
     Number(product?.compare_at_price || 0) * quantity;
   const hasCompareAtPrice =
     compareAtTotal > productTotal;
-  const compareAtSavings =
-    Number((compareAtTotal - productTotal).toFixed(2));
   const pixTotal = Number(
     (productTotal * (1 - pixDiscountPercent / 100)).toFixed(2)
   );
-  const pixSavings = Number((productTotal - pixTotal).toFixed(2));
   const hasPixDiscount =
     pixEnabled && Number(pixDiscountPercent) > 0;
   const paymentDetails =
@@ -284,13 +314,6 @@ export default function Produto() {
     };
   }
 
-  function scrollToFeelings() {
-    feelingsSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
-
   function handleAddToCart() {
     addToCart(selectedItem());
     setAddedToCart(true);
@@ -302,19 +325,16 @@ export default function Produto() {
     const item = selectedItem();
     const itemValue = Number(item.price || 0) * Number(item.quantity || 1);
     trackClarityEvent("buy_now_click");
+    // Sinal de intenção — o InitiateCheckout "oficial" (com event_id, deduplicável
+    // com a CAPI) só é disparado quando o pedido é de fato criado, em
+    // createOrderFromCart (PublicCheckoutPage). Disparar InitiateCheckout aqui
+    // também gerava um segundo evento sem event_id, sem dedup com o primeiro.
     trackMetaCustomEvent("DirectPurchaseClick", {
       currency: "BRL",
       value: itemValue,
       content_ids: [String(item.product_id)],
       content_type: "product",
       source: "product_page",
-    });
-    trackMetaEvent("InitiateCheckout", {
-      currency: "BRL",
-      value: itemValue,
-      contents: buildMetaContents([item]),
-      content_ids: buildMetaContentIds([item]),
-      content_type: "product",
     });
     navigate("/checkout", { state: { directPurchaseItem: item } });
   }
@@ -465,10 +485,21 @@ export default function Produto() {
           {/* ── Galeria de imagens ── */}
           <section className="product-sale-gallery space-y-3 sm:space-y-4">
             <div className="product-sale-media bg-white p-2.5 sm:p-4">
-              {/* "Clique para ampliar" — só desktop, inútil no touch */}
-              <div className="mb-2 hidden items-center justify-end px-1 sm:flex">
-                <span className="text-xs font-medium text-zinc-400">Clique para ampliar</span>
-              </div>
+              {reviewsData?.summary?.count > 0 && (
+                <div className="mb-2 flex flex-wrap items-center gap-1.5 px-1 text-sm">
+                  <StarRating value={reviewsData.summary.average} size={16} />
+                  <span className="font-semibold text-[#43232d]">
+                    {reviewsData.summary.average.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
+                    /5
+                  </span>
+                  <span className="text-zinc-500">com base em quem usou e avaliou</span>
+                  <Heart size={13} className="fill-[#d9536f] text-[#d9536f]" />
+                </div>
+              )}
+
 
               <div
                 className="product-sale-image aspect-square relative w-full touch-pan-y touch-pinch-zoom select-none"
@@ -527,22 +558,9 @@ export default function Produto() {
           <section className="product-sale-panel-column">
             <div className="product-sale-card bg-white">
 
-              {/* Categoria + marca */}
-              <div className="flex items-center justify-between gap-3">
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f4] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.13em] text-[#b74662]">
-                  <Sparkles size={12} />
-                  {category}
-                </p>
-                <span className="text-xs font-medium text-[#b74662] sm:text-sm">Helô</span>
-              </div>
-
-              {/* Título comercial + nome oficial */}
-              <p className="product-sale-title mt-2 font-display sm:mt-4">
+              {/* Título comercial */}
+              <h1 className="product-sale-title font-display">
                 {salesTitle}
-              </p>
-
-              <h1 className="product-sale-official-title mt-1.5 font-display">
-                {product.title}
               </h1>
 
               {/* Subtítulo vindo do banco */}
@@ -552,130 +570,38 @@ export default function Produto() {
                 </p>
               )}
 
-              {/* ── Badges comerciais — vindos do banco (destaques) ── */}
-              {destaquesList.length > 0 && (
-                <div className="product-sale-chips mt-3 sm:mt-3.5">
-                  {destaquesList.map((badge) => (
-                    <span
-                      key={badge}
-                      className="product-sale-chip"
-                    >
-                      <Sparkles size={12} className="shrink-0" />
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Destaques visuais — vindos do banco (o_que_vai_sentir) ── */}
-              {feelingList.length > 0 && (
-                <div className="mt-3 space-y-1.5 sm:mt-4 sm:space-y-2">
-                  {feelingList.slice(0, 3).map((feeling) => (
-                    <div key={feeling} className="flex items-start gap-2 text-sm text-zinc-700">
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#d85c7a] text-white">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-2.5 w-2.5"
-                        >
-                          <path d="M5 12l5 5L20 7" />
-                        </svg>
-                      </span>
-                      <span className="leading-snug">
-                        <MarkdownInline>{feeling}</MarkdownInline>
-                      </span>
-                    </div>
-                  ))}
-                  {feelingList.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={scrollToFeelings}
-                      className="pl-6 text-xs font-semibold text-[#b74662] hover:text-[#d85c7a]"
-                    >
-                      Ver mais benefícios
-                    </button>
-                  )}
-                </div>
-              )}
-
               {/* ── Bloco de preço + CTA — tudo num único bloco visual ── */}
               <div className="product-sale-price-box mt-4 px-4 py-4 sm:mt-4 sm:px-5 sm:py-5">
 
-                {/* Linha 1: Preço principal + quantidade (discreta) */}
-                <div className="product-sale-price-head">
-                  <div className="min-w-0">
-                    {quantity > 1 && (
-                      <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-[#a85a6d]">
-                        Total · {quantity} unidades
-                      </p>
-                    )}
-                    {hasCompareAtPrice && (
-                      <div className="product-sale-compare-stack">
-                        <p className="product-sale-compare-at">
-                          <span>De</span>
-                          <span className="product-sale-compare-value">
-                            {formatBRL(compareAtTotal)}
-                          </span>
-                        </p>
-                        {compareAtSavings > 0 && (
-                          <p className="product-sale-savings-pill">
-                            Economize {formatBRL(compareAtSavings)}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <p className="product-sale-price font-bold leading-none tracking-tight text-helo-text">
-                      {formatBRL(productTotal)}
-                    </p>
-                  </div>
-
-                  {!unavailable && (
-                    <div className="product-sale-quantity-selector">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(quantity - 1)}
-                        className="flex h-8 w-8 items-center justify-center text-zinc-400 transition hover:text-[#d85c7a]"
-                        aria-label="Diminuir quantidade"
-                      >
-                        <Minus size={13} />
-                      </button>
-                      <span className="w-6 text-center text-sm font-semibold text-zinc-700">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(quantity + 1)}
-                        className="flex h-8 w-8 items-center justify-center text-zinc-400 transition hover:text-[#d85c7a]"
-                        aria-label="Aumentar quantidade"
-                      >
-                        <Plus size={13} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Linha 2: PIX em destaque + economia */}
-                {hasPixDiscount && (
-                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                    <span className="text-base font-bold text-[#b74662]">
-                      PIX {formatBRL(pixTotal)}
+                {hasCompareAtPrice && (
+                  <p className="text-sm font-normal text-zinc-400">
+                    de{" "}
+                    <span className="line-through">
+                      {formatBRL(compareAtTotal)}
                     </span>
-                    {pixSavings > 0 && (
-                      <span className="rounded-full bg-[#d85c7a] px-2.5 py-0.5 text-xs font-semibold text-white">
-                        Economize {formatBRL(pixSavings)}
-                      </span>
-                    )}
-                  </div>
+                  </p>
                 )}
 
-                {/* Linha 3: Cartão (secundário) */}
-                {creditCardEnabled && (
-                  <p className="mt-1 text-xs text-zinc-500">
-                    Cartão: {cardLabel}
+                <p className="product-sale-price font-bold leading-none tracking-tight text-helo-text">
+                  {formatBRL(productTotal)}
+                </p>
+
+                {hasPixDiscount && (
+                  <p className="mt-2 text-base text-zinc-700">
+                    ou{" "}
+                    <span className="font-bold text-[#b74662]">
+                      {formatBRL(pixTotal)} no PIX
+                    </span>{" "}
+                    <span className="font-semibold text-emerald-600">
+                      ({formattedPixDiscount}% off)
+                    </span>
+                  </p>
+                )}
+
+                {creditCardEnabled && interestFreeInstallments > 1 && (
+                  <p className="mt-1 text-sm text-zinc-600">
+                    ou {interestFreeInstallments}x de{" "}
+                    {formatBRL(productTotal / interestFreeInstallments)} sem juros
                   </p>
                 )}
 
@@ -685,20 +611,39 @@ export default function Produto() {
                   </div>
                 ) : (
                   <>
-                    {/* Frete */}
-                    <p className="mt-2.5 flex items-center gap-1.5 text-xs text-[#a85a6d]">
-                      <Truck size={12} className="shrink-0 text-[#d85c7a]" />
-                      {freeShippingLabel} nas opções elegíveis.
-                    </p>
+                    {/* Quantidade — alinhada à esquerda, na própria linha */}
+                    <div className="mt-4 flex justify-start">
+                      <div className="product-sale-quantity-selector">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(quantity - 1)}
+                          className="flex h-8 w-8 items-center justify-center text-zinc-400 transition hover:text-[#d85c7a]"
+                          aria-label="Diminuir quantidade"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="w-6 text-center text-sm font-semibold text-zinc-700">
+                          {quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(quantity + 1)}
+                          className="flex h-8 w-8 items-center justify-center text-zinc-400 transition hover:text-[#d85c7a]"
+                          aria-label="Aumentar quantidade"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                    </div>
 
-                    {/* CTAs — imediatamente após o preço */}
+                    {/* CTAs */}
                     <div className="mt-4 space-y-2">
                       <button
                         type="button"
                         onClick={handleBuyNow}
                         className="product-sale-buy-button flex w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold text-white transition sm:text-lg"
                       >
-                        <ShoppingBag size={19} />
+                        <Lock size={17} />
                         Comprar agora
                       </button>
                       <button
@@ -710,25 +655,55 @@ export default function Produto() {
                       </button>
                     </div>
 
-                    {/* Selos compactos */}
-                    <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-[#f4e1e7] pt-3">
-                      {showSecurePurchase && (
-                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <ShieldCheck size={13} className="text-[#d85c7a]" />
-                          Compra protegida
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <Truck size={13} className="text-[#d85c7a]" />
-                        Entrega por CEP
-                      </span>
-                      {paymentMethodsLabel && (
-                        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <CreditCard size={13} className="text-[#d85c7a]" />
-                          {paymentMethodsLabel}
-                        </span>
-                      )}
-                    </div>
+                    {/* Formas de pagamento */}
+                    {(pixEnabled || creditCardEnabled || boletoEnabled) && (
+                      <div className="mt-4 border-t border-[#f4e1e7] pt-4">
+                        <p className="text-xs font-semibold text-zinc-500">
+                          Formas de pagamento
+                        </p>
+                        <div className="mt-2 flex gap-2">
+                          {pixEnabled && (
+                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
+                              <img src={pixIcon} alt="" className="h-[18px] w-[18px]" />
+                              <span className="text-[11px] font-medium text-zinc-600">
+                                PIX
+                              </span>
+                            </div>
+                          )}
+                          {creditCardEnabled && (
+                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
+                              <CreditCard size={18} className="text-black" />
+                              <span className="text-[11px] font-medium text-zinc-600">
+                                Cartão de crédito
+                              </span>
+                            </div>
+                          )}
+                          {boletoEnabled && (
+                            <div className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[#eee0e4] py-2.5 text-center">
+                              <Barcode size={18} className="text-black" />
+                              <span className="text-[11px] font-medium text-zinc-600">
+                                Boleto bancário
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ambiente seguro */}
+                    {showSecurePurchase && (
+                      <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-[#fff7f9] px-3.5 py-3">
+                        <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#d85c7a]" />
+                        <div>
+                          <p className="text-sm font-semibold text-[#43232d]">
+                            Ambiente seguro
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            Seus dados protegidos do início ao fim.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -810,6 +785,19 @@ export default function Produto() {
           </section>
         </div>
 
+        {/* Avaliações — logo abaixo do primeiro bloco (galeria + compra) */}
+        <ProductReviews
+          productId={product.id}
+          productTitle={product.title}
+          data={reviewsData}
+        />
+
+        {/* Para quem é este produto? — identificação imediata, antes de "O que você vai sentir" */}
+        <ProductAudienceFit
+          items={indicadoParaList}
+          imageUrl={product.audience_fit_image_url}
+        />
+
         {/* 8. O que você vai sentir — logo após os CTAs, vende resultado emocional */}
         {feelingList.length > 0 && (
           <article ref={feelingsSectionRef} className="product-sale-feelings mt-10 scroll-mt-24 bg-white p-7 sm:p-9">
@@ -828,6 +816,14 @@ export default function Produto() {
               ))}
             </div>
           </article>
+        )}
+
+        {/* O que vem no Kit — logo abaixo dos benefícios */}
+        {product.category === "kit" && (
+          <ProductKitContents
+            items={product.kit_items || []}
+            kitTitle={salesTitle}
+          />
         )}
 
         {/* 9. Sobre o produto */}

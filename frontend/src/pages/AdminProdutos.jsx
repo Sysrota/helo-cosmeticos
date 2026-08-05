@@ -85,9 +85,18 @@ export default function AdminProdutos() {
   const [emDivulgacao, setEmDivulgacao] = useState(false);
   const [freeShipping, setFreeShipping] = useState(false);
 
+  // Itens do kit — vínculos com produtos já cadastrados no catálogo.
+  const [kitItems, setKitItems] = useState([]); // [{id,item_product_id,item_product,sort_order}]
+  const [kitItemSearch, setKitItemSearch] = useState("");
+  const [kitItemSearchResults, setKitItemSearchResults] = useState([]);
+  const [searchingKitItem, setSearchingKitItem] = useState(false);
+
   const [dicasUso, setDicasUso] = useState("");
   const [oQueVaiSentir, setOQueVaiSentir] = useState("");
   const [destaques, setDestaques] = useState("");
+  const [indicadoPara, setIndicadoPara] = useState("");
+  const [audienceFitImageUrl, setAudienceFitImageUrl] = useState("");
+  const [uploadingAudienceFitImage, setUploadingAudienceFitImage] = useState(false);
   const [composicao, setComposicao] = useState("");
   const [indicacoes, setIndicacoes] = useState("");
   const [restricoes, setRestricoes] = useState("");
@@ -247,6 +256,7 @@ export default function AdminProdutos() {
     if (!res.ok) throw new Error("Falha ao carregar produto");
     const data = await res.json();
     setGallery(data.images || []);
+    setKitItems(data.kit_items || []);
     return data;
   }
 
@@ -316,6 +326,136 @@ export default function AdminProdutos() {
     }
   }
 
+  // Upload da foto da seção "Para quem é este produto?" — só um arquivo,
+  // guardado direto no campo do produto (sem tabela de galeria).
+  async function handleUploadAudienceFitImage(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadingAudienceFitImage(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const up = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: authHeadersOnly(),
+        body: form,
+      });
+
+      if (await handle401(up)) return;
+      if (!up.ok) throw new Error("Falha no upload");
+
+      const upData = await up.json();
+      setAudienceFitImageUrl(upData.image_url);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar a imagem.");
+    } finally {
+      setUploadingAudienceFitImage(false);
+    }
+  }
+
+  // Autocomplete: busca produtos do catálogo conforme digita (debounced),
+  // pra vincular como item do kit. Sem <form>/submit — evitava um form
+  // aninhado dentro do form principal do produto, que causava refresh.
+  useEffect(() => {
+    const term = kitItemSearch.trim();
+
+    if (!term || formCategory !== "kit") {
+      setKitItemSearchResults([]);
+      return undefined;
+    }
+
+    let active = true;
+    setSearchingKitItem(true);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const qs = new URLSearchParams({ search: term, limit: "8" });
+        const res = await fetch(`${API_URL}/products?${qs.toString()}`);
+        const data = await res.json().catch(() => ({}));
+
+        if (active) setKitItemSearchResults(data.items || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (active) setSearchingKitItem(false);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [kitItemSearch, formCategory]);
+
+  const visibleKitItemSearchResults = useMemo(() => {
+    const alreadyAdded = new Set(kitItems.map((k) => k.item_product_id));
+    return kitItemSearchResults.filter(
+      (item) => item.id !== Number(editingId) && !alreadyAdded.has(item.id)
+    );
+  }, [kitItemSearchResults, kitItems, editingId]);
+
+  async function handleAddKitItem(itemProduct) {
+    if (!editingId) {
+      alert("Crie o produto e clique em Editar antes de adicionar itens do kit.");
+      return;
+    }
+
+    try {
+      const nextOrder =
+        kitItems.length > 0
+          ? Math.max(...kitItems.map((k) => Number(k.sort_order) || 0)) + 1
+          : 0;
+
+      const res = await fetch(`${API_URL}/products/${editingId}/kit-items`, {
+        method: "POST",
+        headers: authHeadersJson(),
+        body: JSON.stringify({
+          item_product_id: itemProduct.id,
+          sort_order: nextOrder,
+        }),
+      });
+
+      if (await handle401(res)) return;
+      if (!res.ok) throw new Error("Falha ao adicionar item do kit");
+
+      setKitItemSearch("");
+      setKitItemSearchResults([]);
+      await fetchProductDetails(editingId);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao adicionar item do kit.");
+    }
+  }
+
+  async function handleDeleteKitItem(kitItemId) {
+    if (!window.confirm("Remover este item do kit?")) return;
+
+    try {
+      const res = await fetch(
+        `${API_URL}/products/${editingId}/kit-items/${kitItemId}`,
+        {
+          method: "DELETE",
+          headers: authHeadersOnly(),
+        }
+      );
+
+      if (await handle401(res)) return;
+      if (!res.ok) throw new Error("Falha ao remover item do kit");
+
+      setKitItems((prev) => prev.filter((k) => k.id !== kitItemId));
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao remover item do kit.");
+    }
+  }
+
   function resetForm() {
     setMode("create");
     setEditingId(null);
@@ -331,10 +471,15 @@ export default function AdminProdutos() {
     setIsFeatured(false);
     setEmDivulgacao(false);
     setFreeShipping(false);
+    setKitItems([]);
+    setKitItemSearch("");
+    setKitItemSearchResults([]);
     setGallery([]);
     setDicasUso("");
     setOQueVaiSentir("");
     setDestaques("");
+    setIndicadoPara("");
+    setAudienceFitImageUrl("");
     setComposicao("");
     setIndicacoes("");
     setRestricoes("");
@@ -373,6 +518,8 @@ export default function AdminProdutos() {
     setDicasUso(p.dicas_uso || "");
     setOQueVaiSentir(p.o_que_vai_sentir || "");
     setDestaques(p.destaques || "");
+    setIndicadoPara(p.indicado_para || "");
+    setAudienceFitImageUrl(p.audience_fit_image_url || "");
     setComposicao(p.composicao || "");
     setIndicacoes(p.indicacoes || "");
     setRestricoes(p.restricoes || "");
@@ -386,6 +533,7 @@ export default function AdminProdutos() {
 
 
     setGallery([]);
+    setKitItems([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     // carrega detalhes (inclui galeria e pode incluir campos completos)
@@ -404,6 +552,10 @@ export default function AdminProdutos() {
       setDicasUso(full.dicas_uso || p.dicas_uso || "");
       setOQueVaiSentir(full.o_que_vai_sentir || p.o_que_vai_sentir || "");
       setDestaques(full.destaques || p.destaques || "");
+      setIndicadoPara(full.indicado_para || p.indicado_para || "");
+      setAudienceFitImageUrl(
+        full.audience_fit_image_url || p.audience_fit_image_url || ""
+      );
       setComposicao(full.composicao || p.composicao || "");
       setIndicacoes(full.indicacoes || p.indicacoes || "");
       setRestricoes(full.restricoes || p.restricoes || "");
@@ -436,6 +588,8 @@ export default function AdminProdutos() {
     dicas_uso: dicasUso,
     o_que_vai_sentir: oQueVaiSentir,
     destaques,
+    indicado_para: indicadoPara,
+    audience_fit_image_url: audienceFitImageUrl,
     composicao,
     indicacoes,
     restricoes,
@@ -1259,7 +1413,131 @@ export default function AdminProdutos() {
             </span>
           </span>
         </label>
+
       </div>
+
+      {/* ITENS DO KIT — categoria "Kit" já existe no campo Categoria acima */}
+      {formCategory === "kit" && (
+        <div className="md:col-span-2">
+          <label className="
+            block
+            text-sm
+            font-semibold
+            text-helo-dark
+            mb-2
+          ">
+            Itens do kit
+          </label>
+          <p className="mb-3 text-xs text-zinc-500">
+            Selecione produtos já cadastrados no catálogo — nome e imagem vêm sempre do produto escolhido.
+          </p>
+
+          {!editingId ? (
+            <p className="rounded-xl border border-dashed border-helo-dark/15 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+              Crie o produto e clique em Editar antes de adicionar os itens do kit.
+            </p>
+          ) : (
+            <>
+              {kitItems.length > 0 && (
+                <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {kitItems.map((item) => {
+                    const itemProduct = item.item_product;
+                    const thumb =
+                      itemProduct?.images?.[0]?.image_url ||
+                      itemProduct?.image_url;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex gap-3 rounded-2xl border border-helo-dark/10 bg-white p-3"
+                      >
+                        {thumb ? (
+                          <img
+                            src={`${API_URL}${thumb}`}
+                            alt=""
+                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="h-14 w-14 shrink-0 rounded-xl bg-zinc-100" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-helo-dark">
+                            {itemProduct?.sales_title || itemProduct?.title}
+                          </p>
+                          {itemProduct?.subtitle && (
+                            <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                              {itemProduct.subtitle}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteKitItem(item.id)}
+                          className="h-fit shrink-0 text-xs font-medium text-red-500 hover:text-red-600"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="relative rounded-2xl border border-dashed border-helo-dark/15 bg-zinc-50 p-4">
+                <p className="mb-3 text-xs font-semibold text-helo-dark">
+                  Buscar produto pra adicionar
+                </p>
+                <input
+                  type="text"
+                  placeholder="Digite o nome do produto..."
+                  className="w-full rounded-xl border border-helo-dark/10 bg-white px-4 py-2.5 text-sm"
+                  value={kitItemSearch}
+                  onChange={(e) => setKitItemSearch(e.target.value)}
+                />
+
+                {kitItemSearch.trim() && (
+                  <div className="relative z-10 mt-2 max-h-64 overflow-y-auto rounded-xl border border-helo-dark/10 bg-white shadow-lg">
+                    {searchingKitItem ? (
+                      <p className="px-4 py-3 text-sm text-zinc-500">
+                        Buscando...
+                      </p>
+                    ) : visibleKitItemSearchResults.length > 0 ? (
+                      visibleKitItemSearchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => handleAddKitItem(result)}
+                          className="flex w-full items-center gap-3 border-b border-zinc-100 p-2.5 text-left last:border-0 hover:bg-zinc-50"
+                        >
+                          {result.image_url ? (
+                            <img
+                              src={`${API_URL}${result.image_url}`}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-lg bg-zinc-100" />
+                          )}
+                          <span className="min-w-0 flex-1 truncate text-sm text-helo-dark">
+                            {result.sales_title || result.title}
+                          </span>
+                          <span className="shrink-0 text-xs font-semibold text-helo-dark">
+                            Adicionar
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-4 py-3 text-sm text-zinc-500">
+                        Nenhum produto encontrado.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* DESCRIÇÃO */}
       <div className="md:col-span-2">
@@ -1402,6 +1680,90 @@ export default function AdminProdutos() {
         />
         <p className="mt-1 text-xs text-zinc-500">
           Um destaque por linha. Exibidos como badges próximos ao preço na página do produto. Deixe vazio para não exibir nenhum badge.
+        </p>
+      </div>
+
+      {/* INDICADO PARA */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Indicado para
+        </label>
+
+        <textarea
+          className="
+            w-full
+            px-4
+            py-3
+            rounded-xl
+            border
+            border-helo-dark/10
+            bg-white
+            min-h-[110px]
+          "
+          placeholder={"Pele opaca e sem viço\nPele ressecada ou desidratada\nPoros dilatados\nNunca fez skincare\nQuer uma rotina prática"}
+          value={indicadoPara}
+          onChange={(e) => setIndicadoPara(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          Informe uma característica por linha. Cada linha será exibida como um item da seção &quot;Para quem é este produto?&quot; na página do produto. Deixe vazio para não exibir a seção.
+        </p>
+      </div>
+
+      {/* FOTO DA SEÇÃO "PARA QUEM É ESTE PRODUTO?" */}
+      <div>
+        <label className="
+          block
+          text-sm
+          font-semibold
+          text-helo-dark
+          mb-2
+        ">
+          Foto de &quot;Para quem é este produto?&quot;
+        </label>
+
+        {audienceFitImageUrl && (
+          <img
+            src={`${API_URL}${audienceFitImageUrl}`}
+            alt=""
+            className="mb-2 h-32 w-32 rounded-xl border border-helo-dark/10 object-cover"
+          />
+        )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-helo-dark/10 bg-white px-4 py-2.5 text-sm font-medium text-helo-dark hover:bg-zinc-50">
+            {uploadingAudienceFitImage
+              ? "Enviando..."
+              : audienceFitImageUrl
+                ? "Trocar imagem"
+                : "Enviar imagem"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleUploadAudienceFitImage}
+              disabled={uploadingAudienceFitImage}
+            />
+          </label>
+
+          {audienceFitImageUrl && (
+            <button
+              type="button"
+              onClick={() => setAudienceFitImageUrl("")}
+              className="text-sm font-medium text-red-500 hover:text-red-600"
+            >
+              Remover
+            </button>
+          )}
+        </div>
+
+        <p className="mt-1 text-xs text-zinc-500">
+          Foto exibida ao lado dos itens de &quot;Indicado para&quot;. Deixe vazio para usar a imagem padrão.
         </p>
       </div>
 

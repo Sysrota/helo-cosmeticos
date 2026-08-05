@@ -232,7 +232,22 @@ export async function createCheckoutController(
       cart,
       shipping,
       coupon_code,
+      fbp,
+      fbc,
     } = req.body;
+
+    // Dados de correspondência para a Meta Conversions API — capturados aqui
+    // porque o Purchase costuma ser confirmado depois, de forma assíncrona
+    // (webhook do Mercado Pago), quando não há mais requisição HTTP do
+    // navegador para ler IP/user-agent/cookies do Pixel.
+    const clientIpAddress =
+      String(
+        req.headers["x-forwarded-for"] ||
+        req.socket.remoteAddress ||
+        ""
+      ).split(",")[0].trim() || null;
+    const clientUserAgent =
+      req.headers["user-agent"] || null;
 
     // =====================
     // VALIDATE
@@ -460,6 +475,17 @@ export async function createCheckoutController(
               ? Number(
                   shipping.melhor_envio_service_id
                 )
+              : null,
+
+          fbp:
+            fbp || null,
+          fbc:
+            fbc || null,
+          client_ip_address:
+            clientIpAddress,
+          client_user_agent:
+            clientUserAgent
+              ? String(clientUserAgent)
               : null,
 
           total,

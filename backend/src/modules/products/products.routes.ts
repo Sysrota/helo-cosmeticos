@@ -11,6 +11,8 @@ import {
 
 import { createProductImageController, deleteProductImageController, updateProductImageController } from "./products-images.controller.js";
 
+import { createKitItemController, deleteKitItemController, updateKitItemController } from "./products-kit-items.controller.js";
+
 import { asyncHandler } from "../../shared/middlewares/async-handler.js";
 
 import { auth } from "../../shared/middlewares/auth.js";
@@ -74,6 +76,30 @@ router.delete(
   auth,
   asyncHandler(
     deleteProductImageController
+  )
+);
+
+router.post(
+  "/:id/kit-items",
+  auth,
+  asyncHandler(
+    createKitItemController
+  )
+);
+
+router.put(
+  "/:id/kit-items/:kitItemId",
+  auth,
+  asyncHandler(
+    updateKitItemController
+  )
+);
+
+router.delete(
+  "/:id/kit-items/:kitItemId",
+  auth,
+  asyncHandler(
+    deleteKitItemController
   )
 );
 

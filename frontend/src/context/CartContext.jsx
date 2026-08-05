@@ -9,6 +9,7 @@ import {
 import {
   buildMetaContentIds,
   buildMetaContents,
+  buildMetaNumItems,
   trackMetaEvent,
 } from "../services/metaPixel";
 
@@ -122,6 +123,10 @@ export function CartProvider({
             ]),
           content_type:
             "product",
+          num_items:
+            buildMetaNumItems([
+              { quantity },
+            ]),
         },
         { eventId: `add_to_cart_${productId}_${Date.now()}` }
       );

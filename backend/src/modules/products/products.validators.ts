@@ -24,6 +24,8 @@ export const createProductSchema = z.object({
   o_que_vai_sentir: z.string().optional().default(""),
 
   destaques: z.string().optional().default(""),
+  indicado_para: z.string().optional().default(""),
+  audience_fit_image_url: z.string().optional().default(""),
 
   composicao: z.string().optional().default(""),
   indicacoes: z.string().optional().default(""),

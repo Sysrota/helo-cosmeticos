@@ -28,6 +28,12 @@ model Product {
   dicas_uso         String   @default("")
   o_que_vai_sentir  String   @default("")
   destaques         String   @default("")
+  // Uma indicação por linha — alimenta a seção "Para quem é este produto?"
+  // na página pública do produto.
+  indicado_para     String   @default("")
+  // Foto da seção "Para quem é este produto?" — enviada pelo admin.
+  // Vazia = usa a imagem padrão no frontend.
+  audience_fit_image_url String @default("")
   composicao        String   @default("")
   indicacoes        String   @default("")
   restricoes        String   @default("")
@@ -67,6 +73,13 @@ model Product {
 
   order_items OrderItem[]
 
+  reviews ProductReview[]
+
+  kit_items ProductKitItem[] @relation("KitContents")
+
+  // Kits (outros produtos) que incluem este produto como item.
+  used_in_kits ProductKitItem[] @relation("KitItemProduct")
+
   @@map("products")
 }
 
@@ -84,6 +97,27 @@ model ProductImage {
   product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("product_images")
+}
+
+// Vincula um produto (category = "kit") aos produtos reais do catálogo que
+// o compõem — alimenta a seção "O que vem no Kit" na página pública. Nome,
+// imagem e descrição vêm sempre do produto vinculado (item_product), nunca
+// digitados de novo aqui.
+model ProductKitItem {
+  id              Int      @id @default(autoincrement())
+
+  product_id      Int
+  item_product_id Int
+
+  sort_order      Int      @default(0)
+
+  created_at      DateTime @default(now())
+
+  product      Product @relation("KitContents", fields: [product_id], references: [id], onDelete: Cascade)
+  item_product Product @relation("KitItemProduct", fields: [item_product_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, item_product_id])
+  @@map("product_kit_items")
 }
 
 model User {
@@ -144,6 +178,8 @@ model Contact {
   orders Order[]
 
   coupon_redemptions CouponRedemption[]
+
+  reviews ProductReview[]
 
   @@map("contacts")
 }
@@ -288,6 +324,25 @@ model Order {
 
   contact_id Int
 
+  // "online" (checkout público, com funil de Pixel/CAPI) ou "manual"
+  // (criado pelo admin/atendimento, ex: venda fechada por WhatsApp).
+  // Pedidos "manual" nunca disparam eventos para a Meta — não vieram
+  // do funil de anúncios e inflavam Purchase sem InitiateCheckout.
+  origin String @default("online")
+
+  // Dados de correspondência/deduplicação para Meta Pixel + Conversions API,
+  // capturados no momento da criação do pedido no checkout público.
+  fbp String?
+  fbc String?
+  client_ip_address String?
+  client_user_agent String?
+
+  // Preparação para o envio automático de pedido de avaliação por WhatsApp
+  // (X dias após a entrega) — marca que já foi enviado, pra não repetir.
+  // O job/scheduler que dispara o envio ainda não existe, isso é só a
+  // trava de idempotência que ele vai usar quando for construído.
+  review_requested_at DateTime?
+
   coupon_id Int?
 
   coupon_code String?
@@ -373,6 +428,8 @@ model Order {
   coupon_redemptions CouponRedemption[]
 
   shipping_events_list OrderShippingEvent[]
+
+  reviews ProductReview[]
 
   @@map("orders")
 }
@@ -547,4 +604,51 @@ model OrderItem {
   product Product @relation(fields: [product_id], references: [id])
 
   @@map("order_items")
+}
+
+model ProductReview {
+  id Int @id @default(autoincrement())
+
+  product_id Int
+
+  // Preenchidos apenas quando a avaliação vem do fluxo de Acompanhar
+  // Pedido (pedido pago + e-mail confirmado) — nunca informados pelo
+  // cliente diretamente, sempre resolvidos pelo backend.
+  order_id Int?
+  contact_id Int?
+
+  name String
+  city String?
+  state String?
+
+  rating Int
+
+  title String?
+  comment String @db.Text
+
+  photo_url String?
+
+  recommends Boolean @default(true)
+
+  // true somente quando order_id/contact_id foram validados contra uma
+  // compra paga real deste produto — nunca setado manualmente.
+  verified_purchase Boolean @default(false)
+
+  approved Boolean @default(false)
+
+  admin_response String? @db.Text
+  admin_response_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  product Product @relation(fields: [product_id], references: [id])
+  order Order? @relation(fields: [order_id], references: [id])
+  contact Contact? @relation(fields: [contact_id], references: [id])
+
+  // Evita duas avaliações "verificadas" do mesmo produto pelo mesmo pedido.
+  // NULLs em order_id não colidem entre si no Postgres, então avaliações
+  // sem pedido vinculado não são afetadas por esta trava.
+  @@unique([order_id, product_id])
+  @@map("product_reviews")
 }

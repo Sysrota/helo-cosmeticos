@@ -5,6 +5,7 @@ import {
   MessageSquareText,
   Settings,
   ShoppingBag,
+  Star,
   TicketPercent,
   Users,
 } from "lucide-react";
@@ -61,6 +62,14 @@ const adminItems = [
       "Cupons",
     icon:
       TicketPercent,
+  },
+  {
+    to:
+      "/admin/reviews",
+    label:
+      "Avaliações",
+    icon:
+      Star,
   },
   {
     to:

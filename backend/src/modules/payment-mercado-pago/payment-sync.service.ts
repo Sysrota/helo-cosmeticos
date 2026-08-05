@@ -13,6 +13,7 @@ import {
 } from "../manager/manager-notification.service.js";
 import { mercadoPagoClient } from "./mercado-pago.provider.js";
 import { sendMetaCapiEvent } from "../meta/meta-capi.service.js";
+import { buildMetaUserData } from "../meta/build-meta-user-data.js";
 import {
   syncCouponRedemption,
 } from "../coupons/coupons.service.js";
@@ -228,44 +229,66 @@ export async function syncMercadoPagoPayment(
     await sendOrderConfirmationEmail(order.id);
     await sendOrderPaymentConfirmedWhatsApp(order.id);
 
-    // Conversions API — mesmo event_id que o frontend usa para deduplicação
-    void (async () => {
-      try {
-        const orderWithContact = await prisma.order.findUnique({
-          where: { id: order.id },
-          include: {
-            contact: { select: { email: true, phone: true } },
-            items: { include: { product: { select: { id: true } } } },
-          },
-        });
+    // Conversions API — mesmo event_id que o frontend usa para deduplicação.
+    // Pedidos origin=manual (criados no admin, ex: venda por WhatsApp) nunca
+    // passaram pelo funil do site — não enviamos Purchase para a Meta nesses
+    // casos, senão infla o Purchase sem InitiateCheckout/ViewContent
+    // correspondente e distorce o ROAS das campanhas.
+    if (order.origin !== "manual") {
+      void (async () => {
+        try {
+          const orderWithContact = await prisma.order.findUnique({
+            where: { id: order.id },
+            include: {
+              contact: {
+                select: {
+                  email: true,
+                  phone: true,
+                  name: true,
+                  city: true,
+                  state: true,
+                  addresses: {
+                    orderBy: { updated_at: "desc" },
+                    take: 1,
+                    select: { cep: true, city: true, state: true },
+                  },
+                },
+              },
+              items: { include: { product: { select: { id: true } } } },
+            },
+          });
 
-        if (!orderWithContact) return;
+          if (!orderWithContact) return;
 
-        const contentIds = orderWithContact.items.map((item) =>
-          String(item.product_id)
-        );
-        const numItems = orderWithContact.items.reduce(
-          (sum, item) => sum + Number(item.quantity || 1),
-          0
-        );
+          const contentIds = orderWithContact.items.map((item) =>
+            String(item.product_id)
+          );
+          const numItems = orderWithContact.items.reduce(
+            (sum, item) => sum + Number(item.quantity || 1),
+            0
+          );
+          const contents = orderWithContact.items.map((item) => ({
+            id: String(item.product_id),
+            quantity: Number(item.quantity || 1),
+            item_price: Number(item.unit_price || 0),
+          }));
 
-        await sendMetaCapiEvent({
-          event_name: "Purchase",
-          event_id: `purchase_${order.id}`,
-          value: Number(orderWithContact.total),
-          currency: "BRL",
-          content_ids: contentIds,
-          content_type: "product",
-          num_items: numItems,
-          user_data: {
-            email: orderWithContact.contact?.email ?? null,
-            phone: orderWithContact.contact?.phone ?? null,
-          },
-        });
-      } catch (error) {
-        console.error("[Meta CAPI] Purchase failed:", error);
-      }
-    })();
+          await sendMetaCapiEvent({
+            event_name: "Purchase",
+            event_id: `purchase_${order.id}`,
+            value: Number(orderWithContact.total),
+            currency: "BRL",
+            content_ids: contentIds,
+            content_type: "product",
+            contents,
+            num_items: numItems,
+            user_data: buildMetaUserData(orderWithContact),
+          });
+        } catch (error) {
+          console.error("[Meta CAPI] Purchase failed:", error);
+        }
+      })();
+    }
   }
 
   return {

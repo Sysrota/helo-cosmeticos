@@ -32,6 +32,9 @@ import {
   trackOrderTool,
 } from "../tools/track-order.tool.js";
 import {
+  getProductReviewsTool,
+} from "../tools/get-product-reviews.tool.js";
+import {
   getCommercialPolicy,
 } from "../../store-config/store-config.service.js";
 import {
@@ -363,6 +366,7 @@ REGRAS:
 - Nunca informe dados de pedido só pelo número do pedido.
 - Ao responder status de pedido, informe apenas status, pagamento, entrega/prazo, código de rastreio quando existir, última movimentação logística, itens e total. Nunca informe endereço completo, CPF, e-mail completo ou telefone.
 - Se track_order retornar latest_shipping_event, use esse evento como resumo do rastreio em linguagem natural. Se não houver rastreio ainda, explique que o pedido está no status informado e que a atualização de entrega aparecerá quando a transportadora enviar.
+- Se o cliente perguntar se alguém já usou, pedir avaliações, depoimentos ou opinião de outros clientes sobre um produto, use get_product_reviews. Use apenas os comentários reais retornados; nunca invente avaliação, nota ou depoimento. Se vier no_reviews, diga com naturalidade que ainda não há avaliações públicas para esse produto.
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
 - Para kits, liste somente kit_items ou "Produtos/itens do kit cadastrados"; se não houver itens cadastrados, não deduza pela categoria, tags, nome ou descrição.
 - Nunca use exemplos genéricos de composição de kit.
@@ -966,6 +970,40 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                 },
               },
             },
+
+            // =====================
+            // PRODUCT REVIEWS
+            // =====================
+
+            {
+              type:
+                "function",
+
+              function: {
+
+                name:
+                  "get_product_reviews",
+
+                description:
+                  "Busca avaliações reais e aprovadas de um produto. Use quando o cliente perguntar se alguém já usou, pedir avaliações, depoimentos ou opinião de outros clientes. Se productId não for informado, usa o último produto discutido na conversa.",
+
+                parameters: {
+
+                  type:
+                    "object",
+
+                  properties: {
+
+                    productId: {
+                      type:
+                        "number",
+                      description:
+                        "Opcional — ID do produto. Se omitido, usa o último produto discutido nesta conversa.",
+                    },
+                  },
+                },
+              },
+            },
           ],
         });
 
@@ -1185,6 +1223,27 @@ Se precisar de ajuda, estou aqui 😊
 
             cpf:
               args.cpf,
+          });
+      }
+
+      // =====================
+      // PRODUCT REVIEWS
+      // =====================
+
+      if (
+        functionName ===
+        "get_product_reviews"
+      ) {
+
+        toolResult =
+          await getProductReviewsTool({
+
+            conversationId,
+
+            productId:
+              args.productId
+                ? Number(args.productId)
+                : undefined,
           });
       }
 

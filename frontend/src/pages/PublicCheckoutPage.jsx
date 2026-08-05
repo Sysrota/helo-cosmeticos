@@ -39,6 +39,9 @@ import { useCommercialPolicy } from "../context/useCommercialPolicy";
 import {
   buildMetaContentIds,
   buildMetaContents,
+  buildMetaNumItems,
+  getFbc,
+  getFbp,
   trackMetaCustomEvent,
   trackMetaEvent,
 } from "../services/metaPixel";
@@ -635,6 +638,10 @@ export default function PublicCheckoutPage() {
           ),
         content_type:
           "product",
+        num_items:
+          buildMetaNumItems(
+            items
+          ),
         ...extra,
       },
       eventId
@@ -692,9 +699,15 @@ export default function PublicCheckoutPage() {
     const orderId =
       paidOrder?.id ||
       order?.id;
+    const orderOrigin =
+      paidOrder?.origin ||
+      order?.origin;
 
     if (
       !orderId ||
+      // Pedido criado manualmente no admin (ex: venda por WhatsApp) — nunca
+      // enviar Purchase, pois não veio do funil/anúncios do site.
+      orderOrigin === "manual" ||
       purchaseTrackedRef.current ===
         orderId
     ) {
@@ -929,6 +942,12 @@ export default function PublicCheckoutPage() {
         couponPreview?.coupon?.code ||
         couponCode.trim() ||
         undefined,
+      // Dados de correspondência da Meta — persistidos no pedido para a
+      // Conversions API usar depois, quando o Purchase for confirmado de
+      // forma assíncrona (webhook do Mercado Pago) e não houver mais
+      // requisição do navegador para ler esses cookies.
+      fbp: getFbp(),
+      fbc: getFbc(),
     });
 
     setOrder(data);

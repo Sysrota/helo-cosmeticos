@@ -94,6 +94,12 @@ export async function createOrderService({
 
           contact_id,
 
+          // Pedido criado manualmente pelo admin/atendimento (ex: venda
+          // fechada por WhatsApp) — nunca passou pelo funil do site, então
+          // nunca deve gerar evento de Purchase/InitiateCheckout para a Meta.
+          origin:
+            "manual",
+
           subtotal,
 
           total:

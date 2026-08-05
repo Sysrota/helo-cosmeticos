@@ -44,6 +44,10 @@ import {
   buildMetaContents,
   trackMetaEvent,
 } from "../services/metaPixel";
+import {
+  fetchOrderReviewEligibility,
+} from "../services/reviews";
+import WriteReviewModal from "../components/reviews/WriteReviewModal";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -373,13 +377,23 @@ export default function OrderTrackingPage() {
     useLocation();
   const initialData =
     location.state || {};
+  // Suporte a link direto (ex: WhatsApp pós-entrega pedindo avaliação):
+  // /acompanhar-pedido?pedido=123&email=cliente@exemplo.com
+  const queryParams =
+    new URLSearchParams(location.search);
+  const queryOrderId =
+    queryParams.get("pedido") ||
+    queryParams.get("order") ||
+    "";
+  const queryEmail =
+    queryParams.get("email") || "";
   const [orderId, setOrderId] =
     useState(
-      initialData.orderId || ""
+      initialData.orderId || queryOrderId || ""
     );
   const [email, setEmail] =
     useState(
-      initialData.email || ""
+      initialData.email || queryEmail || ""
     );
   const [loading, setLoading] =
     useState(false);
@@ -406,6 +420,11 @@ export default function OrderTrackingPage() {
   const purchaseTrackedRef = useRef(null);
   // Ref espelho do state — permite ler order dentro de callbacks sem closure stale
   const latestOrderRef = useRef(null);
+  const autoSearchTriggeredRef = useRef(false);
+
+  // Avaliação verificada — produtos deste pedido pago ainda sem avaliação.
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+  const [reviewModalItem, setReviewModalItem] = useState(null);
 
   const fetchTrackedOrder =
     useCallback(async () => {
@@ -430,6 +449,50 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     latestOrderRef.current = order;
   }, [order]);
+
+  // Link direto (?pedido=&email=) — busca automaticamente uma única vez,
+  // sem exigir que o cliente preencha o formulário de novo. Usado pelo
+  // link de "avalie sua compra" enviado por WhatsApp após a entrega.
+  useEffect(() => {
+    if (
+      autoSearchTriggeredRef.current ||
+      !queryOrderId ||
+      !queryEmail
+    ) {
+      return;
+    }
+
+    autoSearchTriggeredRef.current = true;
+    handleSearch({ preventDefault() {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Avaliação verificada: quando o pedido está pago, busca quais produtos
+  // ainda podem ser avaliados (reaproveita a mesma prova de posse —
+  // pedido + e-mail — usada para exibir os dados do pedido).
+  useEffect(() => {
+    if (
+      !order?.id ||
+      !["approved", "paid"].includes(order.payment_status)
+    ) {
+      setReviewEligibility(null);
+      return;
+    }
+
+    let active = true;
+
+    fetchOrderReviewEligibility({ orderId: order.id, email })
+      .then((data) => {
+        if (active) setReviewEligibility(data);
+      })
+      .catch(() => {
+        if (active) setReviewEligibility(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [order?.id, order?.payment_status, email]);
 
   // Na carga inicial: se pedido já está pago, registra no localStorage para
   // evitar que eventos de socket posteriores disparem Purchase novamente.
@@ -702,6 +765,10 @@ export default function OrderTrackingPage() {
   function trackPurchase(paidOrder) {
     const trackedOrder = paidOrder || latestOrderRef.current;
     if (!trackedOrder?.id) return;
+
+    // Pedido criado manualmente no admin (ex: venda por WhatsApp) — nunca
+    // enviar Purchase, pois não veio do funil/anúncios do site.
+    if (trackedOrder.origin === "manual") return;
 
     // localStorage persiste entre recargas — evita disparo duplo se usuário
     // recarregar a página enquanto MP retenta o webhook.
@@ -1179,6 +1246,33 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
+            {reviewEligibility?.eligible_items?.length > 0 && (
+              <div className="mt-7 border-t border-[#f2e7eb] pt-7">
+                <p className="mb-3 text-sm font-semibold text-[#43232d]">
+                  Avalie seus produtos
+                </p>
+                <div className="space-y-2">
+                  {reviewEligibility.eligible_items.map((item) => (
+                    <div
+                      key={item.product_id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-[#f3e7eb] p-3"
+                    >
+                      <p className="truncate text-sm font-medium text-[#43232d]">
+                        {item.title}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setReviewModalItem(item)}
+                        className="shrink-0 rounded-xl bg-[#d9536f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#c14b66]"
+                      >
+                        Avaliar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {canPay && (
               <div className="mt-8 border-t border-[#f2e7eb] pt-7">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b74b65]">
@@ -1284,6 +1378,36 @@ export default function OrderTrackingPage() {
           </section>
         )}
       </div>
+
+      <WriteReviewModal
+        open={Boolean(reviewModalItem)}
+        onClose={() => setReviewModalItem(null)}
+        productId={reviewModalItem?.product_id}
+        productTitle={reviewModalItem?.title}
+        verified={
+          reviewModalItem && order
+            ? {
+                orderId: order.id,
+                email,
+                name: reviewEligibility?.contact_name || "",
+                city: reviewEligibility?.contact_city || "",
+                state: reviewEligibility?.contact_state || "",
+              }
+            : undefined
+        }
+        onSubmitted={() => {
+          setReviewEligibility((previous) =>
+            previous
+              ? {
+                  ...previous,
+                  eligible_items: previous.eligible_items.filter(
+                    (item) => item.product_id !== reviewModalItem?.product_id
+                  ),
+                }
+              : previous
+          );
+        }}
+      />
     </div>
   );
 }
