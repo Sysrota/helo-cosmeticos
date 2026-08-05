@@ -114,7 +114,7 @@ export default function ProductReviews({ productId, productTitle, data }) {
                       )}
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                      <span>{formatReviewDate(review.created_at)}</span>
+                      {/* <span>{formatReviewDate(review.created_at)}</span> */}
                       {review.verified_purchase && (
                         <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
                           <BadgeCheck size={13} />
