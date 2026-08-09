@@ -11,6 +11,9 @@ import {
 import { aiQueue }
   from "../../queues/ai.queue.js";
 import { redis } from "../../config/redis.js";
+import {
+  findOrCreateContactByPhone,
+} from "../contact/contact-phone.service.js";
 
 interface CreateConversationDTO {
   phone: string;
@@ -20,22 +23,7 @@ interface CreateConversationDTO {
 export async function createConversation(
   data: CreateConversationDTO
 ) {
-  let contact =
-    await prisma.contact.findUnique({
-      where: {
-        phone: data.phone,
-      },
-    });
-
-  if (!contact) {
-    contact =
-      await prisma.contact.create({
-        data: {
-          phone: data.phone,
-          name: data.name,
-        },
-      });
-  }
+  const contact = await findOrCreateContactByPhone(data);
 
   const existingConversation =
     await prisma.conversation.findFirst({

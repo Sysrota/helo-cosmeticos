@@ -1,5 +1,8 @@
 import { prisma }
   from "../../config/prisma.js";
+import {
+  normalizeContactPhone,
+} from "./contact-phone.service.js";
 
 export async function listContacts() {
   return prisma.contact.findMany({
@@ -144,7 +147,10 @@ export async function updateContactService({
 
     data: {
       name,
-      phone,
+      phone:
+        phone
+          ? normalizeContactPhone(phone)
+          : undefined,
       email,
       cpf,
 

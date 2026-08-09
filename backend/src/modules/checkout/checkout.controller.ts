@@ -30,6 +30,10 @@ import {
 import {
   applyCouponToOrderService,
 } from "../coupons/coupons.service.js";
+import {
+  findContactByPhone,
+  normalizeContactPhone,
+} from "../contact/contact-phone.service.js";
 
 function normalizeDigits(value?: string | null) {
   return String(value || "")
@@ -87,60 +91,20 @@ async function findCheckoutContact(
     email?: string;
   }
 ) {
-  const contactByExactData =
-    await prisma.contact.findFirst({
-      where: {
-        OR: [
-          {
-            phone:
-              customer.phone,
-          },
-          ...(customer.email
-            ? [
-                {
-                  email:
-                    customer.email,
-                },
-              ]
-            : []),
-        ],
-      },
-    });
+  const contactByPhone = await findContactByPhone(customer.phone);
+  if (contactByPhone) return contactByPhone;
+
+  const contactByExactData = customer.email
+    ? await prisma.contact.findFirst({
+        where: { email: customer.email },
+      })
+    : null;
 
   if (contactByExactData) {
     return contactByExactData;
   }
 
-  const customerFirstName =
-    firstName(
-      customer.name
-    );
-
-  if (
-    !customerFirstName ||
-    !normalizePhone(customer.phone)
-  ) {
-    return null;
-  }
-
-  const recentContacts =
-    await prisma.contact.findMany({
-      orderBy: {
-        updated_at:
-          "desc",
-      },
-      take:
-        500,
-    });
-
-  return recentContacts.find((contact) =>
-    firstName(contact.name) ===
-      customerFirstName &&
-    phoneMatches(
-      contact.phone,
-      customer.phone
-    )
-  ) || null;
+  return null;
 }
 
 async function updateCheckoutContact(
@@ -168,12 +132,7 @@ async function updateCheckoutContact(
 
   const phoneOwner =
     customer.phone
-      ? await prisma.contact.findUnique({
-          where: {
-            phone:
-              customer.phone,
-          },
-        })
+      ? await findContactByPhone(customer.phone)
       : null;
 
   const emailOwner =
@@ -198,7 +157,7 @@ async function updateCheckoutContact(
       phone:
         !phoneOwner ||
         phoneOwner.id === contactId
-          ? customer.phone ||
+          ? normalizeContactPhone(customer.phone) ||
             currentContact.phone
           : currentContact.phone,
       email:
@@ -299,7 +258,7 @@ export async function createCheckoutController(
               customer.name,
 
             phone:
-              customer.phone,
+              normalizeContactPhone(customer.phone),
 
             email:
               customer.email,
