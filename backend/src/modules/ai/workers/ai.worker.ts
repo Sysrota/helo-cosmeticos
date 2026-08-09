@@ -47,6 +47,9 @@ import {
 import {
   buildConversationResumeResponse,
 } from "../services/conversation-resume-response.service.js";
+import {
+  buildCouponInquiryResponse,
+} from "../services/coupon-inquiry-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -195,6 +198,26 @@ export const aiWorker =
             conversationId,
           });
 
+          return;
+        }
+
+        const couponInquiryResponse =
+              lastClientMessage?.content
+            ? await buildCouponInquiryResponse({
+                message: lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (couponInquiryResponse) {
+          await createMessage({
+            conversation_id: conversationId,
+            sender_type: "agent",
+            content: couponInquiryResponse,
+            type: "text",
+          });
+
+          await updateConversationMemory({ conversationId });
           return;
         }
 

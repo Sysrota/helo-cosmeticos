@@ -35,6 +35,9 @@ import {
   getProductReviewsTool,
 } from "../tools/get-product-reviews.tool.js";
 import {
+  searchCouponsTool,
+} from "../tools/search-coupons.tool.js";
+import {
   getCommercialPolicy,
 } from "../../store-config/store-config.service.js";
 import {
@@ -367,6 +370,10 @@ REGRAS:
 - Ao responder status de pedido, informe apenas status, pagamento, entrega/prazo, código de rastreio quando existir, última movimentação logística, itens e total. Nunca informe endereço completo, CPF, e-mail completo ou telefone.
 - Se track_order retornar latest_shipping_event, use esse evento como resumo do rastreio em linguagem natural. Se não houver rastreio ainda, explique que o pedido está no status informado e que a atualização de entrega aparecerá quando a transportadora enviar.
 - Se o cliente perguntar se alguém já usou, pedir avaliações, depoimentos ou opinião de outros clientes sobre um produto, use get_product_reviews. Use apenas os comentários reais retornados; nunca invente avaliação, nota ou depoimento. Se vier no_reviews, diga com naturalidade que ainda não há avaliações públicas para esse produto.
+- Quando o cliente mencionar cupom, indicação, influenciadora, parceira ou código de desconto, use search_coupons com a mensagem completa antes de responder. A busca consulta código, nome do cupom e nome da parceira/influenciadora.
+- Nunca confunda cupom com desconto do PIX. Só confirme que um cupom existe, está ativo ou concede determinado benefício quando search_coupons retornar esses dados.
+- Ao responder sobre cupom, mantenha o PRODUTO ATUAL e as pendências da conversa. Não troque por outro produto e não ofereça link de pagamento antes de validar cupom, produto, entrega/frete e total final.
+- Se search_coupons não encontrar correspondência, peça apenas o nome exato da influenciadora ou o código do cupom. Não invente nem sugira um código.
 - Ao recomendar um produto, use as indications retornadas pela busca apenas como necessidades relacionadas cadastradas para aquele produto; não transforme tags em promessa de resultado
 - Para kits, liste somente kit_items ou "Produtos/itens do kit cadastrados"; se não houver itens cadastrados, não deduza pela categoria, tags, nome ou descrição.
 - Nunca use exemplos genéricos de composição de kit.
@@ -430,6 +437,7 @@ IMPORTANTE:
 ${commercialConditionLines.map((line) => `- Condições vigentes: ${line}`).join("\n")}
 ${creditCardEnabled ? `- Ao falar de cartão, informe exatamente: "${cardConditions}"` : "- Não mencione cartão como forma de pagamento."}
 - Para prazo e valor final de entrega, consulte pelo CEP usando a tool e informe somente os valores finais retornados em options.price
+- Nunca confirme "chega hoje", entrega no mesmo dia ou um prazo específico apenas pela cidade, nome ou localização presumida do cliente. Só confirme prazo quando houver CEP e uma cotação atual retornada por calculate_shipping; sem isso, peça o CEP.
 - Se CARRINHO.shipping_quote.status for "current" e shipping_needs_recalculation não for true, use essa cotação para lembrar o frete já informado; recalcule apenas se o cliente pedir atualização ou se o carrinho tiver mudado
 - Se o cliente já informou CEP/endereço antes, use calculate_shipping sem pedir o CEP novamente; a tool consulta o último endereço salvo do contato
 - Se o carrinho tiver shipping_needs_recalculation true e o cliente perguntar frete, entrega, prazo ou total com frete, recalcule com calculate_shipping antes de responder
@@ -747,6 +755,28 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
                   required: [
                     "query",
                   ],
+                },
+              },
+            },
+
+            // =====================
+            // SEARCH COUPONS
+            // =====================
+
+            {
+              type: "function",
+              function: {
+                name: "search_coupons",
+                description: "Consulta cupons reais por código, nome do cupom ou nome da parceira/influenciadora e retorna vigência, status e condições. Use sempre que o cliente mencionar cupom ou indicação.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    query: {
+                      type: "string",
+                      description: "Mensagem completa do cliente com o código ou nome da influenciadora.",
+                    },
+                  },
+                  required: ["query"],
                 },
               },
             },
@@ -1089,6 +1119,12 @@ ${conversation.checkout_url || "Nenhum link enviado ainda."}
 
             conversationId,
           });
+      }
+
+      if (functionName === "search_coupons") {
+        toolResult = await searchCouponsTool({
+          query: args.query,
+        });
       }
 
       // =====================
