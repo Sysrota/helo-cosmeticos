@@ -170,9 +170,15 @@ export async function generateCheckoutLinkTool({
   // CREATE OR UPDATE PENDING ORDER
   // =====================
 
-  const cartProductIds = [...new Set(
-    items.map((item) => Number(item.product_id))
-  )].sort((first, second) => first - second);
+  const cartProductIds: number[] = [...new Set<number>(
+    items.map(
+      (item: { product_id: number }) =>
+        Number(item.product_id)
+    )
+  )].sort(
+    (first: number, second: number) =>
+      first - second
+  );
 
   const { order, reusedOrder } = await prisma.$transaction(
     async (transaction) => {
