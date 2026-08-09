@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "docker start helo-redis 2>nul & tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "orders:delete-unpaid": "tsx src/scripts/delete-unpaid-orders.ts"
   },
   "keywords": [],
   "author": "",
