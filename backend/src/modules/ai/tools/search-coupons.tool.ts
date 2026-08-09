@@ -1,5 +1,24 @@
 import { prisma } from "../../../config/prisma.js";
 
+type CouponMatch = {
+  code: string;
+  name: string;
+  partner_name: string;
+  discount_type: string;
+  discount_value: number;
+  min_subtotal: number;
+  max_discount: number | null;
+  allow_pix_discount: boolean;
+  starts_at: Date | null;
+  ends_at: Date | null;
+  status: string;
+};
+
+export type SearchCouponsResult =
+  | { status: "query_required" }
+  | { status: "not_found" }
+  | { status: "found"; matches: CouponMatch[] };
+
 function normalizeText(value: string) {
   return String(value || "")
     .normalize("NFD")
@@ -43,7 +62,11 @@ function matchScore(query: string, value: string) {
     : 0;
 }
 
-export async function searchCouponsTool({ query }: { query: string }) {
+export async function searchCouponsTool({
+  query,
+}: {
+  query: string;
+}): Promise<SearchCouponsResult> {
   const normalizedQuery = normalizeText(query);
 
   if (!normalizedQuery) {

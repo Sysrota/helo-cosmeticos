@@ -53,7 +53,7 @@ export async function buildCouponInquiryResponse({
 
   const result = await searchCouponsTool({ query: message });
 
-  if (result.status !== "found" || !("matches" in result) || !result.matches.length) {
+  if (result.status !== "found" || !result.matches.length) {
     return "Vou conferir no cadastro para não te passar uma informação errada 😊 Qual é o nome da influenciadora ou o código exato do cupom?";
   }
 
