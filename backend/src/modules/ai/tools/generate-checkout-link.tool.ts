@@ -170,97 +170,104 @@ export async function generateCheckoutLinkTool({
   // CREATE OR UPDATE PENDING ORDER
   // =====================
 
-  const previousOrder =
-    conversation.last_order_id
-      ? await prisma.order.findUnique({
+  const cartProductIds = [...new Set(
+    items.map((item) => Number(item.product_id))
+  )].sort((first, second) => first - second);
+
+  const { order, reusedOrder } = await prisma.$transaction(
+    async (transaction) => {
+      // Serializa checkouts do mesmo contato para impedir que dois jobs
+      // simultâneos criem pedidos pendentes duplicados.
+      await transaction.$executeRaw`
+        SELECT pg_advisory_xact_lock(${contact.id})
+      `;
+
+      const pendingOrders = await transaction.order.findMany({
         where: {
-          id:
-            conversation.last_order_id,
+          contact_id: contact.id,
+          status: "pending",
+          payment_status: "pending",
+          mercado_pago_payment_id: null,
+          pix_code: null,
         },
-      })
-      : null;
-
-  const canUpdateOrder =
-    previousOrder?.status === "pending" &&
-    previousOrder?.payment_status === "pending" &&
-    !previousOrder?.mercado_pago_payment_id &&
-    !previousOrder?.pix_code;
-
-  const order =
-    canUpdateOrder && previousOrder
-      ? await prisma.$transaction(
-        async (transaction) => {
-          await transaction.orderItem.deleteMany({
-            where: {
-              order_id:
-                previousOrder.id,
-            },
-          });
-
-          return transaction.order.update({
-            where: {
-              id:
-                previousOrder.id,
-            },
-            data: {
-              subtotal,
-              shipping:
-                0,
-              discount:
-                0,
-              total:
-                subtotal,
-              shipping_method:
-                null,
-              shipping_price:
-                0,
-              shipping_deadline:
-                null,
-              items: {
-                create:
-                  items,
-              },
-            },
-          });
-        }
-      )
-      : await prisma.$transaction(
-        async (transaction) => {
-          const orderNumber =
-            await generateOrderNumber(
-              transaction
-            );
-
-          return transaction.order.create({
-
-        data: {
-
-          order_number:
-            orderNumber,
-
-          contact_id:
-            contact.id,
-
-          subtotal,
-
-          total:
-            subtotal,
-
-          status:
-            "pending",
-
-          payment_status:
-            "pending",
-
+        include: {
           items: {
-
-            create:
-              items,
+            select: {
+              product_id: true,
+            },
           },
         },
-          });
-        }
-      );
+        orderBy: {
+          updated_at: "desc",
+        },
+        take: 20,
+      });
+
+      const compatibleOrders = pendingOrders.filter((pendingOrder) => {
+        const pendingProductIds = [...new Set(
+          pendingOrder.items.map((item) => Number(item.product_id))
+        )].sort((first, second) => first - second);
+
+        return (
+          pendingProductIds.length === cartProductIds.length &&
+          pendingProductIds.every(
+            (productId, index) => productId === cartProductIds[index]
+          )
+        );
+      });
+      const previousOrder =
+        compatibleOrders.find(
+          (pendingOrder) => pendingOrder.id === conversation.last_order_id
+        ) || compatibleOrders[0];
+
+      if (previousOrder) {
+        await transaction.orderItem.deleteMany({
+          where: { order_id: previousOrder.id },
+        });
+
+        const updatedOrder = await transaction.order.update({
+          where: { id: previousOrder.id },
+          data: {
+            subtotal,
+            shipping: 0,
+            discount: 0,
+            coupon_id: null,
+            coupon_code: null,
+            coupon_discount: 0,
+            payment_discount: 0,
+            total: subtotal,
+            shipping_method: null,
+            shipping_price: 0,
+            shipping_deadline: null,
+            items: { create: items },
+          },
+        });
+
+        return {
+          order: updatedOrder,
+          reusedOrder: true,
+        };
+      }
+
+      const orderNumber = await generateOrderNumber(transaction);
+      const createdOrder = await transaction.order.create({
+        data: {
+          order_number: orderNumber,
+          contact_id: contact.id,
+          subtotal,
+          total: subtotal,
+          status: "pending",
+          payment_status: "pending",
+          items: { create: items },
+        },
+      });
+
+      return {
+        order: createdOrder,
+        reusedOrder: false,
+      };
+    }
+  );
 
   if (cart.coupon_code) {
     await applyCouponToOrderService(
@@ -294,7 +301,7 @@ export async function generateCheckoutLinkTool({
   void notifyManagersAboutOrder(
     order.id,
     "order_created",
-    canUpdateOrder
+    reusedOrder
       ? "Pedido atualizado pela IA no WhatsApp."
       : "Pedido criado pela IA no WhatsApp."
   ).catch((error) => {
