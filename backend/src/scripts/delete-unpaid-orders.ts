@@ -5,29 +5,36 @@ import { prisma } from "../config/prisma.js";
 const EXECUTE_FLAG = "--execute";
 const CONFIRMATION = "--confirm=APAGAR_PEDIDOS_NAO_PAGOS";
 
-const preservedOrderFilter = {
-  OR: [
-    { payment_status: { in: ["paid", "approved"] } },
-    { status: { in: ["paid", "approved", "finished", "delivered"] } },
-    { shipping_status: "delivered" },
-    { paid_at: { not: null } },
-  ],
-};
+const PAID_STATUSES = new Set(["paid", "approved"]);
+const DELIVERED_STATUSES = new Set(["finished", "delivered"]);
+
+function isPreservedOrder(order: {
+  status: string;
+  payment_status: string | null;
+  shipping_status: string | null;
+  paid_at: Date | null;
+}) {
+  return (
+    PAID_STATUSES.has(String(order.payment_status || "").toLowerCase()) ||
+    PAID_STATUSES.has(String(order.status || "").toLowerCase()) ||
+    DELIVERED_STATUSES.has(String(order.status || "").toLowerCase()) ||
+    DELIVERED_STATUSES.has(String(order.shipping_status || "").toLowerCase()) ||
+    order.paid_at !== null
+  );
+}
 
 async function main() {
   const shouldExecute = process.argv.includes(EXECUTE_FLAG);
   const hasConfirmation = process.argv.includes(CONFIRMATION);
 
-  const ordersToDelete = await prisma.order.findMany({
-    where: {
-      NOT: preservedOrderFilter,
-    },
+  const allOrders = await prisma.order.findMany({
     select: {
       id: true,
       order_number: true,
       status: true,
       payment_status: true,
       shipping_status: true,
+      paid_at: true,
       total: true,
       created_at: true,
       contact: {
@@ -52,6 +59,9 @@ async function main() {
       created_at: "asc",
     },
   });
+  const ordersToDelete = allOrders.filter(
+    (order) => !isPreservedOrder(order)
+  );
 
   console.table(
     ordersToDelete.map((order) => ({
@@ -93,10 +103,35 @@ async function main() {
     return;
   }
 
-  const orderIds = ordersToDelete.map((order) => order.id);
+  const previewOrderIds = ordersToDelete.map((order) => order.id);
 
   const result = await prisma.$transaction(
     async (transaction) => {
+      const currentOrders = await transaction.order.findMany({
+        where: {
+          id: { in: previewOrderIds },
+        },
+        select: {
+          id: true,
+          status: true,
+          payment_status: true,
+          shipping_status: true,
+          paid_at: true,
+        },
+      });
+      const orderIds = currentOrders
+        .filter((order) => !isPreservedOrder(order))
+        .map((order) => order.id);
+
+      if (!orderIds.length) {
+        return {
+          conversations: 0,
+          reviews: 0,
+          items: 0,
+          orders: 0,
+        };
+      }
+
       const conversations = await transaction.conversation.updateMany({
         where: {
           last_order_id: { in: orderIds },
@@ -127,7 +162,6 @@ async function main() {
       const orders = await transaction.order.deleteMany({
         where: {
           id: { in: orderIds },
-          NOT: preservedOrderFilter,
         },
       });
 
