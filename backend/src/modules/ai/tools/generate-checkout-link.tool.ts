@@ -8,6 +8,9 @@ import {
   getOrderDisplayNumber,
   generateOrderNumber,
 } from "../../order/order-number.service.js";
+import {
+  applyCouponToOrderService,
+} from "../../coupons/coupons.service.js";
 
 interface Props {
 
@@ -258,6 +261,13 @@ export async function generateCheckoutLinkTool({
           });
         }
       );
+
+  if (cart.coupon_code) {
+    await applyCouponToOrderService(
+      order.id,
+      String(cart.coupon_code)
+    );
+  }
 
   // =====================
   // URL

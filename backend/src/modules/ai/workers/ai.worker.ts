@@ -53,6 +53,9 @@ import {
 import {
   buildLocalDeliveryCityResponse,
 } from "../services/local-delivery-city-response.service.js";
+import {
+  buildConfirmedCheckoutResponse,
+} from "../services/confirmed-checkout-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -237,6 +240,26 @@ export const aiWorker =
             conversation_id: conversationId,
             sender_type: "agent",
             content: localDeliveryCityResponse,
+            type: "text",
+          });
+
+          await updateConversationMemory({ conversationId });
+          return;
+        }
+
+        const confirmedCheckoutResponse =
+          lastClientMessage?.content
+            ? await buildConfirmedCheckoutResponse({
+                message: lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (confirmedCheckoutResponse) {
+          await createMessage({
+            conversation_id: conversationId,
+            sender_type: "agent",
+            content: confirmedCheckoutResponse,
             type: "text",
           });
 

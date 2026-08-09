@@ -1,5 +1,6 @@
 import { searchCouponsTool } from "../tools/search-coupons.tool.js";
 import { prisma } from "../../../config/prisma.js";
+import { previewCouponService } from "../../coupons/coupons.service.js";
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -47,7 +48,11 @@ export async function buildCouponInquiryResponse({
   const isCouponQuestion =
     /\b(cupom|coupon)\b/.test(normalized) ||
     normalized.includes("codigo de desconto") ||
-    normalized.includes("código de desconto");
+    normalized.includes("código de desconto") ||
+    normalized.includes("fui indicado") ||
+    normalized.includes("fui indicada") ||
+    normalized.includes("indicacao") ||
+    normalized.includes("indicação");
 
   if (!isCouponQuestion) return null;
 
@@ -60,7 +65,11 @@ export async function buildCouponInquiryResponse({
   const coupon = result.matches[0];
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
-    select: { ai_summary: true },
+    select: {
+      ai_summary: true,
+      cart_json: true,
+      last_product_id: true,
+    },
   });
   const memory = conversation?.ai_summary || "";
   const currentProduct = memory.match(/^PRODUTO ATUAL:\s*(.+)$/m)?.[1]?.trim();
@@ -72,16 +81,41 @@ export async function buildCouponInquiryResponse({
     return `${statusMessage(coupon.status)} Se você quiser, posso verificar outra condição disponível para o produto que escolheu.`;
   }
 
-  const minimum = Number(coupon.min_subtotal || 0) > 0
-    ? ` Ele é válido a partir de ${formatBRL(coupon.min_subtotal)} em produtos.`
-    : "";
-  const pixRule = coupon.allow_pix_discount
-    ? " O desconto do PIX também pode ser aplicado, conforme aparecer no pagamento."
-    : " Esse cupom não acumula com o desconto do PIX.";
+  const cart = conversation?.cart_json
+    ? JSON.parse(JSON.stringify(conversation.cart_json))
+    : { items: [] };
+  const previewItems = cart.items?.length
+    ? cart.items
+    : conversation?.last_product_id
+      ? [{ product_id: conversation.last_product_id, quantity: 1 }]
+      : [];
+
+  let finalValue = "";
+
+  if (previewItems.length) {
+    try {
+      const preview = await previewCouponService(coupon.code, previewItems);
+      finalValue = formatBRL(preview.totals.totalAfterCoupon);
+      cart.coupon_code = coupon.code;
+      cart.coupon_discount = preview.totals.couponDiscount;
+      cart.total_after_coupon = preview.totals.totalAfterCoupon;
+
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { cart_json: cart },
+      });
+    } catch {
+      finalValue = "";
+    }
+  }
 
   const nextStep = hasCep
     ? `Vou manter ${hasCurrentProduct ? `o ${currentProduct}` : "o produto escolhido"} e considerar esse cupom na finalização.`
     : `Me passa seu CEP para eu confirmar a entrega e montar o pedido com ${hasCurrentProduct ? `o ${currentProduct}` : "o produto que você escolheu"}.`;
 
-  return `Que legal receber você pela indicação de ${coupon.partner_name} 😊 O cupom ${coupon.code} está ativo e oferece ${discountDescription(coupon)}.${minimum}${pixRule}\n\n${nextStep}`;
+  const confirmation = finalValue
+    ? `Sim 😊 O cupom da ${coupon.partner_name} está ativo. Com o desconto, ${hasCurrentProduct ? `o ${currentProduct}` : "seu pedido"} fica por ${finalValue}.`
+    : `Sim 😊 O cupom da ${coupon.partner_name} está ativo e oferece ${discountDescription(coupon)}.`;
+
+  return `${confirmation}\n\n${nextStep}`;
 }
