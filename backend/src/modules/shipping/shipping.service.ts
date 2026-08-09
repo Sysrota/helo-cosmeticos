@@ -53,6 +53,15 @@ const MOTO_UBER_CITIES = new Set([
   "trindade",
 ]);
 
+const MOTO_UBER_CITY_LABELS = new Map([
+  ["aparecida de goiania", "Aparecida de Goiânia"],
+  ["goiania", "Goiânia"],
+  ["goianira", "Goianira"],
+  ["hidrolandia", "Hidrolândia"],
+  ["senador canedo", "Senador Canedo"],
+  ["trindade", "Trindade"],
+]);
+
 const MOTO_UBER_PRICE = 0;
 
 const LOCAL_PICKUP_OPTION: ShippingOption = {
@@ -69,6 +78,25 @@ function normalizeLocation(value: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+export function findLocalDeliveryCity(value: string) {
+  const normalized = normalizeLocation(value)
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (normalized.length > 80) return null;
+
+  const matchedCity = [...MOTO_UBER_CITIES]
+    .sort((first, second) => second.length - first.length)
+    .find((city) =>
+      new RegExp(`(^|\\s)${city.replace(/ /g, "\\s+")}($|\\s)`).test(normalized)
+    );
+
+  return matchedCity
+    ? MOTO_UBER_CITY_LABELS.get(matchedCity) || matchedCity
+    : null;
 }
 
 function isLocalDeliveryCovered(address: { city: string; state: string }) {

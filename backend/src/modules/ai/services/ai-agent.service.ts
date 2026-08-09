@@ -437,7 +437,7 @@ IMPORTANTE:
 ${commercialConditionLines.map((line) => `- Condições vigentes: ${line}`).join("\n")}
 ${creditCardEnabled ? `- Ao falar de cartão, informe exatamente: "${cardConditions}"` : "- Não mencione cartão como forma de pagamento."}
 - Para prazo e valor final de entrega, consulte pelo CEP usando a tool e informe somente os valores finais retornados em options.price
-- Nunca confirme "chega hoje", entrega no mesmo dia ou um prazo específico apenas pela cidade, nome ou localização presumida do cliente. Só confirme prazo quando houver CEP e uma cotação atual retornada por calculate_shipping; sem isso, peça o CEP.
+- Para Goiânia e as cidades metropolitanas cadastradas na entrega local, a cidade informada já permite confirmar que existe entrega no mesmo dia por Moto Uber; depois peça o CEP para validar o endereço e montar o pedido. Para qualquer outra cidade, só confirme prazo específico quando houver CEP e cotação atual retornada por calculate_shipping.
 - Se CARRINHO.shipping_quote.status for "current" e shipping_needs_recalculation não for true, use essa cotação para lembrar o frete já informado; recalcule apenas se o cliente pedir atualização ou se o carrinho tiver mudado
 - Se o cliente já informou CEP/endereço antes, use calculate_shipping sem pedir o CEP novamente; a tool consulta o último endereço salvo do contato
 - Se o carrinho tiver shipping_needs_recalculation true e o cliente perguntar frete, entrega, prazo ou total com frete, recalcule com calculate_shipping antes de responder

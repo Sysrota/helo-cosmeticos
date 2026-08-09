@@ -50,6 +50,9 @@ import {
 import {
   buildCouponInquiryResponse,
 } from "../services/coupon-inquiry-response.service.js";
+import {
+  buildLocalDeliveryCityResponse,
+} from "../services/local-delivery-city-response.service.js";
 
 async function isLatestClientMessageJob(
   job: {
@@ -214,6 +217,26 @@ export const aiWorker =
             conversation_id: conversationId,
             sender_type: "agent",
             content: couponInquiryResponse,
+            type: "text",
+          });
+
+          await updateConversationMemory({ conversationId });
+          return;
+        }
+
+        const localDeliveryCityResponse =
+          lastClientMessage?.content
+            ? await buildLocalDeliveryCityResponse({
+                message: lastClientMessage.content,
+                conversationId,
+              })
+            : null;
+
+        if (localDeliveryCityResponse) {
+          await createMessage({
+            conversation_id: conversationId,
+            sender_type: "agent",
+            content: localDeliveryCityResponse,
             type: "text",
           });
 
