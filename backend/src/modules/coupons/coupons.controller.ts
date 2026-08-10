@@ -5,13 +5,18 @@ import {
 import {
   applyCouponToOrderService,
   couponReportService,
+  createCommissionPayoutService,
   createCouponService,
+  deleteCommissionPayoutService,
   deleteCouponService,
+  listCommissionPayoutsService,
   listCouponsService,
+  pendingCommissionPreviewService,
   previewCouponService,
   removeCouponFromOrderService,
   updateCouponService,
 } from "./coupons.service.js";
+import { streamCommissionStatementPdf } from "./commission-statement.service.js";
 
 function errorMessage(
   error: unknown,
@@ -181,6 +186,134 @@ export async function removeCheckoutCouponController(
         errorMessage(
           error,
           "Erro ao remover cupom."
+        ),
+    });
+  }
+}
+
+export async function listCommissionPayoutsController(
+  req: Request,
+  res: Response
+) {
+  const payouts =
+    await listCommissionPayoutsService(
+      Number(req.params.id)
+    );
+
+  return res.json(
+    payouts
+  );
+}
+
+export async function pendingCommissionController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const preview =
+      await pendingCommissionPreviewService(
+        Number(req.params.id)
+      );
+
+    return res.json(
+      preview
+    );
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao calcular comissão pendente."
+        ),
+    });
+  }
+}
+
+export async function createCommissionPayoutController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const payout =
+      await createCommissionPayoutService(
+        Number(req.params.id),
+        req.body
+      );
+
+    return res.status(201).json(
+      payout
+    );
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao registrar pagamento de comissão."
+        ),
+    });
+  }
+}
+
+export async function deleteCommissionPayoutController(
+  req: Request,
+  res: Response
+) {
+  try {
+    await deleteCommissionPayoutService(
+      Number(req.params.payoutId)
+    );
+
+    return res.json({
+      message:
+        "Pagamento removido.",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao remover pagamento."
+        ),
+    });
+  }
+}
+
+export async function commissionStatementPdfController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const periodStartRaw =
+      req.query.period_start
+        ? new Date(
+            String(req.query.period_start)
+          )
+        : null;
+    const periodEndRaw =
+      req.query.period_end
+        ? new Date(
+            String(req.query.period_end)
+          )
+        : null;
+
+    await streamCommissionStatementPdf(
+      res,
+      Number(req.params.id),
+      periodStartRaw &&
+      !Number.isNaN(periodStartRaw.getTime())
+        ? periodStartRaw
+        : null,
+      periodEndRaw &&
+      !Number.isNaN(periodEndRaw.getTime())
+        ? periodEndRaw
+        : null
+    );
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao gerar relatório em PDF."
         ),
     });
   }

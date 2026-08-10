@@ -508,6 +508,8 @@ model Coupon {
 
   redemptions CouponRedemption[]
 
+  commission_payouts CommissionPayout[]
+
   @@map("coupons")
 }
 
@@ -540,6 +542,32 @@ model CouponRedemption {
 
   @@unique([coupon_id, order_id])
   @@map("coupon_redemptions")
+}
+
+model CommissionPayout {
+  id Int @id @default(autoincrement())
+
+  coupon_id Int
+
+  period_start DateTime
+
+  period_end DateTime
+
+  paid_subtotal Float @default(0)
+
+  commission_percent Float @default(0)
+
+  commission_amount Float @default(0)
+
+  paid_at DateTime @default(now())
+
+  notes String?
+
+  created_at DateTime @default(now())
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+
+  @@map("commission_payouts")
 }
 
 model OrderSequence {

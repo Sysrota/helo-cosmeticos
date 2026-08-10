@@ -35,6 +35,43 @@ function parseDate(
     : date;
 }
 
+function effectiveOrderDate(
+  order: any
+) {
+  return (
+    order.paid_at ||
+    order.created_at
+  );
+}
+
+function isPaidRedemption(
+  redemption: any
+) {
+  return PAID_STATUSES.includes(
+    String(
+      redemption.order.payment_status ||
+      redemption.order.status ||
+      redemption.status
+    )
+  );
+}
+
+function endOfDay(
+  date: Date
+) {
+  const result =
+    new Date(date);
+
+  result.setHours(
+    23,
+    59,
+    59,
+    999
+  );
+
+  return result;
+}
+
 function parseOptionalNumber(
   value: unknown
 ) {
@@ -683,6 +720,7 @@ export async function couponReportService() {
             contact: true,
           },
         },
+        commission_payouts: true,
       },
     });
 
@@ -691,13 +729,62 @@ export async function couponReportService() {
       const redemptions =
         coupon.redemptions;
       const paidRedemptions =
-        redemptions.filter((redemption) =>
-          PAID_STATUSES.includes(
-            String(
-              redemption.order.payment_status ||
-              redemption.order.status ||
-              redemption.status
+        redemptions.filter(
+          isPaidRedemption
+        );
+
+      const paidCommission =
+        roundMoney(
+          coupon.commission_payouts.reduce(
+            (sum, payout) =>
+              sum +
+              Number(
+                payout.commission_amount || 0
+              ),
+            0
+          )
+        );
+      const lastPayoutPeriodEnd =
+        coupon.commission_payouts.length
+          ? new Date(
+              Math.max(
+                ...coupon.commission_payouts.map(
+                  (payout) =>
+                    new Date(
+                      payout.period_end
+                    ).getTime()
+                )
+              )
             )
+          : null;
+      const pendingRedemptions =
+        paidRedemptions.filter(
+          (redemption) =>
+            !lastPayoutPeriodEnd ||
+            new Date(
+              effectiveOrderDate(
+                redemption.order
+              )
+            ) >
+              lastPayoutPeriodEnd
+        );
+      const pendingSubtotal =
+        pendingRedemptions.reduce(
+          (sum, redemption) =>
+            sum +
+            Number(
+              redemption.order.subtotal || 0
+            ),
+          0
+        );
+      const pendingCommission =
+        roundMoney(
+          pendingSubtotal *
+          (
+            Number(
+              coupon.commission_percent || 0
+            ) /
+            100
           )
         );
 
@@ -786,6 +873,12 @@ export async function couponReportService() {
             : 0,
         estimated_commission:
           commission,
+        paid_commission:
+          paidCommission,
+        pending_commission:
+          pendingCommission,
+        last_payout_period_end:
+          lastPayoutPeriodEnd,
         orders:
           redemptions.map((redemption) => ({
             id:
@@ -836,6 +929,16 @@ export async function couponReportService() {
             acc.estimated_commission +
             row.estimated_commission
           ),
+        paid_commission:
+          roundMoney(
+            acc.paid_commission +
+            row.paid_commission
+          ),
+        pending_commission:
+          roundMoney(
+            acc.pending_commission +
+            row.pending_commission
+          ),
       }),
       {
         coupons: 0,
@@ -844,6 +947,8 @@ export async function couponReportService() {
         revenue_total: 0,
         discount_total: 0,
         estimated_commission: 0,
+        paid_commission: 0,
+        pending_commission: 0,
       }
     );
 
@@ -851,6 +956,266 @@ export async function couponReportService() {
     summary,
     rows,
   };
+}
+
+export async function listCommissionPayoutsService(
+  couponId: number
+) {
+  return prisma.commissionPayout.findMany({
+    where: {
+      coupon_id:
+        couponId,
+    },
+    orderBy: {
+      period_end:
+        "desc",
+    },
+  });
+}
+
+export async function pendingCommissionPreviewService(
+  couponId: number
+) {
+  const coupon =
+    await prisma.coupon.findUnique({
+      where: {
+        id: couponId,
+      },
+      include: {
+        redemptions: {
+          include: {
+            order: true,
+          },
+        },
+        commission_payouts: true,
+      },
+    });
+
+  if (!coupon) {
+    throw new Error(
+      "Cupom não encontrado."
+    );
+  }
+
+  const lastPayoutPeriodEnd =
+    coupon.commission_payouts.length
+      ? new Date(
+          Math.max(
+            ...coupon.commission_payouts.map(
+              (payout) =>
+                new Date(
+                  payout.period_end
+                ).getTime()
+            )
+          )
+        )
+      : null;
+
+  const periodStart =
+    lastPayoutPeriodEnd
+      ? new Date(
+          lastPayoutPeriodEnd.getTime() +
+          24 * 60 * 60 * 1000
+        )
+      : coupon.created_at;
+
+  const periodEnd =
+    new Date();
+
+  const eligible =
+    coupon.redemptions.filter(
+      (redemption) => {
+        if (!isPaidRedemption(redemption)) {
+          return false;
+        }
+
+        const date =
+          new Date(
+            effectiveOrderDate(
+              redemption.order
+            )
+          );
+
+        return (
+          date >= periodStart &&
+          date <= periodEnd
+        );
+      }
+    );
+
+  const paidSubtotal =
+    roundMoney(
+      eligible.reduce(
+        (sum, redemption) =>
+          sum +
+          Number(
+            redemption.order.subtotal || 0
+          ),
+        0
+      )
+    );
+
+  const commissionAmount =
+    roundMoney(
+      paidSubtotal *
+      (
+        Number(
+          coupon.commission_percent || 0
+        ) /
+        100
+      )
+    );
+
+  return {
+    coupon_id:
+      coupon.id,
+    partner_name:
+      coupon.partner_name,
+    commission_percent:
+      coupon.commission_percent,
+    period_start:
+      periodStart,
+    period_end:
+      periodEnd,
+    orders_count:
+      eligible.length,
+    paid_subtotal:
+      paidSubtotal,
+    commission_amount:
+      commissionAmount,
+  };
+}
+
+export async function createCommissionPayoutService(
+  couponId: number,
+  body: any
+) {
+  const coupon =
+    await prisma.coupon.findUnique({
+      where: {
+        id: couponId,
+      },
+    });
+
+  if (!coupon) {
+    throw new Error(
+      "Cupom não encontrado."
+    );
+  }
+
+  const periodStart =
+    parseDate(
+      body.period_start
+    );
+  const periodEndRaw =
+    parseDate(
+      body.period_end
+    );
+
+  if (!periodStart || !periodEndRaw) {
+    throw new Error(
+      "Informe o período (início e fim) do pagamento."
+    );
+  }
+
+  if (periodStart > periodEndRaw) {
+    throw new Error(
+      "O início do período não pode ser depois do fim."
+    );
+  }
+
+  const periodEndLimit =
+    endOfDay(
+      periodEndRaw
+    );
+
+  const redemptions =
+    await prisma.couponRedemption.findMany({
+      where: {
+        coupon_id:
+          couponId,
+      },
+      include: {
+        order: true,
+      },
+    });
+
+  const eligible =
+    redemptions.filter(
+      (redemption) => {
+        if (!isPaidRedemption(redemption)) {
+          return false;
+        }
+
+        const date =
+          new Date(
+            effectiveOrderDate(
+              redemption.order
+            )
+          );
+
+        return (
+          date >= periodStart &&
+          date <= periodEndLimit
+        );
+      }
+    );
+
+  const paidSubtotal =
+    roundMoney(
+      eligible.reduce(
+        (sum, redemption) =>
+          sum +
+          Number(
+            redemption.order.subtotal || 0
+          ),
+        0
+      )
+    );
+
+  const commissionAmount =
+    roundMoney(
+      paidSubtotal *
+      (
+        Number(
+          coupon.commission_percent || 0
+        ) /
+        100
+      )
+    );
+
+  return prisma.commissionPayout.create({
+    data: {
+      coupon_id:
+        couponId,
+      period_start:
+        periodStart,
+      period_end:
+        periodEndRaw,
+      paid_subtotal:
+        paidSubtotal,
+      commission_percent:
+        coupon.commission_percent,
+      commission_amount:
+        commissionAmount,
+      notes:
+        body.notes
+          ? String(
+              body.notes
+            ).trim()
+          : null,
+    },
+  });
+}
+
+export async function deleteCommissionPayoutService(
+  payoutId: number
+) {
+  return prisma.commissionPayout.delete({
+    where: {
+      id: payoutId,
+    },
+  });
 }
 
 export async function deleteCouponService(
