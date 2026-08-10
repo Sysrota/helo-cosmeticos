@@ -430,7 +430,7 @@ export default function Produto() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível calcular o frete.");
-      setShippingOptions(data.slice().sort((a, b) => a.price - b.price));
+      setShippingOptions(data);
     } catch (error) {
       setShippingError(
         error instanceof Error ? error.message : "Não foi possível calcular o frete."

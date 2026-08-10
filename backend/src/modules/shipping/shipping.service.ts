@@ -164,12 +164,67 @@ function getShippingPriority(option: ShippingOption) {
   return 2;
 }
 
+const JT_PRICE_TOLERANCE = 5;
+
+function getComparableShippingPrice(option: ShippingOption) {
+  return Number(option.original_price ?? option.price);
+}
+
+function normalizeCarrierText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(DIACRITICS_PATTERN, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9&]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isJtShippingOption(option: ShippingOption) {
+  const rawText = [
+    option.name,
+    option.melhor_envio_company_name,
+    option.melhor_envio_service_name,
+    option.manda_bem_service,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const normalized = normalizeCarrierText(rawText);
+
+  return (
+    normalized.includes("j&t") ||
+    /(^|\s)j\s*t(\s|$)/.test(normalized) ||
+    /(^|\s)jt\s+express(\s|$)/.test(normalized)
+  );
+}
+
 function getDeadlineMin(option: ShippingOption) {
   return Number.isFinite(option.min_days) ? Number(option.min_days) : 999;
 }
 
 function getDeadlineMax(option: ShippingOption) {
   return Number.isFinite(option.max_days) ? Number(option.max_days) : 999;
+}
+
+function shouldPreferJtOption(
+  jtOption: ShippingOption,
+  comparedOption: ShippingOption
+) {
+  if (!isJtShippingOption(jtOption) || isJtShippingOption(comparedOption)) {
+    return false;
+  }
+
+  if (getShippingPriority(jtOption) !== getShippingPriority(comparedOption)) {
+    return false;
+  }
+
+  const jtPrice = getComparableShippingPrice(jtOption);
+  const comparedPrice = getComparableShippingPrice(comparedOption);
+
+  return (
+    getDeadlineMax(jtOption) < getDeadlineMax(comparedOption) &&
+    jtPrice <= comparedPrice + JT_PRICE_TOLERANCE
+  );
 }
 
 function sortShippingOptions(options: ShippingOption[]) {
@@ -179,8 +234,11 @@ function sortShippingOptions(options: ShippingOption[]) {
 
     if (priorityDiff !== 0) return priorityDiff;
 
-    const originalPriceFirst = Number(first.original_price ?? first.price);
-    const originalPriceSecond = Number(second.original_price ?? second.price);
+    if (shouldPreferJtOption(first, second)) return -1;
+    if (shouldPreferJtOption(second, first)) return 1;
+
+    const originalPriceFirst = getComparableShippingPrice(first);
+    const originalPriceSecond = getComparableShippingPrice(second);
     const priceDiff = originalPriceFirst - originalPriceSecond;
 
     if (priceDiff !== 0) return priceDiff;

@@ -1147,17 +1147,7 @@ export default function PublicCheckoutPage() {
       });
 
       setShippingOptions(data);
-      setSelectedShipping(
-        data.reduce(
-          (bestOption, option) =>
-            !bestOption ||
-            Number(option.price) <
-              Number(bestOption.price)
-              ? option
-              : bestOption,
-          null
-        )
-      );
+      setSelectedShipping(data[0] || null);
       trackCheckoutCustomEvent(
         "CheckoutShippingCalculated",
         {
