@@ -194,6 +194,7 @@ function isJtShippingOption(option: ShippingOption) {
   return (
     normalized.includes("j&t") ||
     /(^|\s)j\s*t(\s|$)/.test(normalized) ||
+    /(^|\s)j\s*e\s*t(\s|$)/.test(normalized) ||
     /(^|\s)jt\s+express(\s|$)/.test(normalized)
   );
 }
