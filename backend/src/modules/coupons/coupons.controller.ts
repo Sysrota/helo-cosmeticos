@@ -4,6 +4,7 @@ import {
 } from "express";
 import {
   applyCouponToOrderService,
+  couponCommissionOrdersService,
   couponReportService,
   createCommissionPayoutService,
   createCouponService,
@@ -191,6 +192,65 @@ export async function removeCheckoutCouponController(
   }
 }
 
+export async function commissionOrdersController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const couponId =
+      req.query.coupon_id
+        ? Number(req.query.coupon_id)
+        : null;
+    const periodStartRaw =
+      req.query.period_start
+        ? new Date(
+            String(req.query.period_start)
+          )
+        : null;
+    const periodEndRaw =
+      req.query.period_end
+        ? new Date(
+            String(req.query.period_end)
+          )
+        : null;
+
+    const report =
+      await couponCommissionOrdersService({
+        couponId:
+          couponId &&
+          !Number.isNaN(couponId)
+            ? couponId
+            : null,
+        periodStart:
+          periodStartRaw &&
+          !Number.isNaN(periodStartRaw.getTime())
+            ? periodStartRaw
+            : null,
+        periodEnd:
+          periodEndRaw &&
+          !Number.isNaN(periodEndRaw.getTime())
+            ? periodEndRaw
+            : null,
+        status:
+          req.query.status
+            ? String(req.query.status)
+            : "all",
+      });
+
+    return res.json(
+      report
+    );
+  } catch (error) {
+    return res.status(400).json({
+      error:
+        errorMessage(
+          error,
+          "Erro ao buscar pedidos de comissão."
+        ),
+    });
+  }
+}
+
 export async function listCommissionPayoutsController(
   req: Request,
   res: Response
@@ -306,7 +366,10 @@ export async function commissionStatementPdfController(
       periodEndRaw &&
       !Number.isNaN(periodEndRaw.getTime())
         ? periodEndRaw
-        : null
+        : null,
+      req.query.status
+        ? String(req.query.status)
+        : "all"
     );
   } catch (error) {
     return res.status(400).json({

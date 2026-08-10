@@ -38,7 +38,7 @@ function endOfDay(
   const result =
     new Date(date);
 
-  result.setHours(
+  result.setUTCHours(
     23,
     59,
     59,
@@ -46,6 +46,35 @@ function endOfDay(
   );
 
   return result;
+}
+
+function findCoveringPayout(
+  date: Date,
+  payouts: any[]
+) {
+  return (
+    payouts.find(
+      (payout) =>
+        date >=
+          new Date(
+            payout.period_start
+          ) &&
+        date <=
+          endOfDay(
+            new Date(
+              payout.period_end
+            )
+          )
+    ) || null
+  );
+}
+
+function statusLabel(
+  status: string
+) {
+  return status === "paid"
+    ? "Pago"
+    : "Pendente";
 }
 
 function formatDate(
@@ -56,7 +85,10 @@ function formatDate(
   }
 
   return new Date(value).toLocaleDateString(
-    "pt-BR"
+    "pt-BR",
+    {
+      timeZone: "UTC",
+    }
   );
 }
 
@@ -78,7 +110,8 @@ export async function streamCommissionStatementPdf(
   res: Response,
   couponId: number,
   periodStart: Date | null,
-  periodEnd: Date | null
+  periodEnd: Date | null,
+  status: string | null
 ) {
   const coupon =
     await prisma.coupon.findUnique({
@@ -111,6 +144,8 @@ export async function streamCommissionStatementPdf(
     periodEnd
       ? endOfDay(periodEnd)
       : null;
+  const statusFilter =
+    status || "all";
 
   const orders =
     coupon.redemptions
@@ -139,23 +174,54 @@ export async function streamCommissionStatementPdf(
 
         return true;
       })
+      .map((redemption) => {
+        const date =
+          new Date(
+            effectiveOrderDate(
+              redemption.order
+            )
+          );
+        const covering =
+          findCoveringPayout(
+            date,
+            coupon.commission_payouts
+          );
+
+        return {
+          redemption,
+          commissionStatus:
+            covering
+              ? "paid"
+              : "pending",
+        };
+      })
+      .filter(
+        (entry) =>
+          statusFilter === "all" ||
+          entry.commissionStatus ===
+            statusFilter
+      )
       .sort(
         (a, b) =>
           new Date(
-            effectiveOrderDate(a.order)
+            effectiveOrderDate(
+              a.redemption.order
+            )
           ).getTime() -
           new Date(
-            effectiveOrderDate(b.order)
+            effectiveOrderDate(
+              b.redemption.order
+            )
           ).getTime()
       );
 
   const paidSubtotal =
     roundMoney(
       orders.reduce(
-        (sum, redemption) =>
+        (sum, entry) =>
           sum +
           Number(
-            redemption.order.subtotal || 0
+            entry.redemption.order.subtotal || 0
           ),
         0
       )
@@ -229,6 +295,13 @@ export async function streamCommissionStatementPdf(
       periodEnd ? formatDate(periodEnd) : "hoje"
     }`
   );
+
+  if (statusFilter !== "all") {
+    doc.text(
+      `Filtro: apenas pedidos ${statusFilter === "paid" ? "pagos" : "pendentes"}`
+    );
+  }
+
   doc.text(
     `Emitido em: ${formatDate(new Date())}`
   );
@@ -238,19 +311,23 @@ export async function streamCommissionStatementPdf(
   const columns = [
     {
       label: "Pedido",
-      width: 90,
+      width: 75,
     },
     {
       label: "Data",
-      width: 80,
+      width: 65,
     },
     {
       label: "Subtotal",
-      width: 100,
+      width: 90,
     },
     {
       label: "Comissão",
-      width: 100,
+      width: 90,
+    },
+    {
+      label: "Status",
+      width: 70,
     },
   ];
   const tableWidth =
@@ -313,7 +390,7 @@ export async function streamCommissionStatementPdf(
     rowY += 20;
   }
 
-  orders.forEach((redemption, index) => {
+  orders.forEach((entry, index) => {
     if (rowY > 760) {
       doc.addPage();
       rowY =
@@ -333,6 +410,8 @@ export async function streamCommissionStatementPdf(
 
     doc.fillColor("#222222");
 
+    const { redemption, commissionStatus } =
+      entry;
     const orderCommission =
       roundMoney(
         Number(
@@ -400,6 +479,24 @@ export async function streamCommissionStatementPdf(
           columns[3].width - 6,
       }
     );
+    cursorX += columns[3].width;
+
+    doc
+      .fillColor(
+        commissionStatus === "paid"
+          ? "#0f9d58"
+          : "#b26a00"
+      )
+      .text(
+        statusLabel(commissionStatus),
+        cursorX,
+        rowY + 3,
+        {
+          width:
+            columns[4].width - 6,
+        }
+      );
+    doc.fillColor("#222222");
 
     rowY += 16;
   });

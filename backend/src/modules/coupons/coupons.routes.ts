@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  commissionOrdersController,
   commissionStatementPdfController,
   couponReportController,
   createCommissionPayoutController,
@@ -24,6 +25,11 @@ couponRoutes.get(
 couponRoutes.get(
   "/report",
   couponReportController
+);
+
+couponRoutes.get(
+  "/commission-orders",
+  commissionOrdersController
 );
 
 couponRoutes.post(

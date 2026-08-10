@@ -1,5 +1,4 @@
 import {
-  Fragment,
   useEffect,
   useMemo,
   useState,
@@ -88,6 +87,22 @@ function payloadFromForm(form) {
   };
 }
 
+function statusBadge(status) {
+  if (status === "paid") {
+    return (
+      <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+        Pago
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700">
+      Pendente
+    </span>
+  );
+}
+
 function buildInfluencerLink(code, productId) {
   const origin =
     window.location.origin;
@@ -132,13 +147,22 @@ export default function CouponsPage() {
     useState(false);
   const [payoutSaving, setPayoutSaving] =
     useState(false);
-  const [expandedHistoryId, setExpandedHistoryId] =
-    useState(null);
+  const [historyOpen, setHistoryOpen] =
+    useState(false);
   const [payoutHistory, setPayoutHistory] =
-    useState({});
-
-  const reportRows =
-    report?.rows || [];
+    useState([]);
+  const [filterCouponId, setFilterCouponId] =
+    useState("");
+  const [filterPeriodStart, setFilterPeriodStart] =
+    useState("");
+  const [filterPeriodEnd, setFilterPeriodEnd] =
+    useState("");
+  const [filterStatus, setFilterStatus] =
+    useState("all");
+  const [ordersReport, setOrdersReport] =
+    useState(null);
+  const [ordersLoading, setOrdersLoading] =
+    useState(false);
 
   const activeCoupons =
     useMemo(
@@ -147,6 +171,30 @@ export default function CouponsPage() {
           (coupon) =>
             coupon.is_active
         ).length,
+      [coupons]
+    );
+
+  const selectedCoupon =
+    useMemo(
+      () =>
+        coupons.find(
+          (coupon) =>
+            String(coupon.id) ===
+            filterCouponId
+        ) || null,
+      [coupons, filterCouponId]
+    );
+
+  const sortedCouponsForFilter =
+    useMemo(
+      () =>
+        coupons
+          .slice()
+          .sort((a, b) =>
+            String(a.partner_name).localeCompare(
+              String(b.partner_name)
+            )
+          ),
       [coupons]
     );
 
@@ -182,10 +230,55 @@ export default function CouponsPage() {
     );
   }
 
+  async function loadCommissionOrders() {
+    try {
+      setOrdersLoading(true);
+
+      const params =
+        new URLSearchParams();
+
+      if (filterCouponId) {
+        params.set("coupon_id", filterCouponId);
+      }
+
+      if (filterPeriodStart) {
+        params.set("period_start", filterPeriodStart);
+      }
+
+      if (filterPeriodEnd) {
+        params.set("period_end", filterPeriodEnd);
+      }
+
+      if (filterStatus !== "all") {
+        params.set("status", filterStatus);
+      }
+
+      const response =
+        await api.get(
+          `/coupons/commission-orders?${params.toString()}`
+        );
+
+      setOrdersReport(
+        response.data
+      );
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadData();
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    loadCommissionOrders();
+  }, [filterCouponId, filterPeriodStart, filterPeriodEnd, filterStatus]);
+
+  useEffect(() => {
+    setHistoryOpen(false);
+    setPayoutHistory([]);
+  }, [filterCouponId]);
 
   function updateForm(field, value) {
     setForm((previous) => ({
@@ -297,7 +390,7 @@ export default function CouponsPage() {
     );
   }
 
-  async function downloadStatementPdf(couponId, code, periodStart, periodEnd) {
+  async function downloadStatementPdf(couponId, code, periodStart, periodEnd, status) {
     const params = new URLSearchParams();
 
     if (periodStart) {
@@ -306,6 +399,10 @@ export default function CouponsPage() {
 
     if (periodEnd) {
       params.set("period_end", periodEnd);
+    }
+
+    if (status && status !== "all") {
+      params.set("status", status);
     }
 
     const query =
@@ -394,12 +491,12 @@ export default function CouponsPage() {
         `Comissão de ${payoutModalRow.partner_name} marcada como paga.`
       );
       setPayoutModalRow(null);
-      setPayoutHistory((previous) => {
-        const next = { ...previous };
-        delete next[payoutModalRow.coupon_id];
-        return next;
-      });
       await loadData();
+      await loadCommissionOrders();
+
+      if (historyOpen) {
+        await loadPayoutHistory(payoutModalRow.coupon_id);
+      }
     } catch (error) {
       setNotice(
         error?.response?.data?.error ||
@@ -416,26 +513,29 @@ export default function CouponsPage() {
         `/coupons/${couponId}/commission-payouts`
       );
 
-    setPayoutHistory((previous) => ({
-      ...previous,
-      [couponId]: response.data,
-    }));
+    setPayoutHistory(
+      response.data
+    );
   }
 
-  async function toggleHistory(row) {
-    const isOpen =
-      expandedHistoryId === row.coupon_id;
+  async function toggleHistory() {
+    if (!selectedCoupon) {
+      return;
+    }
 
-    setExpandedHistoryId(
-      isOpen ? null : row.coupon_id
+    const next =
+      !historyOpen;
+
+    setHistoryOpen(
+      next
     );
 
-    if (!isOpen && !payoutHistory[row.coupon_id]) {
-      await loadPayoutHistory(row.coupon_id);
+    if (next) {
+      await loadPayoutHistory(selectedCoupon.id);
     }
   }
 
-  async function deletePayout(payoutId, couponId) {
+  async function deletePayout(payoutId) {
     if (
       !window.confirm(
         "Remover este pagamento de comissão registrado?"
@@ -447,8 +547,13 @@ export default function CouponsPage() {
     await api.delete(
       `/coupons/commission-payouts/${payoutId}`
     );
-    await loadPayoutHistory(couponId);
+
+    if (selectedCoupon) {
+      await loadPayoutHistory(selectedCoupon.id);
+    }
+
     await loadData();
+    await loadCommissionOrders();
   }
 
   if (loading) {
@@ -811,118 +916,223 @@ export default function CouponsPage() {
             </h2>
           </div>
 
+          <div className="mb-4 grid gap-3 md:grid-cols-4">
+            <label className="text-sm text-zinc-600">
+              Influencer
+              <select
+                value={filterCouponId}
+                onChange={(event) => setFilterCouponId(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border px-3 text-zinc-900"
+              >
+                <option value="">Todas as influencers</option>
+                {sortedCouponsForFilter.map((coupon) => (
+                  <option key={coupon.id} value={coupon.id}>
+                    {coupon.partner_name} — {coupon.code}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm text-zinc-600">
+              De
+              <input
+                type="date"
+                value={filterPeriodStart}
+                onChange={(event) => setFilterPeriodStart(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border px-3 text-zinc-900"
+              />
+            </label>
+            <label className="text-sm text-zinc-600">
+              Até
+              <input
+                type="date"
+                value={filterPeriodEnd}
+                onChange={(event) => setFilterPeriodEnd(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border px-3 text-zinc-900"
+              />
+            </label>
+            <label className="text-sm text-zinc-600">
+              Status da comissão
+              <select
+                value={filterStatus}
+                onChange={(event) => setFilterStatus(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border px-3 text-zinc-900"
+              >
+                <option value="all">Todos</option>
+                <option value="pending">Pendente</option>
+                <option value="paid">Pago</option>
+              </select>
+            </label>
+          </div>
+
+          {(filterCouponId || filterPeriodStart || filterPeriodEnd || filterStatus !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                setFilterCouponId("");
+                setFilterPeriodStart("");
+                setFilterPeriodEnd("");
+                setFilterStatus("all");
+              }}
+              className="mb-4 text-xs text-zinc-500 hover:underline"
+            >
+              Limpar filtros
+            </button>
+          )}
+
+          <div className="mb-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+              <p className="text-xs text-zinc-500">Pedidos no filtro</p>
+              <p className="mt-1 text-xl font-bold">{ordersReport?.summary?.orders || 0}</p>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+              <p className="text-xs text-zinc-500">Subtotal</p>
+              <p className="mt-1 text-xl font-bold">{Formatter.formataMoeda(ordersReport?.summary?.subtotal_total || 0)}</p>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+              <p className="text-xs text-zinc-500">Comissão no filtro</p>
+              <p className="mt-1 text-xl font-bold text-[#d9536f]">{Formatter.formataMoeda(ordersReport?.summary?.commission_total || 0)}</p>
+            </div>
+          </div>
+
+          {selectedCoupon ? (
+            <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border bg-zinc-50 p-3">
+              <span className="text-sm font-medium">
+                {selectedCoupon.partner_name} — {selectedCoupon.code}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  openPayoutModal({
+                    coupon_id: selectedCoupon.id,
+                    partner_name: selectedCoupon.partner_name,
+                    code: selectedCoupon.code,
+                  })
+                }
+                className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
+              >
+                <CheckCircle2 size={14} />
+                Marcar comissão como paga
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadStatementPdf(
+                    selectedCoupon.id,
+                    selectedCoupon.code,
+                    filterPeriodStart,
+                    filterPeriodEnd,
+                    filterStatus
+                  )
+                }
+                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+              >
+                <Download size={14} />
+                Baixar PDF deste filtro
+              </button>
+              <button
+                type="button"
+                onClick={toggleHistory}
+                className="inline-flex items-center gap-1 text-sm text-zinc-600 hover:underline"
+              >
+                <Clock size={14} />
+                Histórico de pagamentos
+              </button>
+            </div>
+          ) : (
+            <p className="mb-4 text-xs text-zinc-500">
+              Selecione uma influencer no filtro para marcar pagamentos ou baixar o PDF individual dela.
+            </p>
+          )}
+
+          {historyOpen && selectedCoupon && (
+            <div className="mb-4 rounded-xl border bg-white p-3">
+              {payoutHistory.length === 0 ? (
+                <p className="text-xs text-zinc-500">Nenhum pagamento registrado ainda.</p>
+              ) : (
+                <ul className="grid gap-2">
+                  {payoutHistory.map((payout) => (
+                    <li
+                      key={payout.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-zinc-50 px-3 py-2 text-xs text-zinc-600"
+                    >
+                      <span>
+                        {formatDateInput(payout.period_start)} a {formatDateInput(payout.period_end)}
+                        {" — pago em "}
+                        {formatDateInput(payout.paid_at)}
+                        {" — "}
+                        <strong className="text-zinc-900">{Formatter.formataMoeda(payout.commission_amount)}</strong>
+                        {payout.notes ? ` — ${payout.notes}` : ""}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadStatementPdf(
+                              selectedCoupon.id,
+                              selectedCoupon.code,
+                              formatDateInput(payout.period_start),
+                              formatDateInput(payout.period_end),
+                              "paid"
+                            )
+                          }
+                          className="text-blue-600 hover:underline"
+                        >
+                          PDF
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deletePayout(payout.id)}
+                          className="text-red-600 hover:underline"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-zinc-50 text-left">
                 <tr>
                   <th className="p-3">Influencer</th>
                   <th className="p-3">Cupom</th>
-                  <th className="p-3">Pedidos</th>
-                  <th className="p-3">Pagos</th>
-                  <th className="p-3">Faturamento</th>
-                  <th className="p-3">Descontos</th>
-                  <th className="p-3">Ticket médio</th>
+                  <th className="p-3">Pedido</th>
+                  <th className="p-3">Data</th>
+                  <th className="p-3">Subtotal</th>
                   <th className="p-3">Comissão</th>
-                  <th className="p-3">Pago</th>
-                  <th className="p-3">Pendente</th>
-                  <th className="p-3 text-right">Ações</th>
+                  <th className="p-3">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {reportRows.map((row) => (
-                  <Fragment key={row.coupon_id}>
-                    <tr className="border-b hover:bg-zinc-50">
-                      <td className="p-3 font-medium">{row.partner_name}</td>
-                      <td className="p-3">{row.code}</td>
-                      <td className="p-3">{row.total_orders}</td>
-                      <td className="p-3">{row.paid_orders}</td>
-                      <td className="p-3">{Formatter.formataMoeda(row.revenue_total)}</td>
-                      <td className="p-3">{Formatter.formataMoeda(row.discount_total)}</td>
-                      <td className="p-3">{Formatter.formataMoeda(row.average_ticket)}</td>
-                      <td className="p-3">{Formatter.formataMoeda(row.estimated_commission)}</td>
-                      <td className="p-3 text-emerald-700">{Formatter.formataMoeda(row.paid_commission)}</td>
-                      <td className="p-3 text-amber-700">{Formatter.formataMoeda(row.pending_commission)}</td>
-                      <td className="p-3 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => openPayoutModal(row)}
-                          className="mr-3 inline-flex items-center gap-1 text-emerald-700 hover:underline"
-                        >
-                          <CheckCircle2 size={14} />
-                          Marcar pagamento
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => downloadStatementPdf(row.coupon_id, row.code, null, null)}
-                          className="mr-3 inline-flex items-center gap-1 text-blue-600 hover:underline"
-                        >
-                          <Download size={14} />
-                          PDF
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleHistory(row)}
-                          className="inline-flex items-center gap-1 text-zinc-600 hover:underline"
-                        >
-                          <Clock size={14} />
-                          Histórico
-                        </button>
-                      </td>
+                {ordersLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-zinc-500">
+                      Carregando...
+                    </td>
+                  </tr>
+                ) : (ordersReport?.rows || []).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-zinc-500">
+                      Nenhum pedido encontrado para esse filtro.
+                    </td>
+                  </tr>
+                ) : (
+                  ordersReport.rows.map((order) => (
+                    <tr key={order.order_id} className="border-b hover:bg-zinc-50">
+                      <td className="p-3 font-medium">{order.partner_name}</td>
+                      <td className="p-3">{order.coupon_code}</td>
+                      <td className="p-3">{order.order_number || `#${order.order_id}`}</td>
+                      <td className="p-3">{formatDateInput(order.date)}</td>
+                      <td className="p-3">{Formatter.formataMoeda(order.subtotal)}</td>
+                      <td className="p-3">{Formatter.formataMoeda(order.commission_amount)}</td>
+                      <td className="p-3">{statusBadge(order.commission_status)}</td>
                     </tr>
-                    {expandedHistoryId === row.coupon_id && (
-                      <tr className="border-b bg-zinc-50/60">
-                        <td colSpan={11} className="p-3">
-                          {!payoutHistory[row.coupon_id] ? (
-                            <p className="text-xs text-zinc-500">Carregando histórico...</p>
-                          ) : payoutHistory[row.coupon_id].length === 0 ? (
-                            <p className="text-xs text-zinc-500">Nenhum pagamento registrado ainda.</p>
-                          ) : (
-                            <ul className="grid gap-2">
-                              {payoutHistory[row.coupon_id].map((payout) => (
-                                <li
-                                  key={payout.id}
-                                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2 text-xs text-zinc-600"
-                                >
-                                  <span>
-                                    {formatDateInput(payout.period_start)} a {formatDateInput(payout.period_end)}
-                                    {" — pago em "}
-                                    {formatDateInput(payout.paid_at)}
-                                    {" — "}
-                                    <strong className="text-zinc-900">{Formatter.formataMoeda(payout.commission_amount)}</strong>
-                                    {payout.notes ? ` — ${payout.notes}` : ""}
-                                  </span>
-                                  <div className="flex items-center gap-3">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        downloadStatementPdf(
-                                          row.coupon_id,
-                                          row.code,
-                                          formatDateInput(payout.period_start),
-                                          formatDateInput(payout.period_end)
-                                        )
-                                      }
-                                      className="text-blue-600 hover:underline"
-                                    >
-                                      PDF
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => deletePayout(payout.id, row.coupon_id)}
-                                      className="text-red-600 hover:underline"
-                                    >
-                                      Remover
-                                    </button>
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

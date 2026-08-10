@@ -62,7 +62,7 @@ function endOfDay(
   const result =
     new Date(date);
 
-  result.setHours(
+  result.setUTCHours(
     23,
     59,
     59,
@@ -70,6 +70,27 @@ function endOfDay(
   );
 
   return result;
+}
+
+function findCoveringPayout(
+  date: Date,
+  payouts: any[]
+) {
+  return (
+    payouts.find(
+      (payout) =>
+        date >=
+          new Date(
+            payout.period_start
+          ) &&
+        date <=
+          endOfDay(
+            new Date(
+              payout.period_end
+            )
+          )
+    ) || null
+  );
 }
 
 function parseOptionalNumber(
@@ -760,13 +781,14 @@ export async function couponReportService() {
       const pendingRedemptions =
         paidRedemptions.filter(
           (redemption) =>
-            !lastPayoutPeriodEnd ||
-            new Date(
-              effectiveOrderDate(
-                redemption.order
-              )
-            ) >
-              lastPayoutPeriodEnd
+            !findCoveringPayout(
+              new Date(
+                effectiveOrderDate(
+                  redemption.order
+                )
+              ),
+              coupon.commission_payouts
+            )
         );
       const pendingSubtotal =
         pendingRedemptions.reduce(
@@ -949,6 +971,198 @@ export async function couponReportService() {
         estimated_commission: 0,
         paid_commission: 0,
         pending_commission: 0,
+      }
+    );
+
+  return {
+    summary,
+    rows,
+  };
+}
+
+export async function couponCommissionOrdersService(
+  filters: {
+    couponId?: number | null;
+    periodStart?: Date | null;
+    periodEnd?: Date | null;
+    status?: string;
+  }
+) {
+  const coupons =
+    await prisma.coupon.findMany({
+      where:
+        filters.couponId
+          ? {
+              id:
+                filters.couponId,
+            }
+          : undefined,
+      orderBy: [
+        {
+          partner_name:
+            "asc",
+        },
+        {
+          code:
+            "asc",
+        },
+      ],
+      include: {
+        redemptions: {
+          include: {
+            order: true,
+            contact: true,
+          },
+        },
+        commission_payouts: true,
+      },
+    });
+
+  const periodEndLimit =
+    filters.periodEnd
+      ? endOfDay(filters.periodEnd)
+      : null;
+  const statusFilter =
+    filters.status || "all";
+
+  const rows: Array<{
+    order_id: number;
+    order_number: string | null;
+    coupon_id: number;
+    coupon_code: string;
+    partner_name: string;
+    customer: string | null;
+    date: Date;
+    subtotal: number;
+    commission_percent: number;
+    commission_amount: number;
+    commission_status: string;
+    payout_id: number | null;
+    payout_paid_at: Date | null;
+  }> = [];
+
+  for (const coupon of coupons) {
+    for (const redemption of coupon.redemptions) {
+      if (!isPaidRedemption(redemption)) {
+        continue;
+      }
+
+      const date =
+        new Date(
+          effectiveOrderDate(
+            redemption.order
+          )
+        );
+
+      if (
+        filters.periodStart &&
+        date < filters.periodStart
+      ) {
+        continue;
+      }
+
+      if (
+        periodEndLimit &&
+        date > periodEndLimit
+      ) {
+        continue;
+      }
+
+      const covering =
+        findCoveringPayout(
+          date,
+          coupon.commission_payouts
+        );
+      const commissionStatus =
+        covering ? "paid" : "pending";
+
+      if (
+        statusFilter === "paid" &&
+        commissionStatus !== "paid"
+      ) {
+        continue;
+      }
+
+      if (
+        statusFilter === "pending" &&
+        commissionStatus !== "pending"
+      ) {
+        continue;
+      }
+
+      const subtotal =
+        roundMoney(
+          Number(
+            redemption.order.subtotal || 0
+          )
+        );
+      const commissionAmount =
+        roundMoney(
+          subtotal *
+          (
+            Number(
+              coupon.commission_percent || 0
+            ) /
+            100
+          )
+        );
+
+      rows.push({
+        order_id:
+          redemption.order.id,
+        order_number:
+          redemption.order.order_number,
+        coupon_id:
+          coupon.id,
+        coupon_code:
+          coupon.code,
+        partner_name:
+          coupon.partner_name,
+        customer:
+          redemption.contact?.name ||
+          null,
+        date,
+        subtotal,
+        commission_percent:
+          coupon.commission_percent,
+        commission_amount:
+          commissionAmount,
+        commission_status:
+          commissionStatus,
+        payout_id:
+          covering?.id ?? null,
+        payout_paid_at:
+          covering?.paid_at ?? null,
+      });
+    }
+  }
+
+  rows.sort(
+    (a, b) =>
+      b.date.getTime() -
+      a.date.getTime()
+  );
+
+  const summary =
+    rows.reduce(
+      (acc, row) => ({
+        orders:
+          acc.orders + 1,
+        subtotal_total:
+          roundMoney(
+            acc.subtotal_total +
+            row.subtotal
+          ),
+        commission_total:
+          roundMoney(
+            acc.commission_total +
+            row.commission_amount
+          ),
+      }),
+      {
+        orders: 0,
+        subtotal_total: 0,
+        commission_total: 0,
       }
     );
 
