@@ -61,6 +61,67 @@ function formatShippingPrice(value) {
   return Number(value) === 0 ? "Grátis" : formatBRL(value);
 }
 
+function formatReviewAverage(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+function CompactReviewSummary({ data, onShowAll }) {
+  const summary = data?.summary || { average: 0, count: 0 };
+  const reviews = data?.reviews || [];
+
+  if (!(summary.count > 0)) return null;
+
+  return (
+    <div className="product-sale-review-summary mt-4 rounded-2xl border border-[#f0dce4] bg-white px-3.5 py-3 sm:px-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <StarRating value={summary.average} size={16} />
+        <span className="text-sm font-bold text-[#43232d]">
+          {formatReviewAverage(summary.average)}
+        </span>
+        <span className="text-sm text-zinc-500">
+          {summary.count} {summary.count === 1 ? "avaliação" : "avaliações"}
+        </span>
+        <Heart size={13} className="fill-[#d9536f] text-[#d9536f]" />
+      </div>
+
+      {reviews.length > 0 && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {reviews.slice(0, 2).map((review) => (
+            <article
+              key={review.id}
+              className="rounded-xl bg-[#fff7f9] px-3 py-2 text-xs leading-5 text-zinc-600"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate font-semibold text-[#43232d]">
+                  {review.name}
+                </span>
+                <StarRating value={review.rating} size={12} />
+              </div>
+              {review.title && (
+                <p className="mt-1 line-clamp-1 font-semibold text-[#43232d]">
+                  {review.title}
+                </p>
+              )}
+              <p className="line-clamp-2">{review.comment}</p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onShowAll}
+        className="mt-2 text-xs font-semibold text-[#b74662] transition hover:text-[#d85c7a]"
+      >
+        Ver todas as avaliações
+      </button>
+    </div>
+  );
+}
+
 function formatShippingOptionPrice(option) {
   if (
     String(option?.name || "").startsWith("Moto Uber") &&
@@ -125,7 +186,6 @@ export default function Produto() {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const dragStartRef = useRef(null);
   const suppressImageClickRef = useRef(false);
-  const feelingsSectionRef = useRef(null);
 
   const cover = useMemo(() => {
     if (!product?.image_url) return "";
@@ -148,7 +208,7 @@ export default function Produto() {
             .filter((image) => Boolean(image.full))
             .map((image) => [image.full, image])
         ).values()
-      ).slice(0, 10),
+      ),
     [cover, gallery]
   );
 
@@ -283,6 +343,17 @@ export default function Produto() {
     creditCardEnabled
       ? `${paymentMethodsLabel}. ${cardLabel}.`
       : paymentMethodsLabel;
+  const kitComponentProductIds = useMemo(
+    () =>
+      (product?.kit_items || [])
+        .map((item) => item.item_product_id || item.item_product?.id)
+        .filter(Boolean),
+    [product]
+  );
+  const upsellExcludedIds = useMemo(
+    () => [product?.id, ...kitComponentProductIds].filter(Boolean),
+    [kitComponentProductIds, product?.id]
+  );
 
   const goToImage = useCallback((direction) => {
     if (images.length <= 1) return;
@@ -320,6 +391,13 @@ export default function Produto() {
     setAddedToCart(true);
     trackClarityEvent("add_to_cart_click");
     window.setTimeout(() => setAddedToCart(false), 2400);
+  }
+
+  function scrollToReviews() {
+    document.getElementById("avaliacoes")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   function handleBuyNow() {
@@ -470,7 +548,7 @@ export default function Produto() {
   return (
     <div className="product-sale-page min-h-screen pb-20">
       {/* Breadcrumb */}
-      <div className="border-b border-[#f1e3e8] bg-white">
+      <div className="hidden border-b border-[#f1e3e8] bg-white sm:block">
         <div className="product-sale-container flex items-center gap-2 py-3 text-sm text-zinc-500">
           <Link to="/produtos" className="transition hover:text-helo-dark">
             Produtos
@@ -485,40 +563,26 @@ export default function Produto() {
 
           {/* ── Galeria de imagens ── */}
           <section className="product-sale-gallery space-y-3 sm:space-y-4">
-            <div className="product-sale-media bg-white p-2.5 sm:p-4">
-              {reviewsData?.summary?.count > 0 && (
-                <div className="mb-2 flex flex-wrap items-center gap-1.5 px-1 text-sm">
-                  <StarRating value={reviewsData.summary.average} size={16} />
-                  <span className="font-semibold text-[#43232d]">
-                    {reviewsData.summary.average.toLocaleString("pt-BR", {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                    /5
-                  </span>
-                  <span className="text-zinc-500">com base em quem usou e avaliou</span>
-                  <Heart size={13} className="fill-[#d9536f] text-[#d9536f]" />
-                </div>
-              )}
-
-
+            <div className="product-sale-media bg-white p-2 sm:p-4">
               <div
-                className="product-sale-image aspect-square relative w-full touch-pan-y touch-pinch-zoom select-none"
+                className="product-sale-image relative w-full touch-pan-y touch-pinch-zoom select-none"
                 onClickCapture={handleGalleryClickCapture}
                 onPointerDown={handleGalleryPointerDown}
                 onPointerMove={handleGalleryPointerMove}
                 onPointerUp={handleGalleryPointerUp}
                 onPointerCancel={handleGalleryPointerCancel}
-                style={{ aspectRatio: "1 / 1" }}
               >
                 <ProductImagePreview
                   src={mainImage}
                   alt={product.title}
                   className="h-full w-full cursor-grab rounded-[1.5rem] bg-[#fff7f9] active:cursor-grabbing"
                   imageClassName="h-full w-full rounded-[1.5rem] object-contain object-center"
+                  fetchPriority="high"
+                  loading="eager"
                   onNavigate={images.length > 1 ? goToImage : undefined}
                   onZoomOpen={() => trackClarityEvent("product_image_zoom_open")}
                   showZoomHint
+                  sizes="(max-width: 639px) 100vw, (max-width: 1023px) 640px, 760px"
                   zoomLabel="Ampliar imagem do produto"
                 />
                 {images.length > 1 && (
@@ -530,7 +594,7 @@ export default function Produto() {
 
               {/* Miniaturas */}
               {images.length > 1 && (
-                <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
+                <div className="product-sale-thumbnails mt-2.5 flex gap-2 overflow-x-auto pb-1 sm:mt-4 sm:gap-3">
                   {images.map((image, index) => {
                     const active = image.full === mainImage;
                     return (
@@ -538,7 +602,7 @@ export default function Produto() {
                         key={image.id}
                         type="button"
                         onClick={() => setSelected(image.full)}
-                        className={`aspect-square overflow-hidden rounded-[1rem] border bg-white p-1.5 transition sm:rounded-[1.25rem] ${
+                        className={`aspect-square h-14 w-14 shrink-0 overflow-hidden rounded-[1rem] border bg-white p-1.5 transition sm:h-auto sm:w-auto sm:flex-1 sm:rounded-[1.25rem] ${
                           active
                             ? "border-[#d85c7a] ring-2 ring-[#f8dfe5]"
                             : "border-[#f0e4e8] hover:border-[#e7bdc8]"
@@ -587,6 +651,13 @@ export default function Produto() {
                   {formatBRL(productTotal)}
                 </p>
 
+                {creditCardEnabled && interestFreeInstallments > 1 && (
+                  <p className="mt-1 text-sm text-zinc-600">
+                    ou {interestFreeInstallments}x de{" "}
+                    {formatBRL(productTotal / interestFreeInstallments)} sem juros
+                  </p>
+                )}
+
                 {hasPixDiscount && (
                   <p className="mt-2 text-base text-zinc-700">
                     ou{" "}
@@ -599,13 +670,6 @@ export default function Produto() {
                   </p>
                 )}
 
-                {creditCardEnabled && interestFreeInstallments > 1 && (
-                  <p className="mt-1 text-sm text-zinc-600">
-                    ou {interestFreeInstallments}x de{" "}
-                    {formatBRL(productTotal / interestFreeInstallments)} sem juros
-                  </p>
-                )}
-
                 {product.free_shipping && (
                   <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
                     <Truck size={13} className="shrink-0" />
@@ -613,13 +677,18 @@ export default function Produto() {
                   </p>
                 )}
 
+                <CompactReviewSummary
+                  data={reviewsData}
+                  onShowAll={scrollToReviews}
+                />
+
                 {unavailable ? (
                   <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
                     Este produto está indisponível no momento.
                   </div>
                 ) : (
                   <>
-                    {/* Quantidade — alinhada à esquerda, na própria linha */}
+                    {/* Quantidade alinhada no bloco de compra */}
                     <div className="mt-4 flex justify-start">
                       <div className="product-sale-quantity-selector">
                         <button
@@ -794,13 +863,14 @@ export default function Produto() {
         </div>
 
         {/* Avaliações — logo abaixo do primeiro bloco (galeria + compra) */}
-        <ProductReviews
-          productId={product.id}
-          productTitle={product.title}
-          data={reviewsData}
-        />
-
         {/* Para quem é este produto? — identificação imediata, antes de "O que você vai sentir" */}
+        {product.category === "kit" && (
+          <ProductKitContents
+            items={product.kit_items || []}
+            kitTitle={salesTitle}
+          />
+        )}
+
         <ProductAudienceFit
           items={indicadoParaList}
           imageUrl={product.audience_fit_image_url}
@@ -808,7 +878,7 @@ export default function Produto() {
 
         {/* 8. O que você vai sentir — logo após os CTAs, vende resultado emocional */}
         {feelingList.length > 0 && (
-          <article ref={feelingsSectionRef} className="product-sale-feelings mt-10 scroll-mt-24 bg-white p-7 sm:p-9">
+          <article className="product-sale-feelings mt-6 scroll-mt-24 bg-white p-7 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">O que você vai sentir</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {feelingList.map((feeling) => (
@@ -826,36 +896,14 @@ export default function Produto() {
           </article>
         )}
 
-        {/* O que vem no Kit — logo abaixo dos benefícios */}
-        {product.category === "kit" && (
-          <ProductKitContents
-            items={product.kit_items || []}
-            kitTitle={salesTitle}
-          />
-        )}
-
-        {/* 9. Sobre o produto */}
-        <article className="product-sale-description mt-6 bg-white p-7 sm:p-9">
-          <h2 className="font-display text-3xl text-[#43232d]">Sobre o produto</h2>
-          <div className={!descriptionExpanded ? "line-clamp-5 overflow-hidden" : undefined}>
-            <MarkdownText className="mt-5 text-base leading-8 text-zinc-600">
-              {product.description || "Sem descrição cadastrada."}
+        {product.dicas_uso && (
+          <article className="product-sale-usage mt-6 p-7 sm:p-9">
+            <h2 className="font-display text-3xl text-[#43232d]">Como usar</h2>
+            <MarkdownText className="mt-5 max-w-4xl text-base leading-8 text-zinc-600">
+              {product.dicas_uso}
             </MarkdownText>
-          </div>
-          {(product.description?.length ?? 0) > 300 && (
-            <button
-              type="button"
-              onClick={() => setDescriptionExpanded((v) => !v)}
-              className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-[#b74662] transition hover:text-[#d85c7a]"
-            >
-              {descriptionExpanded ? "Ler menos" : "Ler mais"}
-              <ChevronRight
-                size={15}
-                className={`transition-transform duration-200 ${descriptionExpanded ? "-rotate-90" : "rotate-90"}`}
-              />
-            </button>
-          )}
-        </article>
+          </article>
+        )}
 
         {/* 10. Compra segura / Entrega / Pagamento */}
         <section className="product-sale-trust mt-6 grid gap-4 bg-white p-5 sm:p-7">
@@ -886,19 +934,58 @@ export default function Produto() {
           )}
         </section>
 
-        {/* 11. Como usar — dúvida de quem já está interessado */}
-        {product.dicas_uso && (
-          <article className="product-sale-usage mt-6 p-7 sm:p-9">
-            <h2 className="font-display text-3xl text-[#43232d]">Como usar</h2>
-            <MarkdownText className="mt-5 max-w-4xl text-base leading-8 text-zinc-600">
-              {product.dicas_uso}
-            </MarkdownText>
+        {product.description && (
+          <article className="product-sale-description mt-6 bg-white p-7 sm:p-9">
+            <h2 className="font-display text-3xl text-[#43232d]">Sobre o produto</h2>
+            <div className={!descriptionExpanded ? "line-clamp-5 overflow-hidden sm:line-clamp-none" : undefined}>
+              <MarkdownText className="mt-5 text-base leading-8 text-zinc-600">
+                {product.description}
+              </MarkdownText>
+            </div>
+            {(product.description?.length ?? 0) > 300 && (
+              <button
+                type="button"
+                onClick={() => setDescriptionExpanded((v) => !v)}
+                className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-[#b74662] transition hover:text-[#d85c7a] sm:hidden"
+              >
+                {descriptionExpanded ? "Ler menos" : "Ler mais"}
+                <ChevronRight
+                  size={15}
+                  className={`transition-transform duration-200 ${descriptionExpanded ? "-rotate-90" : "rotate-90"}`}
+                />
+              </button>
+            )}
           </article>
+        )}
+
+        <ProductReviews
+          productId={product.id}
+          productTitle={product.title}
+          data={reviewsData}
+        />
+
+        {!unavailable && (
+          <section className="product-sale-final-cta mt-6 rounded-[28px] border border-[#f0dfe5] bg-white p-5 sm:p-7">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-display text-2xl text-[#43232d]">{salesTitle}</p>
+                <p className="mt-1 text-lg font-bold text-[#b74662]">{formatBRL(productTotal)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                className="product-sale-buy-button flex w-full items-center justify-center gap-2 rounded-2xl px-6 text-base font-semibold text-white transition sm:w-auto sm:min-w-64 sm:text-lg"
+              >
+                <Lock size={17} />
+                Comprar agora
+              </button>
+            </div>
+          </section>
         )}
 
         {/* 12. Produtos relacionados — por último para não desviar do produto principal */}
         <UpsellProducts
-          excludedIds={[product.id]}
+          excludedIds={upsellExcludedIds}
           onAdd={addToCart}
           title="Combine com este cuidado"
         />

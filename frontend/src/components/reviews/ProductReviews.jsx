@@ -13,15 +13,6 @@ function resolvePhotoUrl(photoUrl) {
   return `${API_URL.replace(/\/$/, "")}${photoUrl}`;
 }
 
-function formatReviewDate(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 function DistributionBar({ stars, percent }) {
   return (
     <div className="flex items-center gap-2 text-xs text-zinc-500">
