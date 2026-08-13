@@ -51,7 +51,7 @@ export default function ProductAudienceFit({ items = [], imageUrl }) {
           </div>
         </div>
 
-        <div className="mx-auto aspect-[4/5] max-h-[320px] w-full max-w-[256px] overflow-hidden rounded-[1.5rem] sm:max-h-none sm:max-w-sm sm:rounded-[2rem] lg:max-w-none">
+        <div className="mx-auto aspect-[4/5] max-h-[320px] w-full max-w-full overflow-hidden rounded-[1.5rem] sm:max-h-none sm:max-w-sm sm:rounded-[2rem] lg:max-w-none">
           <img
             src={resolvedImage || defaultAudienceImage}
             alt=""
