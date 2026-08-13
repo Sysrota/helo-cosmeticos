@@ -32,7 +32,9 @@ function centerBetween(pointA, pointB) {
 export default function ProductImagePreview({
   alt,
   className = "",
+  fetchPriority,
   imageClassName = "",
+  loading = "lazy",
   onNavigate,
   onZoomOpen,
   showZoomHint = false,
@@ -347,7 +349,8 @@ export default function ProductImagePreview({
           alt={alt}
           className={imageClassName}
           draggable={false}
-          loading="lazy"
+          fetchPriority={fetchPriority}
+          loading={loading}
           decoding="async"
           sizes={sizes}
         />

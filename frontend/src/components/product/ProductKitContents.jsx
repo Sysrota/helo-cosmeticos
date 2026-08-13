@@ -20,11 +20,8 @@ export default function ProductKitContents({ items = [], kitTitle }) {
       <h2 className="font-display text-3xl text-[#43232d]">
         O que vem no{kitTitle ? ` ${kitTitle}` : ""}
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">
-        Tudo o que você precisa para uma rotina completa e eficaz.
-      </p>
 
-      <div className="mt-6 grid gap-x-6 gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-5 grid gap-x-6 gap-y-5 sm:mt-6 sm:grid-cols-2 sm:gap-y-7 lg:grid-cols-4">
         {items.map((item) => {
           const itemProduct = item.item_product;
           if (!itemProduct) return null;

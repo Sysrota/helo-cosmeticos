@@ -30,13 +30,9 @@ export default function ProductAudienceFit({ items = [], imageUrl }) {
           <h2 className="font-display text-3xl text-[#43232d]">
             Para quem é este produto?
           </h2>
-          <p className="mt-2 text-zinc-500">
-            Ideal para quem procura uma solução prática e eficiente para
-            cuidar da pele.
-          </p>
 
           {/* flex-wrap — nunca colunas fixas, os badges se distribuem sozinhos */}
-          <div className="mt-6 flex flex-wrap gap-2.5">
+          <div className="mt-5 flex flex-wrap gap-2 sm:mt-6 sm:gap-2.5">
             {items.map((item, index) => (
               <Motion.span
                 key={item}
