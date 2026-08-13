@@ -16,12 +16,12 @@ export default function ProductKitContents({ items = [], kitTitle }) {
   if (!items.length) return null;
 
   return (
-    <section className="product-kit-contents mt-6 bg-white p-7 sm:p-9">
+    <section className="product-kit-contents mt-6 bg-white p-5 sm:p-9">
       <h2 className="font-display text-3xl text-[#43232d]">
         O que vem no{kitTitle ? ` ${kitTitle}` : ""}
       </h2>
 
-      <div className="mt-5 grid gap-x-6 gap-y-5 sm:mt-6 sm:grid-cols-2 sm:gap-y-7 lg:grid-cols-4">
+      <div className="mt-4 grid gap-x-6 gap-y-5 sm:mt-6 sm:grid-cols-2 sm:gap-y-7 lg:grid-cols-4">
         {items.map((item) => {
           const itemProduct = item.item_product;
           if (!itemProduct) return null;
@@ -44,11 +44,11 @@ export default function ProductKitContents({ items = [], kitTitle }) {
                   <Sparkles size={20} className="text-[#d9536f]" />
                 </div>
               )}
-              <p className="mt-3 text-sm font-semibold text-[#43232d]">
+              <p className="mt-2.5 text-sm font-semibold text-[#43232d]">
                 {title}
               </p>
               {itemProduct.subtitle && (
-                <p className="mt-1 text-sm leading-6 text-zinc-500">
+                <p className="mt-1 text-sm leading-5 text-zinc-500">
                   {itemProduct.subtitle}
                 </p>
               )}

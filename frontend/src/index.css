@@ -370,6 +370,8 @@
     .upsell-products,
     .product-sale-final-cta {
       border-radius: 1.5rem;
+      height: auto;
+      min-height: 0;
     }
 
     .product-kit-contents,
@@ -392,22 +394,39 @@
     }
 
     .product-audience-fit img {
-      max-height: 18rem;
+      max-height: 20rem;
     }
 
+    .product-kit-contents .grid,
     .product-sale-feelings .grid,
     .product-sale-reviews .space-y-6 {
       margin-top: 1rem;
     }
 
+    .product-audience-fit > div {
+      gap: 1.25rem;
+    }
+
+    .product-audience-fit > div > div:last-child {
+      max-height: 20rem;
+    }
+
+    .product-kit-contents p {
+      margin-bottom: 0;
+    }
+
+    .product-sale-feelings .grid > div {
+      min-height: 3.5rem;
+    }
+
     .product-sale-trust {
-      gap: 0.65rem;
+      gap: 0.75rem;
       padding: 1rem;
     }
 
     .product-sale-trust-item {
       gap: 0.75rem;
-      padding: 0.85rem;
+      padding: 0.875rem;
     }
 
     .product-sale-trust-item svg {
@@ -462,7 +481,7 @@
       width: 3rem;
       height: 3rem;
       right: max(0.75rem, env(safe-area-inset-right));
-      bottom: max(0.75rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+      bottom: max(1.15rem, calc(env(safe-area-inset-bottom) + 1.15rem));
     }
 
     .floating-whatsapp svg {

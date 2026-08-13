@@ -878,15 +878,15 @@ export default function Produto() {
 
         {/* 8. O que você vai sentir — logo após os CTAs, vende resultado emocional */}
         {feelingList.length > 0 && (
-          <article className="product-sale-feelings mt-6 scroll-mt-24 bg-white p-7 sm:p-9">
+          <article className="product-sale-feelings mt-6 scroll-mt-24 bg-white p-5 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">O que você vai sentir</h2>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
               {feelingList.map((feeling) => (
                 <div
                   key={feeling}
-                  className="flex gap-3 rounded-2xl bg-[#fff7f9] px-4 py-3.5 text-sm leading-6 text-zinc-700"
+                  className="flex items-center gap-3 rounded-2xl bg-[#fff7f9] px-3.5 py-2.5 text-sm leading-6 text-zinc-700 sm:px-4 sm:py-3.5"
                 >
-                  <Sparkles size={16} className="mt-1 shrink-0 text-[#d85c7a]" />
+                  <Sparkles size={16} className="shrink-0 text-[#d85c7a]" />
                   <span>
                     <MarkdownInline>{feeling}</MarkdownInline>
                   </span>
@@ -897,18 +897,18 @@ export default function Produto() {
         )}
 
         {product.dicas_uso && (
-          <article className="product-sale-usage mt-6 p-7 sm:p-9">
+          <article className="product-sale-usage mt-6 p-5 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">Como usar</h2>
-            <MarkdownText className="mt-5 max-w-4xl text-base leading-8 text-zinc-600">
+            <MarkdownText className="mt-4 max-w-4xl text-base leading-7 text-zinc-600 sm:mt-5 sm:leading-8">
               {product.dicas_uso}
             </MarkdownText>
           </article>
         )}
 
         {/* 10. Compra segura / Entrega / Pagamento */}
-        <section className="product-sale-trust mt-6 grid gap-4 bg-white p-5 sm:p-7">
+        <section className="product-sale-trust mt-6 grid gap-3 bg-white p-4 sm:gap-4 sm:p-7">
           {showSecurePurchase && (
-            <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+            <div className="product-sale-trust-item flex items-start gap-3 rounded-2xl p-3.5 sm:gap-4 sm:p-5">
               <ShieldCheck size={25} className="shrink-0 text-[#d85c7a]" />
               <div>
                 <p className="text-base font-semibold text-[#43232d]">Compra protegida</p>
@@ -916,7 +916,7 @@ export default function Produto() {
               </div>
             </div>
           )}
-          <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+          <div className="product-sale-trust-item flex items-start gap-3 rounded-2xl p-3.5 sm:gap-4 sm:p-5">
             <Truck size={25} className="shrink-0 text-[#d85c7a]" />
             <div>
               <p className="text-base font-semibold text-[#43232d]">Entrega por CEP</p>
@@ -924,7 +924,7 @@ export default function Produto() {
             </div>
           </div>
           {paymentMethodsLabel && (
-            <div className="product-sale-trust-item flex items-start gap-4 rounded-2xl p-5">
+            <div className="product-sale-trust-item flex items-start gap-3 rounded-2xl p-3.5 sm:gap-4 sm:p-5">
               <CreditCard size={25} className="shrink-0 text-[#d85c7a]" />
               <div>
                 <p className="text-base font-semibold text-[#43232d]">Pagamento</p>
@@ -935,10 +935,10 @@ export default function Produto() {
         </section>
 
         {product.description && (
-          <article className="product-sale-description mt-6 bg-white p-7 sm:p-9">
+          <article className="product-sale-description mt-6 bg-white p-5 sm:p-9">
             <h2 className="font-display text-3xl text-[#43232d]">Sobre o produto</h2>
             <div className={!descriptionExpanded ? "line-clamp-5 overflow-hidden sm:line-clamp-none" : undefined}>
-              <MarkdownText className="mt-5 text-base leading-8 text-zinc-600">
+              <MarkdownText className="mt-4 text-base leading-7 text-zinc-600 sm:mt-5 sm:leading-8">
                 {product.description}
               </MarkdownText>
             </div>
